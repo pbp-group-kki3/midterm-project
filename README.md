@@ -16,6 +16,7 @@ Every comparison and suggestion is backed by real data such as the **Nutri-Score
 
 ### 🧩 Module List & Assignments
 * **Profile** - SERAFIN (2506637136)
+
 The profile module manages user accounts and personal preferences. Users can register, log in, edit their profile, and securely access their saved information. They can also specify dietary preferences, allergies, and nutritional goals, which may be used to personalized meal plans and product recommendations.
 
 * **Product Discovery** - BECCA (2506637110)
