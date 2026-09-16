@@ -14,23 +14,24 @@ Every comparison and suggestion is backed by real data such as the **Nutri-Score
 
 ---
 
-### ✨ Core Features
-* **Product Comparison:** Compare 2 products side-by-side, highlighting the pros and cons.
-* **Smart Suggestions:** Show greener alternatives or similar products.
-
 ### 🧩 Module List & Assignments
-* **Homepage** - SERAFIN (2506637136)
-* **About Us** (Our Goals, etc.) - ARYAN (2506636985)
-* **Main** - BECCA
-* **Comparison Feature** - ALYSSA
-* **Alternatives Feature** - QEELA
-* **Product Details** (On-click) - REYHAN (2506637086)
+* **Profile** - SERAFIN (2506637136)
+The profile module manages user accounts and personal preferences. Users can register, log in, edit their profile, and securely access their saved information. They can also specify dietary preferences, allergies, and nutritional goals, which may be used to personalized meal plans and product recommendations.
 
-### 🚀 Additional Features
-* Food of The Day
-* Meal Plan
-* Food Recipes
-* Food Preferences
+* **Product Discovery** - BECCA (2506637110)
+The Main module acts as the primary product-discovery page. Users can search for a food product by name and view a concise summary of its nutritional and environmental information. identifies similar products from the same category and recommends potentially healthier or more environmentally friendly alternatives. Each recommendation includes an explanation of why it may be a better choice.
+
+* **Meal Plan** - REYHAN (2506637086)
+The Personalized Meal Plan module generates meal recommendations based on the user’s dietary preferences, allergies, nutritional goals, and selected planning period. It provides suitable recipes for each meal and allows users to replace recommendations that they do not prefer.
+
+* **Product Comparison** - ALYSSA (2506558466)
+The Product Comparison module allows users to select two or three products and evaluate them side by side. Products are compared using consistent criteria, including nutritional quality, environmental score, ingredients, and packaging. When sufficient data is available, it may also estimate the potential impact of regularly choosing one product over another.
+
+* **Food of The Day** - ARYAN (2506636985)
+The Food of the Day module introduces users to a selected sustainable food, ingredient, recipe, or product each day. The recommendation may be based on nutritional value, environmental performance, seasonal relevance, or educational value. Users can interact with the daily recommendation by reading its sustainability information, leaving comments, and viewing opinions shared by other community members.
+
+* **Blog** - QEELA
+The Blog module provides educational content about sustainable food consumption and environmentally responsible lifestyles. It helps users understand the information presented elsewhere in the application and encourages them to develop more sustainable daily habits. Articles may discuss food waste, packaging, recycling, carbon footprints, sustainable shopping, nutrition labels, seasonal food, and responsible consumption.
 
 ---
 
