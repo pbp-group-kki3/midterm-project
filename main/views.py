@@ -1,3 +1,5 @@
 from django.shortcuts import render
+from django.http import HttpResponse
 
-# Create your views here.
+def show_main(request):
+    return HttpResponse("<h1>Welcome to Spoonfed!</h1><p>Our Sustainable Living App is under construction!</p>")
