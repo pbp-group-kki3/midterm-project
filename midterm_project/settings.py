@@ -10,16 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 import os
-from environs import Env
-
-env = Env()
-env.read_env()
-
-SECRET_KEY = env.str('SECRET_KEY', default='django-insecure-placeholder-change-me')
-DEBUG = env.bool('DEBUG', default=True)
-
 from pathlib import Path
-import os
 from dotenv import load_dotenv
 
 # Load enviroment variables from .env file
@@ -33,13 +24,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-=ky$^$@pj0w!ve(jdwbhvsx*8j=qcz4yl$ky!o3si6=*^x*n3l'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-only-key-set-SECRET_KEY-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "rebecca-love-spoonfed.pws.cs.ui.ac.id"]
 PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
+DEBUG = os.getenv('DEBUG', str(not PRODUCTION)).lower() == 'true'
+
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", ".pws.cs.ui.ac.id", ".stndar.dev"]
+ALLOWED_HOSTS += [h.strip() for h in os.getenv('ALLOWED_HOSTS', '').split(',') if h.strip()]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost",
+    "http://127.0.0.1",
+    "https://*.pws.cs.ui.ac.id",
+    "https://*.stndar.dev",
+]
 
 # Application definition
 
@@ -50,7 +49,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'profile',
+    'profiles',
     'main',
     'meal_plan',
     'comparison',
@@ -59,8 +58,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -74,7 +73,7 @@ ROOT_URLCONF = 'midterm_project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -154,7 +153,14 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 WHITENOISE_USE_FINDERS = True
 
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage'},
+}
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGIN_URL = '/profiles/login/'
