@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  {% if recipe %}{{ recipe.title }} | Meal of the Day{% else %}Meal of the Day | SpoonFed{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+
+  <!-- Breadcrumb / Back link -->
+  <nav class="flex items-center gap-2 text-sm text-neutral-500">
+    <a href="/" class="hover:text-brand-600">Home</a>
+    <span>&rsaquo;</span>
+    <a href="{% url 'food_of_the_day:index' %}" class="hover:text-brand-600">Meal of the Day</a>
+    <span>&rsaquo;</span>
+    <span class="text-neutral-800 font-medium truncate max-w-xs">
+      {% if recipe %}{{ recipe.title }}{% else %}Featured Recipe{% endif %}
+    </span>
+  </nav>
+
+  {% if not meal or not recipe %}
+    <div class="card p-10 text-center bg-white shadow-sm">
+      <div class="text-5xl mb-3">🍽️</div>
+      <h2 class="type-h3 text-neutral-800 mb-2">Recipe Not Available</h2>
+      <p class="text-neutral-600 max-w-md mx-auto mb-6">
+        {% if error_message %}
+          {{ error_message }}
+        {% else %}
+          We couldn't find a recipe for this day yet. Please check back later!
+        {% endif %}
+      </p>
+      <a href="{% url 'food_of_the_day:index' %}" class="btn btn-secondary">
+        &larr; Back to Meal of the Day
+      </a>
+    </div>
+  {% else %}
+
+    <!-- Hero Card -->
+    <section class="card card-elevated overflow-hidden bg-white">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 md:p-8">
+        <!-- Recipe Image -->
+        <div class="relative rounded-xl overflow-hidden bg-neutral-100 min-h-[260px] md:min-h-[320px]">
+          {% if recipe.image %}
+            <img 
+              src="{{ recipe.image }}" 
+              alt="{{ recipe.title }}" 
+              class="w-full h-full object-cover"
+            />
+          {% else %}
+            <div class="w-full h-full flex items-center justify-center text-6xl bg-brand-50">
+              🥗
+            </div>
+          {% endif %}
+          <div class="absolute top-3 left-3">
+            <span class="badge badge-brand font-semibold text-xs tracking-wide uppercase px-3 py-1 shadow-sm">
+              Featured on {{ meal.date|date:"F j, Y" }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Recipe Header Information -->
+        <div class="flex flex-col justify-between">
+          <div>
+            {% if dish_types %}
+              <div class="flex flex-wrap gap-1.5 mb-3">
+                {% for dt in dish_types %}
+                  <span class="chip text-xs capitalize">{{ dt }}</span>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            <h1 class="type-h2 text-neutral-900 font-bold leading-tight mb-4">
+              {{ recipe.title }}
+            </h1>
+
+            <!-- Quick Metrics -->
+            <div class="grid grid-cols-3 gap-3 p-4 bg-neutral-50 rounded-xl border border-neutral-100 text-center mb-6">
+              <div>
+                <span class="block text-xs uppercase text-neutral-500 font-medium">Prep Time</span>
+                <span class="text-base font-bold text-neutral-800">
+                  {% if ready_in_minutes %}{{ ready_in_minutes }} min{% else %}N/A{% endif %}
+                </span>
+              </div>
+              <div class="border-x border-neutral-200">
+                <span class="block text-xs uppercase text-neutral-500 font-medium">Servings</span>
+                <span class="text-base font-bold text-neutral-800">
+                  {% if servings %}{{ servings }}{% else %}N/A{% endif %}
+                </span>
+              </div>
+              <div>
+                <span class="block text-xs uppercase text-neutral-500 font-medium">Calories</span>
+                <span class="text-base font-bold text-neutral-800">
+                  {% if calories %}{{ calories }} kcal{% else %}N/A{% endif %}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Attribution -->
+          <div class="text-xs text-neutral-500 pt-3 border-t border-neutral-100">
+            Original recipe: 
+            <a href="{{ source_url }}" target="_blank" rel="noopener noreferrer" class="text-brand-600 hover:underline font-semibold">
+              {{ source_name }}
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Did you know? Highlight Box -->
+    {% if did_you_know %}
+      <section class="card bg-brand-50 border-brand-200 p-6 rounded-2xl shadow-sm">
+        <div class="flex items-start gap-4">
+          <div class="text-3xl shrink-0">💡</div>
+          <div>
+            <h3 class="type-h4 text-brand-900 font-bold mb-1">Did you know?</h3>
+            <ul class="space-y-1.5 text-brand-800 text-sm">
+              {% for fact in did_you_know %}
+                <li class="flex items-center gap-2">
+                  <span class="text-brand-600 font-bold">&bull;</span>
+                  <span>{{ fact }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </section>
+    {% endif %}
+
+    <!-- Recipe Details Panel (Authentication-Based Filtering) -->
+    {% if user.is_authenticated %}
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        <!-- Left Column: Ingredients & Nutrition -->
+        <div class="space-y-6 md:col-span-1">
+          <!-- Ingredients -->
+          <div class="card p-6 bg-white">
+            <h2 class="type-h4 font-bold text-neutral-900 mb-4 pb-2 border-b border-neutral-100">
+              Ingredients
+            </h2>
+            {% if ingredients %}
+              <ul class="space-y-2 text-sm text-neutral-700">
+                {% for item in ingredients %}
+                  <li class="flex items-start gap-2">
+                    <span class="text-brand-500 font-bold mt-0.5">&bull;</span>
+                    <span>{{ item }}</span>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="text-sm text-neutral-500">Ingredient details not listed.</p>
+            {% endif %}
+          </div>
+
+          <!-- Nutrition per serving -->
+          {% if recipe.nutrition and recipe.nutrition.nutrients %}
+            <div class="card p-6 bg-white">
+              <h2 class="type-h4 font-bold text-neutral-900 mb-4 pb-2 border-b border-neutral-100">
+                Nutrition <span class="text-xs font-normal text-neutral-500">per serving</span>
+              </h2>
+              <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
+                {% for n in recipe.nutrition.nutrients|slice:":10" %}
+                  <div class="flex items-center justify-between text-xs py-1 border-b border-neutral-50">
+                    <span class="text-neutral-600">{{ n.name }}</span>
+                    <span class="font-semibold text-neutral-900">{{ n.amount|floatformat:1 }} {{ n.unit }}</span>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Right Column: Step-by-Step Instructions -->
+        <div class="space-y-6 md:col-span-2">
+          <div class="card p-6 md:p-8 bg-white">
+            <h2 class="type-h4 font-bold text-neutral-900 mb-6 pb-2 border-b border-neutral-100">
+              Preparation Steps
+            </h2>
+            {% if instructions %}
+              <ol class="space-y-4">
+                {% for step in instructions %}
+                  <li class="flex items-start gap-4">
+                    <span class="shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-brand-100 text-brand-700 font-bold text-xs">
+                      {{ forloop.counter }}
+                    </span>
+                    <p class="text-sm text-neutral-800 leading-relaxed pt-0.5">
+                      {{ step }}
+                    </p>
+                  </li>
+                {% endfor %}
+              </ol>
+            {% else %}
+              <div class="p-6 bg-neutral-50 rounded-xl border border-neutral-100 text-center">
+                <p class="text-neutral-600 mb-4 text-sm">No step-by-step instructions available in Spoonacular data.</p>
+                <a href="{{ source_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">
+                  View full instructions on {{ source_name }} &rarr;
+                </a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Community Comments Section -->
+      <section class="card p-6 md:p-8 bg-white space-y-6" id="comments">
+        <div class="flex items-center justify-between border-b border-neutral-100 pb-4">
+          <h2 class="type-h4 font-bold text-neutral-900">
+            Community Comments
+            <span class="text-sm font-normal text-neutral-500">({{ comments|length }})</span>
+          </h2>
+          <span class="badge badge-brand text-xs">Share your thoughts</span>
+        </div>
+
+        <!-- Comment Form -->
+        <form action="{% url 'food_of_the_day:add_comment' meal.id %}" method="POST" class="space-y-3">
+          {% csrf_token %}
+          <div>
+            {{ comment_form.text }}
+          </div>
+          <div class="flex justify-end">
+            <button type="submit" class="btn btn-primary btn-sm">
+              Post Comment
+            </button>
+          </div>
+        </form>
+
+        <!-- Comments List -->
+        <div class="space-y-4 pt-2">
+          {% if comments %}
+            {% for c in comments %}
+              <div class="p-4 rounded-xl bg-neutral-50 border border-neutral-100">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="font-semibold text-neutral-800 text-sm">@{{ c.user.username }}</span>
+                  <span class="text-xs text-neutral-400">{{ c.created_at|date:"M j, Y, g:i a" }}</span>
+                </div>
+                <p class="text-sm text-neutral-700 leading-relaxed whitespace-pre-line">{{ c.text }}</p>
+              </div>
+            {% endfor %}
+          {% else %}
+            <p class="text-center py-6 text-sm text-neutral-500 italic">
+              No comments yet. Be the first to share your thoughts on this dish!
+            </p>
+          {% endif %}
+        </div>
+      </section>
+
+    {% else %}
+      <!-- Logged-out call to action banner -->
+      <section class="card p-8 md:p-12 text-center bg-white border border-brand-200 shadow-sm rounded-2xl">
+        <div class="max-w-md mx-auto space-y-4">
+          <div class="w-14 h-14 mx-auto rounded-full bg-brand-50 text-brand-600 flex items-center justify-center text-2xl">
+            🔒
+          </div>
+          <h2 class="type-h3 text-neutral-900 font-bold">Want the full recipe & steps?</h2>
+          <p class="text-neutral-600 text-sm">
+            Log in to view complete ingredient measurements, step-by-step instructions, and join the community discussion.
+          </p>
+          <div class="pt-2">
+            <a href="/profiles/login/" class="btn btn-primary btn-lg px-8">
+              Log in to see the recipe &rarr;
+            </a>
+          </div>
+        </div>
+      </section>
+    {% endif %}
+
+  {% endif %}
+
+</div>
+{% endblock %}
