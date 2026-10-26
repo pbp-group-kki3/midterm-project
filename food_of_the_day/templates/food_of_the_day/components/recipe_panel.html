@@ -1,0 +1,205 @@
+<div class="bg-white rounded-3xl p-6 sm:p-8 md:p-10 shadow-sm border border-neutral-200/80 space-y-6">
+
+  <!-- Header with Title & Action Buttons matching Figma -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-neutral-100">
+    <h2 class="font-serif text-xl sm:text-2xl md:text-3xl font-bold text-neutral-900 leading-tight">
+      {{ recipe.title }}
+    </h2>
+    <div class="flex items-center gap-2.5 shrink-0">
+      <button 
+        type="button" 
+        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-neutral-300 text-neutral-700 hover:bg-neutral-50 text-xs font-semibold transition-colors"
+      >
+        <span aria-hidden="true">🔖</span>
+        <span>Save</span>
+      </button>
+      <button 
+        type="button" 
+        class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#1C3829] hover:bg-[#274836] text-white text-xs font-semibold shadow-sm transition-colors"
+      >
+        <span>Add to my meal plan</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Key Metrics Row matching Figma: Ready in | Serves | Calories | Health score -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 py-2 text-left">
+    <div>
+      <span class="block text-[11px] font-medium text-neutral-400 uppercase tracking-wider">Ready in</span>
+      <span class="text-sm font-bold text-neutral-900">
+        {% if ready_in_minutes %}{{ ready_in_minutes }} min{% else %}N/A{% endif %}
+      </span>
+    </div>
+    <div>
+      <span class="block text-[11px] font-medium text-neutral-400 uppercase tracking-wider">Serves</span>
+      <span class="text-sm font-bold text-neutral-900">
+        {% if servings %}{{ servings }}{% else %}N/A{% endif %}
+      </span>
+    </div>
+    <div>
+      <span class="block text-[11px] font-medium text-neutral-400 uppercase tracking-wider">Calories</span>
+      <span class="text-sm font-bold text-neutral-900">
+        {% if calories %}{{ calories }} kcal{% else %}N/A{% endif %}
+      </span>
+    </div>
+    <div>
+      <span class="block text-[11px] font-medium text-neutral-400 uppercase tracking-wider">Health score</span>
+      <span class="text-sm font-bold text-neutral-900">
+        {% if health_score %}{{ health_score }} / 100{% else %}N/A{% endif %}
+      </span>
+    </div>
+  </div>
+
+  <!-- Did you know? Callout Banner matching Figma Wireframe -->
+  {% if did_you_know %}
+    <div class="bg-[#FFF4DF] border border-[#FBE3BA] text-[#784606] rounded-xl px-4 py-3 text-xs sm:text-sm font-medium flex items-start gap-2.5">
+      <span class="font-bold shrink-0">Did you know?</span>
+      <span class="text-[#6D3D02]">
+        {% for fact in did_you_know %}
+          {{ fact }}{% if not forloop.last %} {% endif %}
+        {% endfor %}
+      </span>
+    </div>
+  {% endif %}
+
+  <!-- Main Grid: Ingredients + Steps (Left) vs Per Serving Nutrition (Right) -->
+  <div class="grid grid-cols-1 md:grid-cols-12 gap-8 pt-2">
+    
+    <!-- Left Column (Ingredients & Steps) -->
+    <div class="md:col-span-8 space-y-6">
+      <!-- Ingredients List -->
+      <div>
+        <h3 class="font-serif text-base font-bold text-neutral-900 mb-3">
+          Ingredients
+        </h3>
+        {% if ingredients %}
+          <ul class="space-y-1.5 text-xs sm:text-sm text-neutral-700">
+            {% for item in ingredients %}
+              <li class="leading-relaxed">{{ item }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-xs sm:text-sm text-neutral-400 italic">Ingredient details unavailable.</p>
+        {% endif %}
+      </div>
+
+      <!-- Preparation Steps -->
+      <div class="pt-2">
+        <h3 class="font-serif text-base font-bold text-neutral-900 mb-3">
+          Steps
+        </h3>
+        {% if instructions %}
+          <ol class="space-y-3 text-xs sm:text-sm text-neutral-800">
+            {% for step in instructions %}
+              <li class="flex items-start gap-2.5 leading-relaxed">
+                <span class="font-bold text-neutral-400 shrink-0">{{ forloop.counter }}.</span>
+                <span>{{ step }}</span>
+              </li>
+            {% endfor %}
+          </ol>
+        {% else %}
+          <p class="text-xs sm:text-sm text-neutral-500 italic">
+            This recipe has no step-by-step instructions on Spoonacular.
+          </p>
+        {% endif %}
+
+        <div class="mt-4">
+          <a 
+            href="{{ source_url }}" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            class="text-xs font-semibold text-[#1C3829] hover:underline inline-flex items-center gap-1"
+          >
+            Read the original recipe by {{ source_name }} &rarr;
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column (Per Serving Nutrition) -->
+    <div class="md:col-span-4">
+      <div class="p-4 sm:p-5 bg-neutral-50 rounded-2xl border border-neutral-100">
+        <h3 class="font-serif text-base font-bold text-neutral-900 mb-3">
+          Per serving
+        </h3>
+        {% if key_nutrients %}
+          <div class="space-y-2">
+            {% for n in key_nutrients %}
+              <div class="flex items-center justify-between text-xs sm:text-sm py-1 border-b border-neutral-200/60 last:border-0">
+                <span class="text-neutral-600">{{ n.name }}</span>
+                <span class="font-semibold text-neutral-900">{{ n.display }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% elif recipe.nutrition and recipe.nutrition.nutrients %}
+          <div class="space-y-2">
+            {% for n in recipe.nutrition.nutrients|slice:":6" %}
+              <div class="flex items-center justify-between text-xs py-1 border-b border-neutral-200/60 last:border-0">
+                <span class="text-neutral-600">{{ n.name }}</span>
+                <span class="font-semibold text-neutral-900">{{ n.amount|floatformat:1 }} {{ n.unit }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-xs text-neutral-400 italic">Nutrition per serving unavailable.</p>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Comments Section matching Figma Wireframe -->
+  <div class="pt-6 border-t border-neutral-100 space-y-4" id="comments">
+    <h3 class="font-serif text-base font-bold text-neutral-900">
+      Comments
+    </h3>
+
+    <!-- Comment Form -->
+    <form action="{% url 'food_of_the_day:add_comment' meal.id %}" method="POST" class="space-y-2">
+      {% csrf_token %}
+      <div class="relative">
+        <textarea 
+          name="text" 
+          rows="2"
+          placeholder="Share your thoughts"
+          class="w-full p-3 pr-20 text-xs sm:text-sm rounded-xl border border-neutral-300 focus:outline-none focus:ring-2 focus:ring-[#1C3829] resize-none"
+          required
+        ></textarea>
+        <button 
+          type="submit" 
+          class="absolute right-2.5 bottom-3.5 px-4 py-1.5 rounded-lg bg-[#1C3829] hover:bg-[#274836] text-white text-xs font-semibold shadow-sm transition-colors"
+        >
+          Post
+        </button>
+      </div>
+    </form>
+
+    <!-- Comments List -->
+    <div class="space-y-3 pt-2">
+      {% if comments %}
+        {% for c in comments %}
+          <div class="p-3.5 bg-neutral-50 rounded-xl space-y-1">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-full bg-[#E5EFE3] text-[#1C3829] font-bold text-[10px] flex items-center justify-center uppercase">
+                {{ c.user.username|slice:":1" }}
+              </div>
+              <span class="font-semibold text-xs text-neutral-800">@{{ c.user.username }}</span>
+              <span class="text-[11px] text-neutral-400">({{ c.created_at|timesince }} ago)</span>
+            </div>
+            <p class="text-xs sm:text-sm text-neutral-700 leading-relaxed pl-8">
+              {{ c.text }}
+            </p>
+            <div class="pl-8 pt-0.5">
+              <span class="text-[11px] text-neutral-400 hover:text-neutral-600 cursor-pointer">Reply (0)</span>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-xs text-neutral-400 italic py-2">
+          No comments yet. Share the first thought!
+        </p>
+      {% endif %}
+    </div>
+  </div>
+
+</div>

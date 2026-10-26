@@ -12,6 +12,7 @@ from food_of_the_day.forms import MealCommentForm
 from food_of_the_day.services import (
     get_recipe,
     extract_calories,
+    extract_key_nutrients,
     get_did_you_know,
     extract_ingredients,
     extract_instructions,
@@ -61,6 +62,7 @@ def _prepare_meal_context(meal, request):
     }
 
     calories = extract_calories(recipe)
+    key_nutrients = extract_key_nutrients(recipe)
     did_you_know = get_did_you_know(recipe)
     ingredients = extract_ingredients(recipe)
     instructions = extract_instructions(recipe)
@@ -70,6 +72,8 @@ def _prepare_meal_context(meal, request):
         'meal': meal,
         'recipe': safe_recipe,
         'calories': calories,
+        'key_nutrients': key_nutrients,
+        'health_score': recipe.get('healthScore'),
         'did_you_know': did_you_know,
         'ingredients': ingredients,
         'instructions': instructions,

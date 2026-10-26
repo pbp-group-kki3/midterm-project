@@ -107,6 +107,53 @@ def extract_calories(recipe):
     return None
 
 
+def extract_key_nutrients(recipe):
+    """
+    Extract key per-serving macronutrients matching Figma wireframe:
+    Calories, Protein, Fat, Carbohydrates.
+    """
+    if not recipe or not isinstance(recipe, dict) or 'nutrition' not in recipe:
+        return []
+    nutrition = recipe.get('nutrition')
+    if not isinstance(nutrition, dict):
+        return []
+    nutrients = nutrition.get('nutrients', [])
+    if not isinstance(nutrients, list):
+        return []
+
+    target_order = ['calories', 'protein', 'fat', 'carbohydrates']
+    found = {}
+
+    for item in nutrients:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get('name', '')).strip()
+        lower = name.lower()
+        if lower in target_order and lower not in found:
+            amount = item.get('amount')
+            unit = item.get('unit', '')
+            if amount is not None:
+                try:
+                    amount_val = float(amount)
+                    # Format calories nicely, others with 1 decimal or integer
+                    if lower == 'calories':
+                        display_amount = f"{amount_val:.1f} {unit}"
+                    else:
+                        display_amount = f"{round(amount_val)} {unit}" if amount_val.is_integer() else f"{amount_val:.1f} {unit}"
+                    found[lower] = {
+                        'name': name.capitalize(),
+                        'display': display_amount,
+                    }
+                except (ValueError, TypeError):
+                    continue
+
+    result = []
+    for key in target_order:
+        if key in found:
+            result.append(found[key])
+    return result
+
+
 def get_did_you_know(recipe):
     """
     From nutrition.nutrients, pick the two vitamins or minerals with the highest percentOfDailyNeeds.

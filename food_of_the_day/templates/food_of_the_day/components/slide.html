@@ -1,95 +1,130 @@
 {% if meal and recipe %}
-<div class="card card-elevated overflow-hidden border border-brand-200/50 hover:shadow-lg transition-all duration-300">
-  <div class="flex flex-col md:flex-row items-stretch">
-    <!-- Image -->
-    <div class="md:w-5/12 relative min-h-[240px] md:min-h-[300px] bg-neutral-100 overflow-hidden">
-      {% if recipe.image %}
-        <img 
-          src="{{ recipe.image }}" 
-          alt="{{ recipe.title }}" 
-          class="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
-          loading="lazy"
-        />
-      {% else %}
-        <div class="w-full h-full flex items-center justify-center bg-brand-50 text-brand-700">
-          <span class="text-5xl">🍲</span>
-        </div>
-      {% endif %}
-      <div class="absolute top-3 left-3 flex flex-wrap gap-1.5">
-        <span class="badge badge-brand shadow-sm font-semibold text-xs tracking-wide uppercase px-2.5 py-1">
-          🌱 Meal of the Day
-        </span>
-        {% if is_today %}
-          <span class="badge badge-success shadow-sm font-semibold text-xs px-2.5 py-1">
-            Today's Pick
+<div class="w-full">
+  <!-- Dark Green Hero Slide Card matching Figma Final Wireframe -->
+  <div class="relative bg-[#1C3829] text-white rounded-3xl overflow-hidden p-6 sm:p-8 md:p-10 shadow-lg border border-[#2B4E3A]">
+    <div class="flex flex-col-reverse md:flex-row items-center justify-between gap-6 md:gap-10">
+      
+      <!-- Left Content Column -->
+      <div class="w-full md:w-7/12 flex flex-col justify-between space-y-4">
+        <!-- Subtitle & Date -->
+        <div>
+          <span class="block text-[11px] font-bold tracking-[0.18em] text-[#A8C8A3] uppercase mb-1">
+            Meal of the Day
           </span>
-        {% endif %}
-      </div>
-    </div>
+          <span class="block text-xs text-[#87A883] font-medium">
+            {{ meal.date|date:"l, j F" }}
+          </span>
+        </div>
 
-    <!-- Content Info -->
-    <div class="md:w-7/12 p-6 md:p-8 flex flex-col justify-between bg-white">
-      <div>
-        <!-- Dish Types -->
+        <!-- Recipe Title -->
+        <h2 class="font-serif text-2xl sm:text-3xl md:text-4xl text-[#FAF8F5] font-semibold leading-tight tracking-tight">
+          {{ recipe.title }}
+        </h2>
+
+        <!-- Metrics Row -->
+        <div class="text-xs sm:text-sm text-[#B6D1B2] font-medium flex items-center flex-wrap gap-2">
+          <span>{% if ready_in_minutes %}{{ ready_in_minutes }} min{% else %}30 min{% endif %}</span>
+          <span class="text-[#4E775B] font-light">|</span>
+          <span>Serves {% if servings %}{{ servings }}{% else %}2{% endif %}</span>
+          <span class="text-[#4E775B] font-light">|</span>
+          <span>{% if calories %}{{ calories }} kcal per serving{% else %}N/A{% endif %}</span>
+        </div>
+
+        <!-- Dish Type Chips -->
         {% if dish_types %}
-          <div class="flex flex-wrap gap-1.5 mb-3">
+          <div class="flex flex-wrap gap-2 pt-1">
             {% for dt in dish_types|slice:":3" %}
-              <span class="chip text-xs capitalize">{{ dt }}</span>
+              <span class="text-[11px] font-medium px-3.5 py-1 rounded-full bg-[#274836] text-[#E5EFE3] border border-[#3A604A] capitalize shadow-sm">
+                {{ dt }}
+              </span>
             {% endfor %}
           </div>
         {% endif %}
 
-        <!-- Title -->
-        <h3 class="type-h3 text-neutral-900 mb-3 line-clamp-2">
-          {{ recipe.title }}
-        </h3>
-
-        <!-- Key Metrics -->
-        <div class="grid grid-cols-3 gap-3 py-3 border-y border-neutral-100 my-4 text-center">
-          <div class="px-2">
-            <span class="block text-xs uppercase tracking-wider text-neutral-500">Prep Time</span>
-            <span class="font-semibold text-neutral-800 text-sm">
-              {% if ready_in_minutes %}{{ ready_in_minutes }} mins{% else %}N/A{% endif %}
-            </span>
-          </div>
-          <div class="px-2 border-x border-neutral-100">
-            <span class="block text-xs uppercase tracking-wider text-neutral-500">Servings</span>
-            <span class="font-semibold text-neutral-800 text-sm">
-              {% if servings %}{{ servings }}{% else %}N/A{% endif %}
-            </span>
-          </div>
-          <div class="px-2">
-            <span class="block text-xs uppercase tracking-wider text-neutral-500">Calories</span>
-            <span class="font-semibold text-neutral-800 text-sm">
-              {% if calories %}{{ calories }} kcal{% else %}N/A{% endif %}
-            </span>
-          </div>
+        <!-- Action Button -->
+        <div class="pt-3">
+          {% if user.is_authenticated %}
+            <button 
+              type="button" 
+              onclick="toggleRecipePanel()" 
+              id="recipe-toggle-btn"
+              class="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full bg-[#FBF9F4] text-[#1C3829] hover:bg-white text-xs sm:text-sm font-semibold shadow-sm transition-all duration-200"
+            >
+              <span id="recipe-toggle-text">See recipe</span>
+              <span id="recipe-toggle-arrow" class="text-xs">&darr;</span>
+            </button>
+            <a 
+              href="{% url 'food_of_the_day:detail' meal.id %}" 
+              class="ml-3 text-xs text-[#A8C8A3] hover:text-white underline underline-offset-2 hidden sm:inline-block"
+            >
+              Direct Link &rarr;
+            </a>
+          {% else %}
+            <a 
+              href="/profiles/login/" 
+              class="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full bg-[#FBF9F4] text-[#1C3829] hover:bg-white text-xs sm:text-sm font-semibold shadow-sm transition-all duration-200"
+            >
+              <span>Login to see the recipe</span>
+              <span class="text-xs">&rarr;</span>
+            </a>
+          {% endif %}
         </div>
-
-        <!-- Attribution -->
-        <p class="text-xs text-neutral-500 mb-4">
-          Original recipe: <a href="{{ source_url }}" target="_blank" rel="noopener noreferrer" class="text-brand-600 hover:underline font-medium">{{ source_name }}</a>
-        </p>
       </div>
 
-      <!-- Action Footer -->
-      <div class="pt-2 flex items-center justify-between">
-        {% if user.is_authenticated %}
-          <a href="{% url 'food_of_the_day:detail' meal.id %}" class="btn btn-primary btn-sm md:btn-md gap-2">
-            <span>See the recipe</span>
-            <span aria-hidden="true">&rarr;</span>
-          </a>
-        {% else %}
-          <a href="/profiles/login/" class="btn btn-secondary btn-sm md:btn-md gap-2">
-            <span>Log in to see the recipe</span>
-            <span aria-hidden="true">&rarr;</span>
-          </a>
-        {% endif %}
-        <span class="text-xs text-neutral-400">
-          Featured for {{ meal.date|date:"M j, Y" }}
-        </span>
+      <!-- Right Image Column -->
+      <div class="w-full md:w-5/12">
+        <div class="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-[#244533] border border-[#355B44] shadow-md flex items-center justify-center">
+          {% if recipe.image %}
+            <img 
+              src="{{ recipe.image }}" 
+              alt="{{ recipe.title }}" 
+              class="w-full h-full object-cover"
+              loading="lazy"
+            />
+          {% else %}
+            <div class="text-center p-6 text-[#9FBA9A]">
+              <span class="text-4xl block mb-2">🍲</span>
+              <span class="text-xs">Recipe photo from Spoonacular</span>
+            </div>
+          {% endif %}
+        </div>
       </div>
+
     </div>
   </div>
+
+  <!-- Carousel Indicator Dots matching Figma -->
+  <div class="flex items-center justify-center gap-2 py-4" aria-hidden="true">
+    <span class="w-2 h-2 rounded-full bg-neutral-300"></span>
+    <span class="w-2 h-2 rounded-full bg-[#1C3829]"></span>
+  </div>
+
+  <!-- Expandable Recipe Details Panel for Authenticated Users (matching Figma Wireframe) -->
+  {% if user.is_authenticated %}
+    <div id="recipe-expanded-panel" class="hidden transition-all duration-300">
+      {% include 'food_of_the_day/components/recipe_panel.html' %}
+    </div>
+
+    <script>
+      function toggleRecipePanel() {
+        const panel = document.getElementById('recipe-expanded-panel');
+        const text = document.getElementById('recipe-toggle-text');
+        const arrow = document.getElementById('recipe-toggle-arrow');
+        if (!panel) return;
+
+        if (panel.classList.contains('hidden')) {
+          panel.classList.remove('hidden');
+          if (text) text.innerText = 'Hide recipe';
+          if (arrow) arrow.innerHTML = '&uarr;';
+          // Smooth scroll into view
+          panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          panel.classList.add('hidden');
+          if (text) text.innerText = 'See recipe';
+          if (arrow) arrow.innerHTML = '&darr;';
+        }
+      }
+    </script>
+  {% endif %}
 </div>
 {% endif %}
