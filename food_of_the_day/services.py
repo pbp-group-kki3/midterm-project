@@ -2,9 +2,6 @@ import os
 import requests
 from django.core.cache import cache
 
-# Attempt to import the shared Spoonacular get_recipe function from meal_plan
-# If meal_plan/services/spoonacular.py is not yet implemented by Reyhan,
-# use the local reference implementation matching the specification in the guide.
 try:
     from meal_plan.services.spoonacular import get_recipe as _get_recipe_from_meal_plan
 except (ImportError, ModuleNotFoundError):
