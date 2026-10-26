@@ -1,7 +1,12 @@
+{% comment %}
+    Footer, shown on every page (included by base.html).
+    Green band with the logo on the left and the credit on the right.
+{% endcomment %}
 <footer class="site-footer">
-  <div class="site-footer-inner">
-    <span class="logo-on-light">{% include 'components/logo.html' %}</span>
-    <a href="/modules/" class="footer-link">Preview all modules</a>
-    <span>&copy; {% now "Y" %} SpoonFed &middot; PBP Midterm Group Project</span>
-  </div>
+    <div class="site-footer-inner">
+        <a href="/" class="navbar-logo" aria-label="SpoonFeed home">
+            {% include 'components/logo.html' %}
+        </a>
+        <span>&copy; {% now "Y" %} PBP Kelompok 3 KKI. Fakultas Ilmu Komputer, Universitas Indonesia.</span>
+    </div>
 </footer>

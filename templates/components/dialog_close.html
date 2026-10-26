@@ -1,0 +1,14 @@
+{% comment %}
+    The × button for the top-right corner of a dialog (icon from Figma).
+    Clicking it closes the dialog, no JavaScript needed.
+
+    How to use, inside .dialog-header:
+        {% include 'components/dialog_close.html' %}
+{% endcomment %}
+<form method="dialog">
+    <button class="dialog-close" aria-label="Close">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M15 5L10 10M10 10L5 15M10 10L5 5M10 10L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+    </button>
+</form>

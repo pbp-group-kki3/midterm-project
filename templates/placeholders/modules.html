@@ -1,52 +1,60 @@
 {% extends 'base.html' %}
 
-{% block title %}All modules | SpoonFed{% endblock %}
+{% block title %}All modules | SpoonFeed{% endblock %}
 
 {% block content %}
-<section class="hero">
-  <span class="badge badge-warning">Coming soon</span>
-  <h1 class="type-display">Welcome to SpoonFed</h1>
-  <p class="type-body-lg">Our sustainable living app is still in the kitchen. Pick a module to peek inside.</p>
-</section>
-<section aria-labelledby="module-hub-title">
-  <h2 id="module-hub-title" class="type-h3" style="margin: 0 0 var(--space-4);">Jump to a module</h2>
-  <div class="module-grid">
-    <a href="/" class="card module-card">
-      <span class="module-card-icon" aria-hidden="true">🔎</span>
-      <h3 class="type-h4">Discover</h3>
-      <p class="type-body-sm">Search foods and see what is really in them.</p>
-      <span class="module-card-cta">Open &rarr;</span>
-    </a>
-    <a href="/meal-plan/" class="card module-card">
-      <span class="module-card-icon" aria-hidden="true">🥗</span>
-      <h3 class="type-h4">Meal Plan</h3>
-      <p class="type-body-sm">Meals planned around your diet and goals.</p>
-      <span class="module-card-cta">Open &rarr;</span>
-    </a>
-    <a href="/compare/" class="card module-card">
-      <span class="module-card-icon" aria-hidden="true">⚖️</span>
-      <h3 class="type-h4">Compare</h3>
-      <p class="type-body-sm">Put products side by side and see which one wins.</p>
-      <span class="module-card-cta">Open &rarr;</span>
-    </a>
-    <a href="/food-of-the-day/" class="card module-card">
-      <span class="module-card-icon" aria-hidden="true">🌱</span>
-      <h3 class="type-h4">Food of the Day</h3>
-      <p class="type-body-sm">One sustainable pick, every day.</p>
-      <span class="module-card-cta">Open &rarr;</span>
-    </a>
-    <a href="/blog/" class="card module-card">
-      <span class="module-card-icon" aria-hidden="true">📖</span>
-      <h3 class="type-h4">Blog</h3>
-      <p class="type-body-sm">Stories and tips for eating a little greener.</p>
-      <span class="module-card-cta">Open &rarr;</span>
-    </a>
-    <a href="/profiles/" class="card module-card">
-      <span class="module-card-icon" aria-hidden="true">👤</span>
-      <h3 class="type-h4">Profile</h3>
-      <p class="type-body-sm">Your account and food preferences.</p>
-      <span class="module-card-cta">Open &rarr;</span>
-    </a>
-  </div>
-</section>
+    <section class="hero">
+        <span class="badge badge-warning">Coming soon</span>
+        <h1 class="type-display">Welcome to SpoonFeed</h1>
+        <p class="type-body-lg">Our sustainable living app is still in the kitchen. Pick a module to peek inside.</p>
+    </section>
+
+    <section aria-labelledby="module-hub-title">
+        <h2 id="module-hub-title" class="type-h3 mb-4">Jump to a module</h2>
+
+        <div class="card-grid">
+            <a href="/" class="card module-card">
+                <span class="module-card-icon" aria-hidden="true">🔎</span>
+                <h3 class="type-h4">Discover</h3>
+                <p class="type-body-sm">Search foods and see what is really in them.</p>
+                <span class="module-card-cta">Open &rarr;</span>
+            </a>
+            <a href="/meal-plan/" class="card module-card">
+                <span class="module-card-icon" aria-hidden="true">🥗</span>
+                <h3 class="type-h4">Meal Plan</h3>
+                <p class="type-body-sm">Meals planned around your diet and goals.</p>
+                <span class="module-card-cta">Open &rarr;</span>
+            </a>
+            <a href="/compare/" class="card module-card">
+                <span class="module-card-icon" aria-hidden="true">⚖️</span>
+                <h3 class="type-h4">Compare</h3>
+                <p class="type-body-sm">Put products side by side and see which one wins.</p>
+                <span class="module-card-cta">Open &rarr;</span>
+            </a>
+            <a href="/food-of-the-day/" class="card module-card">
+                <span class="module-card-icon" aria-hidden="true">🌱</span>
+                <h3 class="type-h4">Food of the Day</h3>
+                <p class="type-body-sm">One sustainable pick, every day.</p>
+                <span class="module-card-cta">Open &rarr;</span>
+            </a>
+            <a href="/blog/" class="card module-card">
+                <span class="module-card-icon" aria-hidden="true">📖</span>
+                <h3 class="type-h4">Blog</h3>
+                <p class="type-body-sm">Stories and tips for eating a little greener.</p>
+                <span class="module-card-cta">Open &rarr;</span>
+            </a>
+            <a href="/profiles/" class="card module-card">
+                <span class="module-card-icon" aria-hidden="true">👤</span>
+                <h3 class="type-h4">Profile</h3>
+                <p class="type-body-sm">Your account and food preferences.</p>
+                <span class="module-card-cta">Open &rarr;</span>
+            </a>
+            <a href="/styleguide/" class="card module-card">
+                <span class="module-card-icon" aria-hidden="true">🎨</span>
+                <h3 class="type-h4">Styleguide</h3>
+                <p class="type-body-sm">Every color, text style and component, with code to copy.</p>
+                <span class="module-card-cta">Open &rarr;</span>
+            </a>
+        </div>
+    </section>
 {% endblock %}
