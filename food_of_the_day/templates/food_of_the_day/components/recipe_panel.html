@@ -56,7 +56,7 @@
       <span class="font-bold shrink-0">Did you know?</span>
       <span class="text-[#6D3D02]">
         {% for fact in did_you_know %}
-          {{ fact }}{% if not forloop.last %} {% endif %}
+          <span>{{ fact }}</span>{% if not forloop.last %} &bull; {% endif %}
         {% endfor %}
       </span>
     </div>
