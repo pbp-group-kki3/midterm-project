@@ -1,7 +1,9 @@
+from django.contrib.auth.models import User
 from django.test import TestCase
 
 PLACEHOLDER_PATHS = [
     '/modules/',
+    '/styleguide/',
     '/meal-plan/',
     '/compare/',
     '/food-of-the-day/',
@@ -26,3 +28,15 @@ class SharedLayoutTests(TestCase):
         for path in NAV_PATHS:
             with self.subTest(path=path):
                 self.assertContains(response, 'href="%s"' % path)
+
+    def test_logo_is_an_svg(self):
+        response = self.client.get('/modules/')
+        self.assertContains(response, '<svg class="logo"')
+
+    def test_logged_in_navbar_shows_avatar_with_first_letter(self):
+        user = User.objects.create_user(username='reyhan', password='testpass123')
+        self.client.force_login(user)
+        response = self.client.get('/modules/')
+        self.assertContains(response, 'class="user-chip"')
+        self.assertContains(response, 'class="avatar avatar-sm"')
+        self.assertRegex(response.content.decode(), r'class="avatar avatar-sm">\s*R\s*</span>')
