@@ -1,10 +1,14 @@
 from django.db import models
 from django.conf import settings
+from django.core.validators import MinValueValidator, MinLengthValidator
 
 
 class MealOfTheDay(models.Model):
     date = models.DateField(unique=True, help_text="The date this meal is featured")
-    recipe_id = models.IntegerField(help_text="Spoonacular recipe ID")
+    recipe_id = models.IntegerField(
+        validators=[MinValueValidator(1)],
+        help_text="Spoonacular recipe ID"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -27,7 +31,10 @@ class MealComment(models.Model):
         on_delete=models.CASCADE,
         related_name='comments'
     )
-    text = models.TextField(max_length=1000)
+    text = models.TextField(
+        max_length=1000,
+        validators=[MinLengthValidator(2)]
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -36,4 +43,5 @@ class MealComment(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"Comment by {self.user} on {self.meal.date}: {self.text[:30]}"
+        meal_date = getattr(self.meal, 'date', 'unknown')
+        return f"Comment by {self.user} on {meal_date}: {self.text[:30]}"
