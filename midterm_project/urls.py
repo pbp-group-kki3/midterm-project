@@ -16,6 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, re_path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from midterm_project.placeholders import coming_soon, modules
 
 urlpatterns = [
@@ -34,3 +36,6 @@ urlpatterns = [
 
     re_path(r'^profiles/', coming_soon, {'slug': 'profiles'}),
 ]
+#This is for media files to work in testing.
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
