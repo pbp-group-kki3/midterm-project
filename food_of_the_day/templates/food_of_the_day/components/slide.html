@@ -93,11 +93,13 @@
     </div>
   </div>
 
-  <!-- Carousel Indicator Dots matching Figma -->
+  <!-- Carousel Indicator Dots (shown only in Home Carousel context) -->
+  {% if show_carousel_dots %}
   <div class="flex items-center justify-center gap-2 py-4" aria-hidden="true">
     <span class="w-2 h-2 rounded-full bg-neutral-300"></span>
     <span class="w-2 h-2 rounded-full bg-[#1C3829]"></span>
   </div>
+  {% endif %}
 
   <!-- Expandable Recipe Details Panel for Authenticated Users (matching Figma Wireframe) -->
   {% if user.is_authenticated %}

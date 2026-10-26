@@ -18,4 +18,5 @@ def meal_of_the_day_slide(context):
     data = _prepare_meal_context(today_meal, request)
     data['request'] = request
     data['user'] = context.get('user')
+    data['show_carousel_dots'] = True
     return data
