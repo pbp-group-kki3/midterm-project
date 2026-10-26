@@ -1,0 +1,320 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpoonFeed — Create an Account</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#1e3a29',      
+                            darker: '#15291d',   
+                            bg: '#fbf9f4',        
+                            accent: '#4a6b53',    
+                            pillBorder: '#d1d8d2'
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['Georgia', 'Cambria', 'Times New Roman', 'serif'],
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .chip-active {
+            background-color: #1e3a29 !important;
+            color: #ffffff !important;
+            border-color: #1e3a29 !important;
+        }
+        .step-content {
+            transition: opacity 0.25s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-[#f0ece1] min-h-screen flex items-center justify-center p-0 md:p-6 font-sans text-gray-800 antialiased">
+
+    <div class="w-full max-w-6xl min-h-screen md:min-h-[680px] bg-brand-bg md:rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row border border-gray-200">
+        
+        <div class="w-full md:w-5/12 bg-brand-dark text-white p-8 md:p-12 flex flex-col justify-between shrink-0 relative overflow-hidden">
+            <div class="flex items-center space-x-2">
+                <span class="text-2xl font-bold tracking-tight text-white font-serif flex items-center">
+                    Spoon<span class="text-yellow-400">Feed</span>
+                </span>
+            </div>
+
+            <div class="my-10 md:my-0 space-y-4 max-w-md">
+                <h1 class="text-3xl lg:text-4xl font-serif font-normal leading-tight text-white">
+                    Healthy & Sustainable Living, Made Easy.
+                </h1>
+                <p class="text-gray-300 text-sm md:text-base leading-relaxed font-light">
+                    Check what is in your food, compare two products, and plan meals that fit your diet.
+                </p>
+            </div>
+
+            <div class="hidden md:block"></div>
+        </div>
+
+        <div class="w-full md:w-7/12 bg-brand-bg p-6 md:p-12 flex flex-col justify-center relative">
+            
+            <div class="w-full max-w-md mx-auto mb-8">
+                <div class="flex items-center justify-center space-x-4 relative">
+                    <div class="absolute top-1/2 left-1/4 right-1/4 h-[2px] bg-gray-300 -translate-y-1/2 -z-0"></div>
+                    
+                    <div id="circle-1" class="w-8 h-8 rounded-full bg-brand-dark text-white font-semibold text-xs flex items-center justify-center z-10 transition-all duration-300">
+                        1
+                    </div>
+                    <div id="circle-2" class="w-8 h-8 rounded-full bg-gray-200 text-gray-600 font-semibold text-xs flex items-center justify-center z-10 transition-all duration-300">
+                        2
+                    </div>
+                    <div id="circle-3" class="w-8 h-8 rounded-full bg-gray-200 text-gray-600 font-semibold text-xs flex items-center justify-center z-10 transition-all duration-300">
+                        3
+                    </div>
+                </div>
+            </div>
+
+            <form method="POST" action="" enctype="multipart/form-data" id="spoonfeedForm" class="w-full max-w-md mx-auto space-y-6">
+                {% csrf_token %}
+
+                <input type="hidden" name="dietary_preferences" id="dietary_preferences_input" value="">
+                <input type="hidden" name="allergies" id="allergies_input" value="">
+
+                {% if error %}
+                <div class="p-3 bg-red-100 border border-red-300 text-red-700 text-xs rounded-lg mb-4">
+                    {{ error }}
+                </div>
+                {% endif %}
+
+                <div id="step-1" class="step-content space-y-4">
+                    <div class="space-y-1">
+                        <h2 class="text-2xl md:text-3xl font-serif font-bold text-gray-900">Create an account</h2>
+                    </div>
+
+                    <div class="space-y-3 pt-2">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Username</label>
+                            <input type="text" name="username" id="input_username" required
+                                placeholder="{username}"
+                                class="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-dark focus:border-transparent transition-all">
+                            <p class="text-[11px] text-gray-500 mt-1">Letters, numbers and _ only</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Email</label>
+                            <input type="email" name="email" id="input_email" required
+                                placeholder="[name@example.com]"
+                                class="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-dark focus:border-transparent transition-all">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Password</label>
+                            <input type="password" name="password" id="input_password" required
+                                placeholder="••••••••"
+                                class="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-dark focus:border-transparent transition-all">
+                            <p class="text-[11px] text-gray-500 mt-1">At least 8 characters</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Confirm password</label>
+                            <input type="password" name="confirm_password" id="input_confirm_password" required
+                                placeholder="••••••••"
+                                class="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-dark focus:border-transparent transition-all">
+                        </div>
+                    </div>
+
+                    <div class="pt-4 space-y-3">
+                        <button type="button" onclick="goToStep(2)"
+                            class="w-full py-3 bg-brand-dark hover:bg-brand-darker text-white font-medium text-sm rounded-lg shadow-sm transition-all text-center">
+                            Continue
+                        </button>
+
+                        <p class="text-xs text-center text-gray-600 pt-2">
+                            Already have an account? <a href="{% url 'login' %}" class="font-bold text-gray-900 underline hover:text-brand-dark">Log in</a>
+                        </p>
+                    </div>
+                </div>
+
+                <div id="step-2" class="step-content space-y-5 hidden">
+                    <div class="space-y-1">
+                        <h2 class="text-2xl md:text-3xl font-serif font-bold text-gray-900">Make it yours</h2>
+                        <p class="text-xs text-gray-600">Tell us what works for you, so we can help you find food that fits.</p>
+                    </div>
+
+                    <div class="space-y-4 pt-1">
+                        <div>
+                            <h3 class="text-xs font-bold text-gray-800">Diet and allergies</h3>
+                            <p class="text-[11px] text-gray-500 leading-tight mt-0.5">Choose your dietary preferences and any ingredients you need to avoid. You can always update these later.</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-2">Diet</label>
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button" class="chip-diet px-3.5 py-1.5 rounded-full border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-brand-dark transition-all" data-value="Halal">Halal</button>
+                                <button type="button" class="chip-diet px-3.5 py-1.5 rounded-full border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-brand-dark transition-all" data-value="Vegetarian">Vegetarian</button>
+                                <button type="button" class="chip-diet px-3.5 py-1.5 rounded-full border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-brand-dark transition-all" data-value="Vegan">Vegan</button>
+                                <button type="button" class="chip-diet px-3.5 py-1.5 rounded-full border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-brand-dark transition-all" data-value="Pescatarian">Pescatarian</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-2">Allergies</label>
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button" class="chip-allergy px-3.5 py-1.5 rounded-full border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-brand-dark transition-all" data-value="Milk">Milk</button>
+                                <button type="button" class="chip-allergy px-3.5 py-1.5 rounded-full border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-brand-dark transition-all" data-value="Peanuts">Peanuts</button>
+                                <button type="button" class="chip-allergy px-3.5 py-1.5 rounded-full border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-brand-dark transition-all" data-value="Gluten">Gluten</button>
+                                <button type="button" class="chip-allergy px-3.5 py-1.5 rounded-full border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-brand-dark transition-all" data-value="Soy">Soy</button>
+                                <button type="button" class="chip-allergy px-3.5 py-1.5 rounded-full border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-brand-dark transition-all" data-value="Eggs">Eggs</button>
+                                <button type="button" class="chip-allergy px-3.5 py-1.5 rounded-full border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-brand-dark transition-all" data-value="Shellfish">Shellfish</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 space-y-3">
+                        <button type="button" onclick="goToStep(3)"
+                            class="w-full py-3 bg-brand-dark hover:bg-brand-darker text-white font-medium text-sm rounded-lg shadow-sm transition-all text-center">
+                            Continue
+                        </button>
+
+                        <div class="flex justify-between items-center text-xs pt-1">
+                            <button type="button" onclick="goToStep(1)" class="text-gray-600 font-semibold hover:underline">Back</button>
+                            <button type="button" onclick="goToStep(3)" class="text-gray-500 hover:underline">Skip for now</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="step-3" class="step-content space-y-6 hidden">
+                    <div class="space-y-1">
+                        <h2 class="text-2xl md:text-3xl font-serif font-bold text-gray-900">You're all set!</h2>
+                        <p class="text-xs text-gray-600">Your SpoonFeed experience is almost ready. Create your account to get started.</p>
+                    </div>
+
+                    <div class="space-y-3">
+                        <label class="block text-xs font-semibold text-gray-700">Profile Picture (Optional)</label>
+                        
+                        <div class="w-full bg-brand-dark rounded-xl p-8 flex flex-col items-center justify-center text-center text-white relative group overflow-hidden cursor-pointer shadow-md">
+                            <div id="imagePreviewContainer" class="flex flex-col items-center space-y-2">
+                                <span class="text-2xl font-bold font-serif">Spoon<span class="text-yellow-400">Feed</span></span>
+                                <p class="text-[11px] text-gray-300">Click to choose a picture</p>
+                            </div>
+                            <img id="uploadedImagePreview" src="" alt="Profile Preview" class="hidden absolute inset-0 w-full h-full object-cover">
+                            
+                            <input type="file" name="picture" id="pictureInput" accept="image/*"
+                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                onchange="previewProfilePicture(event)">
+                        </div>
+                        <p class="text-[11px] text-gray-500 text-center">Click card above to upload image file (PNG, JPG)</p>
+                    </div>
+
+                    <div class="pt-4 space-y-3">
+                        <button type="submit"
+                            class="w-full py-3 bg-brand-dark hover:bg-brand-darker text-white font-medium text-sm rounded-lg shadow-sm transition-all text-center">
+                            Create account
+                        </button>
+
+                        <div class="text-left text-xs">
+                            <button type="button" onclick="goToStep(2)" class="text-gray-600 font-semibold hover:underline">Back</button>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        const selectedDiets = new Set();
+        const selectedAllergies = new Set();
+
+        function goToStep(step) {
+            if (currentStep === 1 && step > 1) {
+                const username = document.getElementById('input_username').value;
+                const email = document.getElementById('input_email').value;
+                const pass = document.getElementById('input_password').value;
+                const confirmPass = document.getElementById('input_confirm_password').value;
+
+                if (!username || !email || !pass || !confirmPass) {
+                    alert("Please fill out all required fields before continuing.");
+                    return;
+                }
+
+                if (pass !== confirmPass) {
+                    alert("Passwords do not match. Please verify.");
+                    return;
+                }
+            }
+
+            document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
+
+            document.getElementById(`step-${step}`).classList.remove('hidden');
+
+            updateProgressIndicators(step);
+
+            currentStep = step;
+        }
+
+        function updateProgressIndicators(step) {
+            for (let i = 1; i <= 3; i++) {
+                const circle = document.getElementById(`circle-${i}`);
+                if (i < step) {
+                    circle.className = "w-8 h-8 rounded-full bg-brand-dark text-white font-semibold text-xs flex items-center justify-center z-10 transition-all duration-300";
+                    circle.innerHTML = `<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>`;
+                } else if (i === step) {
+                    circle.className = "w-8 h-8 rounded-full bg-brand-dark text-white font-semibold text-xs flex items-center justify-center z-10 transition-all duration-300 ring-2 ring-brand-dark ring-offset-2";
+                    circle.innerHTML = i;
+                } else {
+                    circle.className = "w-8 h-8 rounded-full bg-gray-200 text-gray-600 font-semibold text-xs flex items-center justify-center z-10 transition-all duration-300";
+                    circle.innerHTML = i;
+                }
+            }
+        }
+
+        document.querySelectorAll('.chip-diet').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const val = btn.getAttribute('data-value');
+                if (selectedDiets.has(val)) {
+                    selectedDiets.delete(val);
+                    btn.classList.remove('chip-active');
+                } else {
+                    selectedDiets.add(val);
+                    btn.classList.add('chip-active');
+                }
+                document.getElementById('dietary_preferences_input').value = Array.from(selectedDiets).join(', ');
+            });
+        });
+
+        document.querySelectorAll('.chip-allergy').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const val = btn.getAttribute('data-value');
+                if (selectedAllergies.has(val)) {
+                    selectedAllergies.delete(val);
+                    btn.classList.remove('chip-active');
+                } else {
+                    selectedAllergies.add(val);
+                    btn.classList.add('chip-active');
+                }
+                document.getElementById('allergies_input').value = Array.from(selectedAllergies).join(', ');
+            });
+        });
+        function previewProfilePicture(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.getElementById('uploadedImagePreview');
+                    img.src = e.target.result;
+                    img.classList.remove('hidden');
+                    document.getElementById('imagePreviewContainer').classList.add('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+    </script>
+</body>
+</html>
