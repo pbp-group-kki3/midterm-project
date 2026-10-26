@@ -111,6 +111,26 @@ class FoodOfTheDayServicesTest(TestCase):
         self.assertIn("146% of your daily Vitamin C", facts[0])
         self.assertIn("90% of your daily Vitamin K", facts[1])
 
+    def test_get_did_you_know_ignores_alcohol_and_non_vitamins(self):
+        recipe_with_alcohol = {
+            "nutrition": {
+                "nutrients": [
+                    {"name": "Alcohol %", "amount": 2.5, "unit": "%", "percentOfDailyNeeds": 100.0},
+                    {"name": "Alcohol", "amount": 2.5, "unit": "g", "percentOfDailyNeeds": 100.0},
+                    {"name": "Caffeine", "amount": 50.0, "unit": "mg", "percentOfDailyNeeds": 50.0},
+                    {"name": "Vitamin C", "amount": 60.0, "unit": "mg", "percentOfDailyNeeds": 80.0},
+                    {"name": "Calcium", "amount": 200.0, "unit": "mg", "percentOfDailyNeeds": 25.0},
+                ]
+            }
+        }
+        facts = get_did_you_know(recipe_with_alcohol)
+        self.assertEqual(len(facts), 2)
+        self.assertIn("Vitamin C", facts[0])
+        self.assertIn("Calcium", facts[1])
+        for fact in facts:
+            self.assertNotIn("Alcohol", fact)
+            self.assertNotIn("Caffeine", fact)
+
     def test_get_did_you_know_empty_when_no_qualifying_nutrients(self):
         empty_recipe = {
             "nutrition": {

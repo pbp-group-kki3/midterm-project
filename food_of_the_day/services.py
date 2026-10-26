@@ -67,20 +67,67 @@ def get_recipe(recipe_id):
     return recipe
 
 
-# Nutrient names / keywords to skip when calculating "Did you know?" vitamins & minerals
+# Micronutrients recognized as valid vitamins or minerals per guidelines
+VALID_VITAMINS_AND_MINERALS = {
+    'vitamin a',
+    'vitamin b1',
+    'thiamin',
+    'vitamin b2',
+    'riboflavin',
+    'vitamin b3',
+    'niacin',
+    'vitamin b5',
+    'pantothenic acid',
+    'vitamin b6',
+    'vitamin b12',
+    'vitamin c',
+    'vitamin d',
+    'vitamin e',
+    'vitamin k',
+    'folate',
+    'folic acid',
+    'choline',
+    'calcium',
+    'iron',
+    'zinc',
+    'magnesium',
+    'potassium',
+    'phosphorus',
+    'copper',
+    'manganese',
+    'selenium',
+    'iodine',
+}
+
+# Non-vitamin/mineral nutrients to strictly exclude from "Did you know?"
 EXCLUDED_NUTRIENTS = {
+    'alcohol',
+    'caffeine',
     'calories',
     'fat',
     'saturated fat',
     'trans fat',
     'unsaturated fat',
+    'monounsaturated fat',
+    'polyunsaturated fat',
     'carbohydrates',
     'net carbohydrates',
     'sugar',
     'sodium',
     'cholesterol',
     'protein',
+    'fiber',
 }
+
+
+def is_valid_vitamin_or_mineral(name):
+    """Verify that a nutrient is a genuine vitamin or mineral, not alcohol, fat, or macro."""
+    if not name or not isinstance(name, str):
+        return False
+    clean = name.lower().replace('%', '').strip()
+    if clean in EXCLUDED_NUTRIENTS:
+        return False
+    return clean.startswith('vitamin') or clean in VALID_VITAMINS_AND_MINERALS
 
 
 def extract_calories(recipe):
@@ -135,7 +182,6 @@ def extract_key_nutrients(recipe):
             if amount is not None:
                 try:
                     amount_val = float(amount)
-                    # Format calories nicely, others with 1 decimal or integer
                     if lower == 'calories':
                         display_amount = f"{amount_val:.1f} {unit}"
                     else:
@@ -157,7 +203,7 @@ def extract_key_nutrients(recipe):
 def get_did_you_know(recipe):
     """
     From nutrition.nutrients, pick the two vitamins or minerals with the highest percentOfDailyNeeds.
-    Skip calories, fat, carbohydrates, sugar, sodium, and cholesterol.
+    Skip calories, fat, carbohydrates, sugar, sodium, cholesterol, alcohol, etc.
     Write each one as: "One serving gives you <percent>% of your daily <nutrient>."
     If nothing qualifies, return an empty list.
     """
@@ -172,15 +218,22 @@ def get_did_you_know(recipe):
         return []
 
     candidates = []
+    seen_nutrients = set()
 
     for item in nutrients:
         if not isinstance(item, dict):
             continue
-        name = str(item.get('name', '')).strip()
-        name_lower = name.lower()
+        raw_name = str(item.get('name', '')).strip()
+        # Clean out any trailing % from raw nutrient names like "Alcohol %"
+        clean_name = raw_name.replace('%', '').strip()
+        name_lower = clean_name.lower()
 
-        # Skip excluded macronutrients
-        if name_lower in EXCLUDED_NUTRIENTS:
+        # Strict validation: must be a genuine vitamin or mineral
+        if not is_valid_vitamin_or_mineral(clean_name):
+            continue
+
+        # Prevent duplicate entries for the same nutrient
+        if name_lower in seen_nutrients:
             continue
 
         percent_raw = item.get('percentOfDailyNeeds')
@@ -188,8 +241,9 @@ def get_did_you_know(recipe):
             try:
                 percent = float(percent_raw)
                 if percent > 0:
+                    seen_nutrients.add(name_lower)
                     candidates.append({
-                        'name': name,
+                        'name': clean_name,
                         'percent': percent,
                     })
             except (ValueError, TypeError):
