@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% comment %}
+    The /styleguide/ page. All the data comes from midterm_project/styleguide.py.
+    To add a component example, add it to EXAMPLES in that file, not here.
+{% endcomment %}
+
+{% block title %}Styleguide | SpoonFeed{% endblock %}
+
+{% block content %}
+    <header class="page-header">
+        <div>
+            <h1 class="page-title">Styleguide</h1>
+            <p class="page-subtitle">Everything in our shared CSS. Copy the code under each example. Full notes in STYLE_GUIDE.md.</p>
+        </div>
+    </header>
+
+    {# Quick jump links #}
+    <nav class="chip-row mb-10">
+        <a class="chip" href="#colors">Colors</a>
+        <a class="chip" href="#type">Text</a>
+        <a class="chip" href="#spacing">Spacing &amp; corners</a>
+        {% for example in examples %}
+            <a class="chip" href="#{{ example.id }}">{{ example.title }}</a>
+        {% endfor %}
+    </nav>
+
+    {# Colors #}
+    <section class="sg-section" id="colors">
+        <h2 class="type-h3">Colors</h2>
+        <p>Use the CSS variable in your CSS, or the Tailwind class in your HTML.</p>
+
+        {% for group, items in colors.items %}
+            <h3 class="type-overline text-brand">{{ group }}</h3>
+            <div class="sg-swatches">
+                {% for variable, tailwind_class, use in items %}
+                    <div class="sg-swatch">
+                        <div class="sg-swatch-color" style="background: var({{ variable }});"></div>
+                        <div class="sg-swatch-name">
+                            {{ variable }}
+                            <span>.{{ tailwind_class }} · {{ use }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </section>
+
+    {# Text styles #}
+    <section class="sg-section" id="type">
+        <h2 class="type-h3">Text styles</h2>
+        <p>Font is Inter. The serif (Young Serif) is only for hero titles.</p>
+
+        <div class="card">
+            <table class="sg-table">
+                <tr>
+                    <th>Class</th>
+                    <th>Size / weight</th>
+                    <th>Example</th>
+                    <th>Use for</th>
+                </tr>
+                {% for css_class, size, sample, use in type_styles %}
+                    <tr>
+                        <td><code>.{{ css_class }}</code></td>
+                        <td>{{ size }}</td>
+                        <td class="{{ css_class }}">{{ sample }}</td>
+                        <td class="text-secondary">{{ use }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </section>
+
+    {# Spacing and corners #}
+    <section class="sg-section" id="spacing">
+        <h2 class="type-h3">Spacing &amp; corners</h2>
+        <p>Everything sits on a 4px grid. Tailwind's p-1, p-2, p-4 ... use the same steps.</p>
+
+        <div class="card mb-3">
+            <table class="sg-table">
+                <tr>
+                    <th>Variable</th>
+                    <th>Size</th>
+                    <th></th>
+                    <th>Use for</th>
+                </tr>
+                {% for variable, size, use in spacing %}
+                    <tr>
+                        <td><code>{{ variable }}</code></td>
+                        <td>{{ size }}</td>
+                        <td><div class="bg-brand h-3 rounded-sm" style="width: var({{ variable }});"></div></td>
+                        <td class="text-secondary">{{ use }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+
+        <div class="card">
+            <table class="sg-table">
+                <tr>
+                    <th>Variable</th>
+                    <th>Size</th>
+                    <th></th>
+                    <th>Use for</th>
+                </tr>
+                {% for variable, size, use in radius %}
+                    <tr>
+                        <td><code>{{ variable }}</code></td>
+                        <td>{{ size }}</td>
+                        <td><div class="bg-brand-subtle border border-brand h-10 w-16" style="border-radius: var({{ variable }});"></div></td>
+                        <td class="text-secondary">{{ use }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </section>
+
+    {# Components: each one shown live, then its code #}
+    {% for example in examples %}
+        <section class="sg-section" id="{{ example.id }}">
+            <h2 class="type-h3">{{ example.title }}</h2>
+            {% if example.note %}
+                <p>{{ example.note }}</p>
+            {% endif %}
+
+            <div class="card sg-demo">
+                <div class="sg-row">{{ example.rendered|safe }}</div>
+            </div>
+            <pre class="sg-code">{{ example.html }}</pre>
+        </section>
+    {% endfor %}
+{% endblock %}

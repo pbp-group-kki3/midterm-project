@@ -1,27 +1,51 @@
+{% comment %}
+    Base layout. Every page extends this:
+        {% extends 'base.html' %}
+
+    Blocks you can fill:
+        title        the browser tab text
+        meta         extra <meta> tags
+        extra_head   your own CSS files
+        content      the page itself
+        extra_js     your own JS files
+{% endcomment %}
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}SpoonFed{% endblock %}</title>
-  {% block meta %}{% endblock %}
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="{% static 'js/tailwind-config.js' %}"></script>
-  <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
-  <link rel="stylesheet" href="{% static 'css/components.css' %}">
-  {% block extra_head %}{% endblock %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SpoonFeed{% endblock %}</title>
+    {% block meta %}{% endblock %}
+
+    <!-- Fonts: Inter for everything, Young Serif for hero titles -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Young+Serif&display=swap" rel="stylesheet">
+
+    <!-- Tailwind, set up to use our colors (see static/js/tailwind-config.js) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{% static 'js/tailwind-config.js' %}"></script>
+
+    <!-- Shared SpoonFeed styles. Keep this order: tokens first. -->
+    <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components.css' %}">
+    <link rel="stylesheet" href="{% static 'css/pages.css' %}">
+
+    <!-- Your module's own CSS goes in this block -->
+    {% block extra_head %}{% endblock %}
 </head>
 <body class="min-h-screen flex flex-col">
-  {% include 'header.html' %}
-  <main class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    {% block content %}{% endblock %}
-  </main>
-  {% include 'footer.html' %}
-  <script src="{% static 'js/navbar.js' %}" defer></script>
-  {% block extra_js %}{% endblock %}
+    {% include 'header.html' %}
+
+    <main class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% include 'footer.html' %}
+
+    <script src="{% static 'js/navbar.js' %}" defer></script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>
