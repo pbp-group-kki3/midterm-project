@@ -1,9 +1,10 @@
+import datetime
 from django.shortcuts import render, get_object_or_404, redirect
 from django.conf import settings
 from django.utils import timezone
-from django.contrib.auth.decorators import login_required
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.contrib import messages
-from django.http import JsonResponse, HttpResponseBadRequest
+from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
 from food_of_the_day.models import MealOfTheDay, MealComment
@@ -14,7 +15,23 @@ from food_of_the_day.services import (
     get_did_you_know,
     extract_ingredients,
     extract_instructions,
+    is_safe_external_url,
 )
+
+
+def _get_safe_redirect_url(request, default_path):
+    """
+    Validates the HTTP_REFERER to prevent Open Redirect attacks.
+    Only allows redirects back to the exact same host.
+    """
+    referer = request.META.get('HTTP_REFERER')
+    if referer and url_has_allowed_host_and_scheme(
+        url=referer,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure()
+    ):
+        return referer
+    return default_path
 
 
 def _prepare_meal_context(meal, request):
@@ -23,12 +40,25 @@ def _prepare_meal_context(meal, request):
         return {'meal': None, 'recipe': None}
 
     recipe = get_recipe(meal.recipe_id)
-    if not recipe:
+    if not recipe or not isinstance(recipe, dict):
         return {
             'meal': meal,
             'recipe': None,
             'error_message': 'Recipe details from Spoonacular are currently unavailable.',
         }
+
+    # URL sanitization to guard against javascript: or data: XSS vectors
+    raw_source_url = recipe.get('sourceUrl')
+    source_url = raw_source_url if is_safe_external_url(raw_source_url) else 'https://spoonacular.com'
+
+    raw_image_url = recipe.get('image')
+    safe_image_url = raw_image_url if is_safe_external_url(raw_image_url) else None
+
+    safe_recipe = {
+        **recipe,
+        'image': safe_image_url,
+        'sourceUrl': source_url,
+    }
 
     calories = extract_calories(recipe)
     did_you_know = get_did_you_know(recipe)
@@ -38,18 +68,18 @@ def _prepare_meal_context(meal, request):
 
     return {
         'meal': meal,
-        'recipe': recipe,
+        'recipe': safe_recipe,
         'calories': calories,
         'did_you_know': did_you_know,
         'ingredients': ingredients,
         'instructions': instructions,
         'comments': comments,
         'comment_form': MealCommentForm(),
-        'dish_types': recipe.get('dishTypes', []),
+        'dish_types': recipe.get('dishTypes', []) if isinstance(recipe.get('dishTypes'), list) else [],
         'servings': recipe.get('servings'),
         'ready_in_minutes': recipe.get('readyInMinutes'),
-        'source_name': recipe.get('sourceName') or 'Spoonacular',
-        'source_url': recipe.get('sourceUrl') or 'https://spoonacular.com',
+        'source_name': str(recipe.get('sourceName') or 'Spoonacular')[:100],
+        'source_url': source_url,
     }
 
 
@@ -96,7 +126,8 @@ def slide_partial(request):
 def add_comment(request, meal_id):
     """
     Handles comment submission on a featured meal.
-    Requires user authentication.
+    Requires user authentication, validates input, checks for spam duplicates,
+    and protects against Open Redirect attacks.
     """
     if not request.user.is_authenticated:
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -106,8 +137,26 @@ def add_comment(request, meal_id):
 
     meal = get_object_or_404(MealOfTheDay, id=meal_id)
     form = MealCommentForm(request.POST)
+    fallback_url = f'/food-of-the-day/{meal.id}/'
 
     if form.is_valid():
+        cleaned_text = form.cleaned_data['text']
+
+        # Anti-spam protection: prevent identical comments posted within 10 seconds
+        ten_seconds_ago = timezone.now() - datetime.timedelta(seconds=10)
+        is_duplicate = MealComment.objects.filter(
+            user=request.user,
+            meal=meal,
+            text=cleaned_text,
+            created_at__gte=ten_seconds_ago
+        ).exists()
+
+        if is_duplicate:
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'error': 'Duplicate comment submitted too quickly. Please wait a moment.'}, status=429)
+            messages.warning(request, 'You recently posted this comment. Please wait a moment before posting again.')
+            return redirect(_get_safe_redirect_url(request, fallback_url))
+
         comment = form.save(commit=False)
         comment.user = request.user
         comment.meal = meal
@@ -125,10 +174,12 @@ def add_comment(request, meal_id):
             })
 
         messages.success(request, 'Your comment was posted successfully!')
-        return redirect(request.META.get('HTTP_REFERER') or f'/food-of-the-day/{meal.id}/')
+        return redirect(_get_safe_redirect_url(request, fallback_url))
 
+    # Form errors
+    first_error = form.errors.get('text', ['Invalid comment.'])[0]
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        return JsonResponse({'error': 'Invalid comment text'}, status=400)
+        return JsonResponse({'error': str(first_error)}, status=400)
 
-    messages.error(request, 'Failed to post comment. Please check your text.')
-    return redirect(request.META.get('HTTP_REFERER') or f'/food-of-the-day/{meal.id}/')
+    messages.error(request, f'Failed to post comment: {first_error}')
+    return redirect(_get_safe_redirect_url(request, fallback_url))

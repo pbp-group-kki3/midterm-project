@@ -5,14 +5,17 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.core.cache import cache
 from django.db.utils import IntegrityError
+from django.core.exceptions import ValidationError
 
 from food_of_the_day.models import MealOfTheDay, MealComment
+from food_of_the_day.forms import MealCommentForm
 from food_of_the_day.services import (
     get_recipe,
     extract_calories,
     get_did_you_know,
     extract_ingredients,
     extract_instructions,
+    is_safe_external_url,
 )
 
 User = get_user_model()
@@ -105,7 +108,6 @@ class FoodOfTheDayServicesTest(TestCase):
     def test_get_did_you_know_selects_top_two_micronutrients(self):
         facts = get_did_you_know(self.sample_recipe)
         self.assertEqual(len(facts), 2)
-        # Top 2 should be Vitamin C (145.5% -> 146%) and Vitamin K (90%)
         self.assertIn("146% of your daily Vitamin C", facts[0])
         self.assertIn("90% of your daily Vitamin K", facts[1])
 
@@ -125,15 +127,45 @@ class FoodOfTheDayServicesTest(TestCase):
     def test_get_recipe_caching(self, mock_fallback_get):
         mock_fallback_get.return_value = self.sample_recipe
 
-        # First call hits mock
         res1 = get_recipe(716429)
         self.assertEqual(res1['id'], 716429)
         mock_fallback_get.assert_called_once()
 
-        # Second call returns from cache
         res2 = get_recipe(716429)
         self.assertEqual(res2['id'], 716429)
-        mock_fallback_get.assert_called_once()  # Call count remains 1
+        mock_fallback_get.assert_called_once()
+
+    def test_safe_external_url(self):
+        self.assertTrue(is_safe_external_url("https://spoonacular.com/recipe"))
+        self.assertTrue(is_safe_external_url("http://example.com"))
+        self.assertFalse(is_safe_external_url("javascript:alert(1)"))
+        self.assertFalse(is_safe_external_url("data:text/html,<script>alert(1)</script>"))
+        self.assertFalse(is_safe_external_url(""))
+        self.assertFalse(is_safe_external_url(None))
+
+    def test_get_recipe_invalid_id_returns_none(self):
+        self.assertIsNone(get_recipe(-1))
+        self.assertIsNone(get_recipe("invalid_string"))
+        self.assertIsNone(get_recipe(0))
+
+
+class FoodOfTheDayFormsTest(TestCase):
+    def test_form_valid_text(self):
+        form = MealCommentForm(data={'text': 'Very nutritious and tasty!'})
+        self.assertTrue(form.is_valid())
+
+    def test_form_whitespace_only_invalid(self):
+        form = MealCommentForm(data={'text': '     \n   '})
+        self.assertFalse(form.is_valid())
+        self.assertIn('text', form.errors)
+
+    def test_form_too_short_invalid(self):
+        form = MealCommentForm(data={'text': 'a'})
+        self.assertFalse(form.is_valid())
+
+    def test_form_too_long_invalid(self):
+        form = MealCommentForm(data={'text': 'a' * 1001})
+        self.assertFalse(form.is_valid())
 
 
 @override_settings(ROOT_URLCONF='food_of_the_day.test_urls')
@@ -175,7 +207,6 @@ class FoodOfTheDayViewsTest(TestCase):
         mock_get_recipe.return_value = self.sample_recipe
         response = self.client.get(reverse('food_of_the_day:detail', args=[self.meal.id]))
         self.assertEqual(response.status_code, 200)
-        # Should prompt to log in and not reveal full preparation steps
         self.assertContains(response, "Log in to see the recipe")
         self.assertNotContains(response, "Preparation Steps")
 
@@ -189,6 +220,19 @@ class FoodOfTheDayViewsTest(TestCase):
         self.assertContains(response, "Mix everything in a bowl.")
         self.assertContains(response, "Ingredients")
         self.assertContains(response, "1 cup spinach")
+
+    @patch('food_of_the_day.views.get_recipe')
+    def test_xss_url_sanitization(self, mock_get_recipe):
+        malicious_recipe = {
+            **self.sample_recipe,
+            "sourceUrl": "javascript:alert('xss')",
+            "image": "javascript:void(0)",
+        }
+        mock_get_recipe.return_value = malicious_recipe
+        response = self.client.get(reverse('food_of_the_day:detail', args=[self.meal.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "javascript:alert('xss')")
+        self.assertNotContains(response, "javascript:void(0)")
 
     def test_add_comment_anonymous_redirects(self):
         response = self.client.post(
@@ -209,6 +253,35 @@ class FoodOfTheDayViewsTest(TestCase):
         comment = MealComment.objects.first()
         self.assertEqual(comment.user, self.user)
         self.assertEqual(comment.text, 'Loved this recipe, very eco-friendly!')
+
+    def test_add_comment_open_redirect_protection(self):
+        self.client.login(username='dineder', password='password123')
+        response = self.client.post(
+            reverse('food_of_the_day:add_comment', args=[self.meal.id]),
+            {'text': 'Testing redirect vulnerability protection.'},
+            HTTP_REFERER='https://evil-phishing-site.attacker.com/steal-credentials'
+        )
+        self.assertEqual(response.status_code, 302)
+        # Must NOT redirect to external phishing site
+        self.assertFalse(response['Location'].startswith('https://evil-phishing-site'))
+        self.assertTrue(response['Location'].startswith(f'/food-of-the-day/{self.meal.id}/'))
+
+    def test_add_comment_duplicate_spam_protection(self):
+        self.client.login(username='dineder', password='password123')
+        # First submission
+        self.client.post(
+            reverse('food_of_the_day:add_comment', args=[self.meal.id]),
+            {'text': 'Repeated comment text'}
+        )
+        self.assertEqual(MealComment.objects.count(), 1)
+
+        # Immediate duplicate submission
+        response2 = self.client.post(
+            reverse('food_of_the_day:add_comment', args=[self.meal.id]),
+            {'text': 'Repeated comment text'}
+        )
+        # Should not create a second identical comment
+        self.assertEqual(MealComment.objects.count(), 1)
 
     @patch('food_of_the_day.views.get_recipe')
     def test_slide_partial_view(self, mock_get_recipe):

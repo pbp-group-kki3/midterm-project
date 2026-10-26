@@ -1,4 +1,5 @@
 from django import forms
+from django.core.exceptions import ValidationError
 from food_of_the_day.models import MealComment
 
 
@@ -18,3 +19,19 @@ class MealCommentForm(forms.ModelForm):
         labels = {
             'text': ''
         }
+
+    def clean_text(self):
+        text = self.cleaned_data.get('text', '')
+        if not text:
+            raise ValidationError('Comment cannot be empty.')
+
+        # Remove null bytes if any
+        cleaned_text = text.replace('\x00', '').strip()
+
+        if len(cleaned_text) < 2:
+            raise ValidationError('Comment is too short. Please provide at least 2 characters.')
+
+        if len(cleaned_text) > 1000:
+            raise ValidationError('Comment cannot exceed 1000 characters.')
+
+        return cleaned_text
