@@ -1,0 +1,6 @@
+<!-- Fake profile photo, only used on /styleguide/ to show an avatar with a picture -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+    <rect width="96" height="96" fill="#9DBD99"/>
+    <circle cx="48" cy="38" r="18" fill="#F5EFE0"/>
+    <path d="M14 96c4-20 18-30 34-30s30 10 34 30z" fill="#F5EFE0"/>
+</svg>
