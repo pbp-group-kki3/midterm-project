@@ -161,21 +161,17 @@
                                     </div>
                                 </div>
 
-                                <form
-                                    method="post"
-                                    action="{% url 'comparison:remove_product' product.compare_barcode %}"
-                                    class="mt-3"
+                                <button
+                                    type="button"
+                                    class="btn btn-danger-subtle btn-sm btn-block mt-3 compare-remove-trigger"
+                                    data-remove-url="{% url 'comparison:remove_product' product.compare_barcode %}"
+                                    data-product-name="{{ product.product_name|default:'this product' }}"
+                                    aria-haspopup="dialog"
+                                    aria-controls="compare-remove-dialog"
+                                    aria-label="Remove {{ product.product_name|default:'product' }} from comparison"
                                 >
-                                    {% csrf_token %}
-
-                                    <button
-                                        type="submit"
-                                        class="btn btn-danger-subtle btn-sm btn-block"
-                                        aria-label="Remove {{ product.product_name|default:'product' }} from comparison"
-                                    >
-                                        Remove
-                                    </button>
-                                </form>
+                                    Remove
+                                </button>
                             </td>
                         {% endfor %}
 
@@ -249,4 +245,48 @@
             </a>
         </section>
     {% endif %}
+
+    <dialog
+        id="compare-remove-dialog"
+        class="dialog"
+        aria-labelledby="compare-remove-title"
+        aria-describedby="compare-remove-description"
+    >
+        <div class="dialog-header">
+            <h2 id="compare-remove-title" class="dialog-title">
+                Remove product?
+            </h2>
+        </div>
+
+        <p id="compare-remove-description" class="dialog-text">
+            Remove
+            <strong id="compare-remove-product-name"></strong>
+            from this comparison? You can add it again from Discover.
+        </p>
+
+        <form id="compare-remove-form" method="post">
+            {% csrf_token %}
+
+            <div class="dialog-actions">
+                <button
+                    type="button"
+                    id="compare-remove-cancel"
+                    class="btn btn-secondary"
+                    autofocus
+                >
+                    Cancel
+                </button>
+
+                <button type="submit" class="btn btn-danger">
+                    Remove
+                </button>
+            </div>
+        </form>
+    </dialog>
+{% endblock %}
+{% block extra_js %}
+    <script
+        src="{% static 'comparison/comparison.js' %}"
+        defer
+    ></script>
 {% endblock %}
