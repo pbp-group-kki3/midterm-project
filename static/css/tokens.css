@@ -1,127 +1,192 @@
+/* SpoonFeed design tokens
+
+   Every color, size, corner and shadow in the app lives here.
+   The names are the same ones Figma shows in Dev Mode,
+   so if Figma says var(--space-sm), you can type var(--space-sm).
+
+   How to use:
+       .my-box {
+           background: var(--color-bg-surface);
+           padding: var(--space-lg);
+           border-radius: var(--radius-lg);
+       }
+
+   Rules:
+   - Use the named tokens (sections 2 to 10), not the raw palette (section 1).
+   - To change a color for the whole app, change the value here. Never rename. */
+
 :root {
-  --brand-50: #F0F6EF;
-  --brand-100: #DCEADB;
-  --brand-200: #BED5BC;
-  --brand-300: #9DBD99;
-  --brand-400: #78A173;
-  --brand-500: #5C8756;
-  --brand-600: #447241;
-  --brand-700: #395F37;
-  --brand-800: #2F4E2E;
-  --brand-900: #172817;
 
-  --neutral-0: #FFFFFF;
-  --neutral-50: #F7F8FA;
-  --neutral-100: #EEF0F4;
-  --neutral-200: #E2E5EC;
-  --neutral-300: #CBD0DA;
-  --neutral-400: #9AA1B1;
-  --neutral-500: #6B7280;
-  --neutral-600: #4B5361;
-  --neutral-700: #353B47;
-  --neutral-800: #23272F;
-  --neutral-900: #14161B;
-  --neutral-950: #0B0C10;
+    /* 1. Raw palette
+       The actual colors. Don't use these in your CSS directly,
+       use the named ones below so we can swap colors later in one place. */
 
-  --green-50: #E7F9EF;
-  --green-500: #22C55E;
-  --green-600: #16A34A;
-  --green-700: #15803D;
+    /* Brand green. 600 is the main SpoonFeed green. */
+    --brand-50: #F0F6EF;
+    --brand-100: #DCEADB;
+    --brand-200: #BED5BC;
+    --brand-300: #9DBD99;
+    --brand-400: #78A173;
+    --brand-500: #5C8756;
+    --brand-600: #447241;
+    --brand-700: #395F37;
+    --brand-800: #2F4E2E;
+    --brand-900: #172817;
 
-  --amber-50: #FFF6E5;
-  --amber-500: #F59E0B;
-  --amber-600: #D97706;
+    /* Grays, from white (0) to almost black (950) */
+    --neutral-0: #FFFFFF;
+    --neutral-50: #F7F8FA;
+    --neutral-100: #EEF0F4;
+    --neutral-200: #E2E5EC;
+    --neutral-300: #CBD0DA;
+    --neutral-400: #9AA1B1;
+    --neutral-500: #6B7280;
+    --neutral-600: #4B5361;
+    --neutral-700: #353B47;
+    --neutral-800: #23272F;
+    --neutral-900: #14161B;
+    --neutral-950: #0B0C10;
 
-  --red-50: #FDECEC;
-  --red-500: #EF4444;
-  --red-600: #DC2626;
-  --red-700: #B91C1C;
+    /* Status colors */
+    --green-50: #E7F9EF;
+    --green-500: #22C55E;
+    --green-600: #16A34A;
+    --green-700: #15803D;
 
-  --blue-50: #E8F1FE;
-  --blue-500: #3B82F6;
-  --blue-600: #2563EB;
+    --amber-50: #FFF6E5;
+    --amber-500: #F59E0B;
+    --amber-600: #D97706;
 
-  --color-bg-canvas: #F7F5ED;
-  --color-bg-surface: var(--neutral-0);
-  --color-bg-subtle: var(--neutral-100);
-  --color-bg-muted: var(--neutral-200);
-  --color-bg-brand: var(--brand-600);
-  --color-bg-brand-hover: var(--brand-700);
-  --color-bg-brand-subtle: var(--brand-50);
-  --color-bg-success: var(--green-500);
-  --color-bg-success-subtle: var(--green-50);
-  --color-bg-warning: var(--amber-500);
-  --color-bg-warning-subtle: var(--amber-50);
-  --color-bg-danger: var(--red-500);
-  --color-bg-danger-subtle: var(--red-50);
-  --color-bg-info: var(--blue-500);
-  --color-bg-info-subtle: var(--blue-50);
+    --red-50: #FDECEC;
+    --red-500: #EF4444;
+    --red-600: #DC2626;
+    --red-700: #B91C1C;
 
-  --color-text-primary: var(--neutral-900);
-  --color-text-secondary: var(--neutral-500);
-  --color-text-tertiary: var(--neutral-400);
-  --color-text-disabled: var(--neutral-400);
-  --color-text-on-brand: var(--neutral-0);
-  --color-text-brand: var(--brand-600);
-  --color-text-success: var(--green-700);
-  --color-text-warning: var(--amber-600);
-  --color-text-danger: var(--red-600);
-  --color-text-info: var(--blue-600);
+    --blue-50: #E8F1FE;
+    --blue-500: #3B82F6;
+    --blue-600: #2563EB;
 
-  --color-border-subtle: var(--neutral-100);
-  --color-border-default: var(--neutral-200);
-  --color-border-strong: var(--neutral-300);
-  --color-border-brand: var(--brand-600);
-  --color-border-focus: var(--brand-500);
-  --color-border-danger: var(--red-500);
 
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+    /* 2. Background colors */
 
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --space-10: 40px;
-  --space-12: 48px;
+    --color-bg-canvas: #F7F5EE;                    /* page background, the cream color */
+    --color-bg-surface: var(--neutral-0);          /* white: cards, inputs, popups */
+    --color-bg-subtle: var(--neutral-100);         /* light gray: secondary buttons, image placeholders, empty score tiles */
+    --color-bg-muted: var(--neutral-200);          /* darker gray: hover on gray things, disabled buttons */
 
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-2xl: 24px;
-  --radius-full: 9999px;
+    --color-bg-brand: var(--brand-600);            /* main green: primary buttons, navbar, footer */
+    --color-bg-brand-hover: var(--brand-700);      /* green when you hover it */
+    --color-bg-brand-subtle: var(--brand-50);      /* very light green: selected chip, active sidebar item, avatar without photo */
 
-  --shadow-sm: 0 1px 2px rgba(20, 22, 27, 0.06);
-  --shadow-md: 0 4px 16px rgba(20, 22, 27, 0.08);
+    --color-bg-accent: var(--amber-500);           /* yellow: only the "Login" button in the navbar */
+    --color-bg-accent-hover: var(--amber-600);
+
+    --color-bg-success: var(--green-500);
+    --color-bg-success-subtle: var(--green-50);    /* light green: "Better" cells, "Fits your preferences" tag */
+    --color-bg-warning: var(--amber-500);
+    --color-bg-warning-subtle: var(--amber-50);
+    --color-bg-danger: var(--red-500);             /* red: "Delete account" button */
+    --color-bg-danger-subtle: var(--red-50);       /* light red: "Remove" button, error alert */
+    --color-bg-info: var(--blue-500);
+    --color-bg-info-subtle: var(--blue-50);
+
+    /* The dark green "feature" block (Meal of the Day hero, login side panel) */
+    --color-bg-feature: #1F3527;
+    --color-text-on-feature: #F5EFE0;              /* main text on the dark block (cream) */
+    --color-text-on-feature-muted: #AFC2A6;        /* smaller text on the dark block */
+    --color-text-feature-accent: #C9A45C;          /* gold label, e.g. "MEAL OF THE DAY" */
+
+
+    /* 3. Text colors */
+
+    --color-text-primary: var(--neutral-900);      /* normal text and headings */
+    --color-text-secondary: var(--neutral-500);    /* subtitles, descriptions, email under a name */
+    --color-text-tertiary: var(--neutral-400);     /* placeholders, tiny meta text, "Optional" */
+    --color-text-disabled: var(--neutral-400);
+    --color-text-on-brand: var(--neutral-0);       /* white text sitting on green */
+    --color-text-brand: var(--brand-600);          /* green text: links, category labels, avatar letter */
+    --color-text-success: var(--green-600);
+    --color-text-warning: var(--amber-600);
+    --color-text-danger: var(--red-600);           /* error messages, "Remove" */
+    --color-text-info: var(--blue-600);
+    --color-logo-on-brand: #FFF6E5;                /* cream color of the word "SpoonFeed" in the logo */
+
+
+    /* 4. Border and icon colors */
+
+    --color-border-subtle: var(--neutral-100);     /* faint lines: table rows, read-only inputs */
+    --color-border-default: var(--neutral-200);    /* normal borders: cards, inputs, chips */
+    --color-border-strong: var(--neutral-300);     /* stronger border: chip hover, empty state outline */
+    --color-border-brand: var(--brand-500);        /* green border: selected chip, outline button, active sidebar item */
+    --color-border-focus: var(--brand-500);        /* input while you're typing in it */
+    --color-border-danger: var(--red-500);         /* input with an error */
+    --color-focus-ring: var(--brand-100);          /* soft green glow around a focused input */
+
+    --color-icon-default: var(--neutral-700);      /* normal icons, e.g. the pencil in "Edit profile" */
+    --color-icon-primary: var(--neutral-900);
+    --color-icon-secondary: var(--neutral-400);    /* faded icons, e.g. inactive sidebar icons */
+    --color-icon-on-brand: var(--neutral-0);
+
+
+    /* 5. Score grade colors
+       The A to E tiles on product cards. Official Nutri-Score colors.
+       Used by .grade-a to .grade-e in components.css. */
+
+    --grade-a: #038141;
+    --grade-b: #85BB2F;
+    --grade-c: #FECB02;
+    --grade-d: #EE8100;
+    --grade-e: #E63E11;
+    --grade-unknown: var(--color-bg-subtle);
+
+
+    /* 6. Fonts */
+
+    --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;   /* everything */
+    --font-display: 'Young Serif', Georgia, 'Times New Roman', serif;                        /* logo and big hero titles only */
+
+
+    /* 7. Spacing
+       Everything sits on a 4px grid. Use these for padding, margin and gap. */
+
+    --space-none: 0;
+    --space-xs: 4px;      /* icon next to text */
+    --space-sm: 8px;      /* between buttons, between chips */
+    --space-md: 12px;     /* inside small things */
+    --space-lg: 16px;     /* card body padding, gap in a grid */
+    --space-xl: 24px;     /* card padding, between blocks */
+    --space-2xl: 32px;    /* big blocks */
+    --space-3xl: 40px;    /* between page sections */
+    --space-4xl: 64px;    /* above the footer */
+
+
+    /* 8. Corners (border-radius) */
+
+    --radius-sm: 8px;       /* score tiles, small tags */
+    --radius-md: 12px;      /* buttons, inputs, sidebar items */
+    --radius-lg: 16px;      /* cards */
+    --radius-xl: 24px;      /* big blocks like the feature hero */
+    --radius-full: 999px;   /* fully round: pills, chips, avatars */
+
+
+    /* 9. Shadows */
+
+    --shadow-card: 0 1px 2px rgba(20, 22, 27, 0.06), 0 1px 3px rgba(20, 22, 27, 0.10);   /* resting card */
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.10);                                         /* hover, navbar, floating buttons */
+    --shadow-lg: 0 12px 32px rgba(20, 22, 27, 0.16);                                    /* popups */
+
+
+    /* 10. Fixed sizes */
+
+    --btn-height-sm: 36px;   /* small button */
+    --btn-height-md: 44px;   /* normal button and input */
+    --btn-height-lg: 52px;   /* big button */
+    --input-height: 48px;    /* text inputs and selects */
+
+    --avatar-sm: 32px;       /* navbar */
+    --avatar-md: 40px;       /* default, e.g. next to a comment */
+    --avatar-lg: 72px;       /* profile header */
+    --avatar-xl: 96px;       /* profile photo picker */
+
+    --container-max: 72rem;  /* max page width (1152px) */
 }
-
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  margin: 0;
-  font-family: var(--font-sans);
-  background: var(--color-bg-canvas);
-  color: var(--color-text-primary);
-  -webkit-font-smoothing: antialiased;
-}
-
-.type-display { font: 700 clamp(36px, 8vw, 56px)/1.07 var(--font-sans); }
-.type-h1 { font: 800 28px/36px var(--font-sans); }
-.type-h2 { font: 800 24px/32px var(--font-sans); }
-.type-h3 { font: 700 20px/28px var(--font-sans); }
-.type-h4 { font: 700 18px/24px var(--font-sans); }
-.type-title { font: 600 18px/24px var(--font-sans); }
-.type-body-lg { font: 400 16px/24px var(--font-sans); }
-.type-body-md { font: 400 15px/22px var(--font-sans); }
-.type-body-sm { font: 400 14px/20px var(--font-sans); }
-.type-label-lg { font: 600 16px/20px var(--font-sans); }
-.type-label-md { font: 600 14px/20px var(--font-sans); }
-.type-label-sm { font: 600 12px/16px var(--font-sans); }
-.type-caption { font: 400 12px/16px var(--font-sans); }
-.type-overline { font: 700 10px/16px var(--font-sans); letter-spacing: 0.05em; text-transform: uppercase; }
