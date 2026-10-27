@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Compare | SpoonFeed{% endblock %}
+
+{% block content %}
+    <header class="page-header">
+        <div>
+            <a href="/" class="back-link mb-3">
+                ← Back to Discover
+            </a>
+
+            <h1 class="page-title page-title-lg">Compare</h1>
+
+            <p class="page-subtitle">
+                Compare up to three products side by side.
+            </p>
+        </div>
+    </header>
+
+    <section class="empty-state" aria-labelledby="compare-empty-title">
+        <h2 class="empty-state-title" id="compare-empty-title">
+            No comparison available yet
+        </h2>
+
+        <p class="empty-state-text">
+            Select two or three products from Discover to compare them.
+        </p>
+
+        <a href="/" class="btn btn-primary">
+            Browse products
+        </a>
+    </section>
+{% endblock %}
