@@ -6,7 +6,7 @@
 {% block extra_head %}
     <link
         rel="stylesheet"
-        href="{% static 'comparison/comparison.css' %}"
+        href="{% static 'comparison/comparison.css' %}?v=3"
     >
 {% endblock %}
 
@@ -33,13 +33,7 @@
         </div>
     {% endif %}
 
-    {% if products %}
-        {% if products|length < 2 %}
-            <div class="alert alert-info mb-6" role="status">
-                Select at least two available products to compare.
-            </div>
-        {% endif %}
-
+    {% if show_compare_panel %}
         <div
             class="card compare-panel"
             role="region"
@@ -58,12 +52,18 @@
                     {% for product in products %}
                         <col>
                     {% endfor %}
+
+                    {% if show_add_product %}
+                        <col>
+                    {% endif %}
                 </colgroup>
 
                 <thead>
                     <tr>
                         <th scope="col">
-                            <span class="sr-only">Comparison criteria</span>
+                            <span class="sr-only">
+                                Comparison criteria
+                            </span>
                         </th>
 
                         {% for product in products %}
@@ -96,8 +96,26 @@
                                 </div>
                             </th>
                         {% endfor %}
+
+                        {% if show_add_product %}
+                            <th scope="col" class="compare-product-heading">
+                                <a href="/" class="compare-add-product">
+                                    <span class="type-label-md">
+                                        + Add product
+                                    </span>
+
+                                    <span class="type-caption text-secondary">
+                                        Select a product from Discover
+                                    </span>
+                                </a>
+
+                                <p class="type-body-sm text-secondary text-center mt-3">
+                                    Compare up to 3 products
+                                </p>
+                            </th>
+                        {% endif %}
                     </tr>
-                    
+
                     <tr>
                         <td></td>
 
@@ -107,6 +125,7 @@
                                     <div class="score-tile">
                                         <span class="score-tile-label">Grade</span>
                                         <span class="score-tile-value">?</span>
+
                                         <span class="sr-only">
                                             SpoonFeed grade is not available yet.
                                         </span>
@@ -133,49 +152,78 @@
                                         </span>
                                     </div>
                                 </div>
+
+                                <form
+                                    method="post"
+                                    action="{% url 'comparison:remove_product' product.compare_barcode %}"
+                                    class="mt-3"
+                                >
+                                    {% csrf_token %}
+
+                                    <button
+                                        type="submit"
+                                        class="btn btn-danger-subtle btn-sm btn-block"
+                                        aria-label="Remove {{ product.product_name|default:'product' }} from comparison"
+                                    >
+                                        Remove
+                                    </button>
+                                </form>
                             </td>
                         {% endfor %}
+
+                        {% if show_add_product %}
+                            <td class="compare-score-heading"></td>
+                        {% endif %}
                     </tr>
                 </thead>
 
-                {% if products|length >= 2 %}
-                    {% for section in comparison_sections %}
-                        <tbody>
+                {% for section in comparison_sections %}
+                    <tbody>
+                        <tr>
+                            <th
+                                colspan="{{ table_column_count }}"
+                                class="compare-section-title type-overline text-brand"
+                            >
+                                {{ section.title }}
+                            </th>
+                        </tr>
+
+                        {% for row in section.rows %}
                             <tr>
-                                <th
-                                    colspan="{{ products|length|add:'1' }}"
-                                    class="compare-section-title type-overline text-brand"
-                                >
-                                    {{ section.title }}
+                                <th scope="row" class="compare-criterion">
+                                    {{ row.label }}
                                 </th>
-                            </tr>
 
-                            {% for row in section.rows %}
-                                <tr>
-                                    <th scope="row" class="compare-criterion">
-                                        {{ row.label }}
-                                    </th>
+                                {% for cell in row.cells %}
+                                    <td class="compare-value">
+                                        <div class="data-table-cell{% if cell.is_better %} is-better{% endif %}">
+                                            <span class="compare-value-content">
+                                                {{ cell.display }}
+                                            </span>
 
-                                    {% for cell in row.cells %}
-                                        <td class="compare-value">
-                                            <div class="data-table-cell{% if cell.is_better %} is-better{% endif %}">
-                                                <span class="compare-value-content">
-                                                    {{ cell.display }}
+                                            {% if cell.is_better %}
+                                                <span class="better-tag">
+                                                    ✓ Better
                                                 </span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                {% endfor %}
 
-                                                {% if cell.is_better %}
-                                                    <span class="better-tag">
-                                                        ✓ Better
-                                                    </span>
-                                                {% endif %}
-                                            </div>
-                                        </td>
-                                    {% endfor %}
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    {% endfor %}
-                {% endif %}
+                                {% if show_add_product %}
+                                    <td class="compare-value">
+                                        <div class="data-table-cell">
+                                            <span aria-hidden="true">—</span>
+                                            <span class="sr-only">
+                                                No product selected
+                                            </span>
+                                        </div>
+                                    </td>
+                                {% endif %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                {% endfor %}
             </table>
         </div>
 
