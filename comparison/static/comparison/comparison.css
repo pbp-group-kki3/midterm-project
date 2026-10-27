@@ -94,6 +94,13 @@
     overflow-wrap: anywhere;
 }
 
+/* Separate table row keeps all product indicators aligned. */
+.compare-score-heading {
+    padding-left: var(--space-xl);
+    padding-bottom: var(--space-xl);
+    vertical-align: top;
+}
+
 /* Keep the panel comfortable on narrower screens. */
 @media (max-width: 767px) {
     .compare-panel {
@@ -107,5 +114,9 @@
     .compare-product-heading,
     .compare-value {
         padding-left: var(--space-lg);
+    }
+
+    .compare-score-heading {
+    padding-left: var(--space-lg);
     }
 }

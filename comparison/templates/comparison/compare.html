@@ -97,6 +97,45 @@
                             </th>
                         {% endfor %}
                     </tr>
+                    
+                    <tr>
+                        <td></td>
+
+                        {% for product in products %}
+                            <td class="compare-score-heading">
+                                <div class="score-row">
+                                    <div class="score-tile">
+                                        <span class="score-tile-label">Grade</span>
+                                        <span class="score-tile-value">?</span>
+                                        <span class="sr-only">
+                                            SpoonFeed grade is not available yet.
+                                        </span>
+                                    </div>
+
+                                    <div class="score-tile">
+                                        <span class="score-tile-label">Nutri</span>
+                                        <span class="score-tile-value">
+                                            {{ product.compare_nutri|default:"?"|upper }}
+                                        </span>
+                                    </div>
+
+                                    <div class="score-tile">
+                                        <span class="score-tile-label">Green</span>
+                                        <span class="score-tile-value">
+                                            {{ product.compare_green|default:"?"|upper }}
+                                        </span>
+                                    </div>
+
+                                    <div class="score-tile">
+                                        <span class="score-tile-label">NOVA</span>
+                                        <span class="score-tile-value">
+                                            {{ product.compare_nova|default:"?" }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </td>
+                        {% endfor %}
+                    </tr>
                 </thead>
 
                 {% if products|length >= 2 %}
