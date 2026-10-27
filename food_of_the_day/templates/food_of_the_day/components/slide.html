@@ -1,8 +1,28 @@
 {% if meal and recipe %}
-<div class="w-full">
-  <!-- Dark Green Hero Slide Card matching SpoonFeed Design System (.feature-card) -->
-  <section class="feature-card">
-    <div class="feature-card-text">
+<div class="w-full relative">
+  <!-- Dark Green Hero Slide Card matching SpoonFeed Design System & Figma Wireframe -->
+  <section class="feature-card relative overflow-hidden">
+
+    <!-- Carousel Arrow Buttons matching Figma (icon-btn-dark) -->
+    <button 
+      type="button"
+      class="icon-btn icon-btn-dark absolute left-3 md:left-4 top-1/2 -translate-y-1/2 z-10 hidden sm:inline-flex"
+      aria-label="Previous slide"
+      title="Previous slide"
+    >
+      <span aria-hidden="true">&lsaquo;</span>
+    </button>
+    <button 
+      type="button"
+      class="icon-btn icon-btn-dark absolute right-3 md:right-4 top-1/2 -translate-y-1/2 z-10 hidden sm:inline-flex"
+      aria-label="Next slide"
+      title="Next slide"
+    >
+      <span aria-hidden="true">&rsaquo;</span>
+    </button>
+
+    <!-- Left Content Column -->
+    <div class="feature-card-text sm:pl-8 md:pl-10">
       <div>
         <span class="feature-card-overline">Meal of the day</span>
         <span class="type-caption block opacity-80 mt-0.5" style="color: var(--color-text-on-feature-muted);">
@@ -41,7 +61,7 @@
             href="{% url 'food_of_the_day:detail' meal.id %}" 
             class="type-body-sm underline text-white opacity-80 hover:opacity-100 hidden sm:inline-block"
           >
-            Direct Link &rarr;
+            Direct link &rarr;
           </a>
         {% else %}
           <a 
@@ -54,7 +74,8 @@
       </div>
     </div>
 
-    <div class="feature-card-img">
+    <!-- Right Image Column (Recipe photo from Spoonacular) -->
+    <div class="feature-card-img sm:pr-8 md:pr-10">
       {% if recipe.image %}
         <img 
           src="{{ recipe.image }}" 
@@ -68,15 +89,13 @@
         </div>
       {% endif %}
     </div>
-  </section>
 
-  <!-- Carousel Indicator Dots (shown only in Home Carousel context) -->
-  {% if show_carousel_dots %}
-  <div class="flex items-center justify-center gap-2 py-4" aria-hidden="true">
-    <span class="w-2 h-2 rounded-full bg-neutral-300"></span>
-    <span class="w-2 h-2 rounded-full bg-brand"></span>
-  </div>
-  {% endif %}
+    <!-- Carousel Indicator Dots (Centered at bottom inside/under card) -->
+    <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2" aria-hidden="true">
+      <span class="w-1.5 h-1.5 rounded-full bg-white opacity-40"></span>
+      <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+    </div>
+  </section>
 
   <!-- Expandable Recipe Details Panel for Authenticated Users -->
   {% if user.is_authenticated %}
