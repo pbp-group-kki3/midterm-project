@@ -1,38 +1,40 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Meal of the Day | SpoonFed{% endblock %}
+{% block title %}Meal of the Day | SpoonFeed{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto space-y-8">
+<div class="space-y-8">
 
-  <!-- Module Header -->
-  <header class="text-center max-w-2xl mx-auto space-y-2">
-    <span class="text-[11px] font-bold tracking-[0.18em] text-[#1C3829] uppercase bg-[#E5EFE3] px-3 py-1 rounded-full inline-block">
-      Daily Sustainable Recommendation
-    </span>
-    <h1 class="font-serif text-3xl sm:text-4xl text-neutral-900 font-bold">
-      Meal of the Day
-    </h1>
-    <p class="text-xs sm:text-sm text-neutral-600 leading-relaxed">
-      A handpicked nutritious, eco-conscious recipe featured every day to inspire healthier everyday cooking.
-    </p>
+  <!-- Page Header matching SpoonFeed Styleguide -->
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Meal of the Day</h1>
+      <p class="page-subtitle">A handpicked sustainable recipe featured every day.</p>
+    </div>
+    {% if user.is_staff %}
+      <div class="page-actions">
+        <a href="/admin/food_of_the_day/mealoftheday/add/" class="btn btn-secondary btn-sm">
+          + Manage in Admin
+        </a>
+      </div>
+    {% endif %}
   </header>
 
-  <!-- Featured Dish Slide matching Figma Final Wireframe -->
+  <!-- Featured Dish Slide -->
   <section>
     {% if meal and recipe %}
       {% include 'food_of_the_day/components/slide.html' %}
     {% else %}
-      <div class="bg-white rounded-3xl p-12 text-center border border-dashed border-neutral-300 shadow-sm max-w-2xl mx-auto space-y-4">
-        <div class="text-5xl">🌱</div>
-        <h3 class="font-serif text-xl font-bold text-neutral-800">No Meal Featured Yet for Today</h3>
-        <p class="text-neutral-500 text-xs sm:text-sm max-w-md mx-auto">
+      <div class="empty-state">
+        <span class="empty-state-icon">🌱</span>
+        <h3 class="empty-state-title">No Meal Featured Yet for Today</h3>
+        <p class="empty-state-text">
           Today's featured recipe hasn't been set yet. Check back soon or browse previous recommendations below!
         </p>
         {% if user.is_staff %}
           <div class="pt-2">
-            <a href="/admin/food_of_the_day/mealoftheday/add/" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#1C3829] hover:bg-[#274836] text-white text-xs font-semibold transition-colors">
+            <a href="/admin/food_of_the_day/mealoftheday/add/" class="btn btn-primary btn-sm">
               + Add Today's Recipe in Admin
             </a>
           </div>
@@ -43,33 +45,31 @@
 
   <!-- Past Featured Meals Gallery -->
   {% if past_meals %}
-    <section class="pt-8 border-t border-neutral-200/80 space-y-4">
-      <div class="flex items-center justify-between">
-        <div>
-          <h2 class="font-serif text-xl font-bold text-neutral-900">Past Featured Meals</h2>
-          <p class="text-xs text-neutral-500">Revisit previous delicious and sustainable recommendations</p>
-        </div>
+    <section class="pt-8 border-t border-default space-y-4">
+      <div>
+        <h2 class="type-h3">Past Featured Meals</h2>
+        <p class="page-subtitle">Revisit previous delicious and sustainable recommendations</p>
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {% for past in past_meals %}
-          <div class="bg-white rounded-2xl p-5 border border-neutral-200/80 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+          <div class="card card-elevated flex flex-col justify-between">
             <div class="space-y-2 mb-4">
-              <div class="flex items-center justify-between text-xs text-neutral-400">
-                <span class="px-2 py-0.5 rounded-full bg-neutral-100 font-medium text-neutral-600 text-[11px]">
+              <div class="flex items-center justify-between">
+                <span class="badge">
                   {{ past.date|date:"M j, Y" }}
                 </span>
-                <span>Recipe ID: {{ past.recipe_id }}</span>
+                <span class="type-caption text-tertiary">ID: {{ past.recipe_id }}</span>
               </div>
-              <h3 class="font-serif font-bold text-neutral-800 text-base">
+              <h3 class="type-card-title text-primary">
                 Featured Meal
               </h3>
-              <p class="text-xs text-neutral-500">
+              <p class="type-body-sm text-secondary">
                 {{ past.comments.count }} community comment{{ past.comments.count|pluralize }}
               </p>
             </div>
             <div>
-              <a href="{% url 'food_of_the_day:detail' past.id %}" class="inline-flex items-center justify-center w-full px-3 py-2 rounded-xl border border-neutral-200 text-neutral-700 hover:bg-neutral-50 text-xs font-semibold transition-colors">
+              <a href="{% url 'food_of_the_day:detail' past.id %}" class="btn btn-outline btn-block btn-sm">
                 View Details &rarr;
               </a>
             </div>
