@@ -1,107 +1,84 @@
 {% if meal and recipe %}
 <div class="w-full">
-  <!-- Dark Green Hero Slide Card matching Figma Final Wireframe -->
-  <div class="relative bg-[#1C3829] text-white rounded-3xl overflow-hidden p-6 sm:p-8 md:p-10 shadow-lg border border-[#2B4E3A]">
-    <div class="flex flex-col-reverse md:flex-row items-center justify-between gap-6 md:gap-10">
-      
-      <!-- Left Content Column -->
-      <div class="w-full md:w-7/12 flex flex-col justify-between space-y-4">
-        <!-- Subtitle & Date -->
-        <div>
-          <span class="block text-[11px] font-bold tracking-[0.18em] text-[#A8C8A3] uppercase mb-1">
-            Meal of the Day
-          </span>
-          <span class="block text-xs text-[#87A883] font-medium">
-            {{ meal.date|date:"l, j F" }}
-          </span>
+  <!-- Dark Green Hero Slide Card matching SpoonFeed Design System (.feature-card) -->
+  <section class="feature-card">
+    <div class="feature-card-text">
+      <div>
+        <span class="feature-card-overline">Meal of the day</span>
+        <span class="type-caption block opacity-80 mt-0.5" style="color: var(--color-text-on-feature-muted);">
+          {{ meal.date|date:"l, j F" }}
+        </span>
+      </div>
+
+      <h2 class="feature-card-title">{{ recipe.title }}</h2>
+
+      <p class="feature-card-meta">
+        {% if ready_in_minutes %}{{ ready_in_minutes }} min{% else %}30 min{% endif %} | 
+        Serves {% if servings %}{{ servings }}{% else %}2{% endif %} | 
+        {% if calories %}{{ calories }} kcal per serving{% else %}N/A{% endif %}
+      </p>
+
+      {% if dish_types %}
+        <div class="badge-row">
+          {% for dt in dish_types|slice:":3" %}
+            <span class="badge badge-on-feature capitalize">{{ dt }}</span>
+          {% endfor %}
         </div>
+      {% endif %}
 
-        <!-- Recipe Title -->
-        <h2 class="font-serif text-2xl sm:text-3xl md:text-4xl text-[#FAF8F5] font-semibold leading-tight tracking-tight">
-          {{ recipe.title }}
-        </h2>
-
-        <!-- Metrics Row -->
-        <div class="text-xs sm:text-sm text-[#B6D1B2] font-medium flex items-center flex-wrap gap-2">
-          <span>{% if ready_in_minutes %}{{ ready_in_minutes }} min{% else %}30 min{% endif %}</span>
-          <span class="text-[#4E775B] font-light">|</span>
-          <span>Serves {% if servings %}{{ servings }}{% else %}2{% endif %}</span>
-          <span class="text-[#4E775B] font-light">|</span>
-          <span>{% if calories %}{{ calories }} kcal per serving{% else %}N/A{% endif %}</span>
-        </div>
-
-        <!-- Dish Type Chips -->
-        {% if dish_types %}
-          <div class="flex flex-wrap gap-2 pt-1">
-            {% for dt in dish_types|slice:":3" %}
-              <span class="text-[11px] font-medium px-3.5 py-1 rounded-full bg-[#274836] text-[#E5EFE3] border border-[#3A604A] capitalize shadow-sm">
-                {{ dt }}
-              </span>
-            {% endfor %}
-          </div>
+      <div class="pt-2 flex items-center gap-3">
+        {% if user.is_authenticated %}
+          <button 
+            type="button" 
+            onclick="toggleRecipePanel()" 
+            id="recipe-toggle-btn"
+            class="btn btn-on-feature btn-pill btn-sm"
+          >
+            <span id="recipe-toggle-text">See recipe</span>
+            <span id="recipe-toggle-arrow">&darr;</span>
+          </button>
+          <a 
+            href="{% url 'food_of_the_day:detail' meal.id %}" 
+            class="type-body-sm underline text-white opacity-80 hover:opacity-100 hidden sm:inline-block"
+          >
+            Direct Link &rarr;
+          </a>
+        {% else %}
+          <a 
+            href="/profiles/login/" 
+            class="btn btn-on-feature btn-pill btn-sm"
+          >
+            Login to see the recipe &rarr;
+          </a>
         {% endif %}
-
-        <!-- Action Button -->
-        <div class="pt-3">
-          {% if user.is_authenticated %}
-            <button 
-              type="button" 
-              onclick="toggleRecipePanel()" 
-              id="recipe-toggle-btn"
-              class="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full bg-[#FBF9F4] text-[#1C3829] hover:bg-white text-xs sm:text-sm font-semibold shadow-sm transition-all duration-200"
-            >
-              <span id="recipe-toggle-text">See recipe</span>
-              <span id="recipe-toggle-arrow" class="text-xs">&darr;</span>
-            </button>
-            <a 
-              href="{% url 'food_of_the_day:detail' meal.id %}" 
-              class="ml-3 text-xs text-[#A8C8A3] hover:text-white underline underline-offset-2 hidden sm:inline-block"
-            >
-              Direct Link &rarr;
-            </a>
-          {% else %}
-            <a 
-              href="/profiles/login/" 
-              class="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full bg-[#FBF9F4] text-[#1C3829] hover:bg-white text-xs sm:text-sm font-semibold shadow-sm transition-all duration-200"
-            >
-              <span>Login to see the recipe</span>
-              <span class="text-xs">&rarr;</span>
-            </a>
-          {% endif %}
-        </div>
       </div>
-
-      <!-- Right Image Column -->
-      <div class="w-full md:w-5/12">
-        <div class="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-[#244533] border border-[#355B44] shadow-md flex items-center justify-center">
-          {% if recipe.image %}
-            <img 
-              src="{{ recipe.image }}" 
-              alt="{{ recipe.title }}" 
-              class="w-full h-full object-cover"
-              loading="lazy"
-            />
-          {% else %}
-            <div class="text-center p-6 text-[#9FBA9A]">
-              <span class="text-4xl block mb-2">🍲</span>
-              <span class="text-xs">Recipe photo from Spoonacular</span>
-            </div>
-          {% endif %}
-        </div>
-      </div>
-
     </div>
-  </div>
+
+    <div class="feature-card-img">
+      {% if recipe.image %}
+        <img 
+          src="{{ recipe.image }}" 
+          alt="{{ recipe.title }}" 
+          loading="lazy"
+        />
+      {% else %}
+        <div class="w-full h-full flex flex-col items-center justify-center p-6 text-center" style="background: var(--color-bg-brand-subtle); color: var(--color-text-brand);">
+          <span class="text-4xl block mb-2">🍲</span>
+          <span class="type-body-sm">Recipe photo from Spoonacular</span>
+        </div>
+      {% endif %}
+    </div>
+  </section>
 
   <!-- Carousel Indicator Dots (shown only in Home Carousel context) -->
   {% if show_carousel_dots %}
   <div class="flex items-center justify-center gap-2 py-4" aria-hidden="true">
     <span class="w-2 h-2 rounded-full bg-neutral-300"></span>
-    <span class="w-2 h-2 rounded-full bg-[#1C3829]"></span>
+    <span class="w-2 h-2 rounded-full bg-brand"></span>
   </div>
   {% endif %}
 
-  <!-- Expandable Recipe Details Panel for Authenticated Users (matching Figma Wireframe) -->
+  <!-- Expandable Recipe Details Panel for Authenticated Users -->
   {% if user.is_authenticated %}
     <div id="recipe-expanded-panel" class="hidden transition-all duration-300">
       {% include 'food_of_the_day/components/recipe_panel.html' %}
@@ -118,7 +95,6 @@
           panel.classList.remove('hidden');
           if (text) text.innerText = 'Hide recipe';
           if (arrow) arrow.innerHTML = '&uarr;';
-          // Smooth scroll into view
           panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else {
           panel.classList.add('hidden');

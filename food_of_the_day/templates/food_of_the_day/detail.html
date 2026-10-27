@@ -2,61 +2,63 @@
 {% load static %}
 
 {% block title %}
-  {% if recipe %}{{ recipe.title }} | Meal of the Day{% else %}Meal of the Day | SpoonFed{% endif %}
+  {% if recipe %}{{ recipe.title }} | Meal of the Day{% else %}Meal of the Day | SpoonFeed{% endif %}
 {% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto space-y-6">
+<div class="space-y-6">
 
   <!-- Breadcrumb Navigation -->
-  <nav class="flex items-center gap-2 text-xs sm:text-sm text-neutral-500">
-    <a href="/" class="hover:text-[#1C3829]">Home</a>
+  <nav class="flex items-center gap-2 type-body-sm text-secondary">
+    <a href="/" class="hover:text-brand">Home</a>
     <span>&rsaquo;</span>
-    <a href="{% url 'food_of_the_day:index' %}" class="hover:text-[#1C3829]">Meal of the Day</a>
+    <a href="{% url 'food_of_the_day:index' %}" class="hover:text-brand">Meal of the Day</a>
     <span>&rsaquo;</span>
-    <span class="text-neutral-800 font-medium truncate max-w-xs">
+    <span class="text-primary font-medium truncate max-w-xs">
       {% if recipe %}{{ recipe.title }}{% else %}Featured Recipe{% endif %}
     </span>
   </nav>
 
   {% if not meal or not recipe %}
-    <div class="bg-white rounded-3xl p-10 text-center shadow-sm border border-neutral-200">
-      <div class="text-5xl mb-3">🍽️</div>
-      <h2 class="font-serif text-2xl text-neutral-800 font-bold mb-2">Recipe Not Available</h2>
-      <p class="text-neutral-600 max-w-md mx-auto mb-6 text-sm">
+    <div class="empty-state">
+      <span class="empty-state-icon">🍽️</span>
+      <h3 class="empty-state-title">Recipe Not Available</h3>
+      <p class="empty-state-text">
         {% if error_message %}
           {{ error_message }}
         {% else %}
           We couldn't find a recipe for this day yet. Please check back later!
         {% endif %}
       </p>
-      <a href="{% url 'food_of_the_day:index' %}" class="btn btn-secondary btn-sm">
-        &larr; Back to Meal of the Day
-      </a>
+      <div class="pt-2">
+        <a href="{% url 'food_of_the_day:index' %}" class="btn btn-secondary btn-sm">
+          &larr; Back to Meal of the Day
+        </a>
+      </div>
     </div>
   {% else %}
 
-    <!-- Dark Green Hero Slide matching Figma Final Wireframe -->
+    <!-- Dark Green Hero Slide matching Design System -->
     {% include 'food_of_the_day/components/slide.html' %}
 
     <!-- Expanded Recipe Details (if authenticated) or Login Prompt (if anonymous) -->
     {% if user.is_authenticated %}
-      <div class="mt-6">
+      <div>
         {% include 'food_of_the_day/components/recipe_panel.html' %}
       </div>
     {% else %}
-      <div class="bg-white border border-[#274836]/20 rounded-3xl p-8 sm:p-12 text-center shadow-sm space-y-4 max-w-xl mx-auto mt-6">
-        <div class="w-12 h-12 mx-auto rounded-full bg-[#E5EFE3] text-[#1C3829] flex items-center justify-center text-xl">
+      <div class="card card-elevated text-center p-10 space-y-4 max-w-xl mx-auto" style="margin-top: var(--space-xl);">
+        <div class="w-12 h-12 mx-auto rounded-full bg-brand-subtle text-brand flex items-center justify-center text-xl font-bold">
           🔒
         </div>
-        <h3 class="font-serif text-xl sm:text-2xl font-bold text-neutral-900">
+        <h3 class="type-h3 text-primary">
           Want the full recipe & steps?
         </h3>
-        <p class="text-xs sm:text-sm text-neutral-600 leading-relaxed">
+        <p class="type-body-sm text-secondary leading-relaxed">
           Log in to view complete ingredient measurements, step-by-step instructions, and join the community discussion.
         </p>
         <div class="pt-2">
-          <a href="/profiles/login/" class="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-[#1C3829] hover:bg-[#274836] text-white text-xs sm:text-sm font-semibold shadow-sm transition-colors">
+          <a href="/profiles/login/" class="btn btn-primary btn-pill">
             Log in to see the recipe &rarr;
           </a>
         </div>
