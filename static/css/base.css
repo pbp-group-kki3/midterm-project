@@ -1,0 +1,136 @@
+/* SpoonFeed base styles
+
+   Page defaults and text styles.
+   Text classes match the Figma text styles, so if Figma says
+   "SpoonFed/Heading M", use .type-heading-m.
+
+   How to use:
+       <h1 class="type-heading-m">Discover products</h1>
+       <p class="type-body-sm text-secondary">Search by product name.</p> */
+
+
+/* Page defaults */
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    font-family: var(--font-sans);
+    background: var(--color-bg-canvas);
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+}
+
+img {
+    display: block;
+    max-width: 100%;
+}
+
+
+/* Page titles (from the wireframes) */
+
+/* Big page title, e.g. "Compare", the username on the profile page */
+.type-heading-l {
+    font: 700 36px/44px var(--font-sans);
+    letter-spacing: -0.015em;
+}
+
+/* Normal page title, e.g. "Discover products", "Recipes", "Blog" */
+.type-heading-m {
+    font: 700 28px/36px var(--font-sans);
+    letter-spacing: -0.015em;
+}
+
+/* Serif title for heroes, e.g. the Meal of the Day name, the login side panel */
+.type-serif {
+    font: 400 36px/44px var(--font-display);
+}
+
+
+/* Headings */
+
+/* Huge welcome title. Shrinks on phones. */
+.type-display {
+    font: 400 clamp(36px, 8vw, 56px)/1.07 var(--font-sans);
+}
+
+.type-h1 {
+    font: 800 28px/36px var(--font-sans);
+}
+
+.type-h2 {
+    font: 800 24px/32px var(--font-sans);
+}
+
+/* Section title inside a page, e.g. "Your articles", "Account settings" */
+.type-h3 {
+    font: 700 20px/28px var(--font-sans);
+}
+
+.type-h4 {
+    font: 700 18px/24px var(--font-sans);
+}
+
+
+/* Titles */
+
+/* Popup title, e.g. "Save comparison" */
+.type-title {
+    font: 600 18px/24px var(--font-sans);
+}
+
+/* Name on a product, recipe or article card */
+.type-card-title {
+    font: 600 16px/24px var(--font-sans);
+}
+
+
+/* Body text */
+
+/* Normal paragraphs */
+.type-body-lg {
+    font: 400 16px/24px var(--font-sans);
+}
+
+.type-body-md {
+    font: 400 15px/22px var(--font-sans);
+}
+
+/* Page subtitles, table cells, small paragraphs */
+.type-body-sm {
+    font: 400 14px/20px var(--font-sans);
+}
+
+
+/* Labels (buttons, form labels, chips) */
+
+.type-label-lg {
+    font: 600 16px/20px var(--font-sans);
+}
+
+/* Form labels, e.g. "Username" */
+.type-label-md {
+    font: 600 14px/20px var(--font-sans);
+}
+
+.type-label-sm {
+    font: 600 12px/16px var(--font-sans);
+}
+
+
+/* Small text */
+
+/* Meta text, e.g. "200 ml", "45 min · 2 servings", "Optional" */
+.type-caption {
+    font: 500 12px/16px var(--font-sans);
+}
+
+/* All-caps label, e.g. "SCORES", "PACKAGING", "FEATURED".
+   Add the Tailwind class text-brand to make it green. */
+.type-overline {
+    font: 700 12px/16px var(--font-sans);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
