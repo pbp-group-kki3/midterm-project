@@ -4,6 +4,7 @@
 {% block title %}Compare | SpoonFeed{% endblock %}
 
 {% block extra_head %}
+    <link rel="preconnect" href="https://images.openfoodfacts.org">
     <link
         rel="stylesheet"
         href="{% static 'comparison/comparison.css' %}?v=3"
@@ -74,6 +75,8 @@
                                             <img
                                                 src="{{ product.image_front_small_url }}"
                                                 alt="{{ product.product_name|default:'Product photo' }}"
+                                                loading="eager"
+                                                decoding="async"   
                                             >
                                         {% else %}
                                             <span class="type-caption text-tertiary">
@@ -122,13 +125,18 @@
                         {% for product in products %}
                             <td class="compare-score-heading">
                                 <div class="score-row">
-                                    <div class="score-tile">
+                                    <div class="score-tile{% if product.compare_grade != '?' %} grade-{{ product.compare_grade|lower }}{% endif %}">
                                         <span class="score-tile-label">Grade</span>
-                                        <span class="score-tile-value">?</span>
 
-                                        <span class="sr-only">
-                                            SpoonFeed grade is not available yet.
+                                        <span class="score-tile-value">
+                                            {{ product.compare_grade|default:"?" }}
                                         </span>
+
+                                        {% if product.compare_grade == "?" %}
+                                            <span class="sr-only">
+                                                Insufficient data to calculate SpoonFeed grade.
+                                            </span>
+                                        {% endif %}
                                     </div>
 
                                     <div class="score-tile">
@@ -226,19 +234,6 @@
                 {% endfor %}
             </table>
         </div>
-
-        <p class="type-caption text-secondary mt-4">
-            SpoonFeed grade is not available yet.
-            Compare nutrition on the same measurement basis.
-            Missing allergen data does not mean allergen-free.
-        </p>
-
-        <p class="type-caption text-secondary mt-2">
-            Product data from
-            <a href="https://world.openfoodfacts.org/" class="link">
-                Open Food Facts
-            </a>.
-        </p>
     {% else %}
         <section class="empty-state" aria-labelledby="compare-empty-title">
             <h2 class="empty-state-title" id="compare-empty-title">
