@@ -1,0 +1,18 @@
+{% comment %}
+    Profile picture circle. Shows the photo if there is one, otherwise the first letter of the name.
+
+    How to use:
+        {% include 'components/avatar.html' with name=user.username photo=photo_url size='lg' %}
+
+    name   the user's name, used for the letter and the alt text   (required)
+    photo  URL of the profile photo, leave it out if there's none   (optional)
+    size   'sm' (32px navbar), 'lg' (72px profile header), 'xl' (96px photo picker)
+           leave it out for the normal 40px size                    (optional)
+{% endcomment %}
+<span class="avatar{% if size %} avatar-{{ size }}{% endif %}">
+    {% if photo %}
+        <img src="{{ photo }}" alt="{{ name }}">
+    {% else %}
+        {{ name|first|upper }}
+    {% endif %}
+</span>

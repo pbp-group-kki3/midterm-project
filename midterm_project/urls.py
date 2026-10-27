@@ -19,12 +19,15 @@ from django.urls import path, re_path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from midterm_project.placeholders import coming_soon, modules
+from midterm_project.styleguide import styleguide
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('main.urls')),
 
     path('modules/', modules),
+
+    path('styleguide/', styleguide),
 
     path('meal-plan/', coming_soon, {'slug': 'meal-plan'}),
 

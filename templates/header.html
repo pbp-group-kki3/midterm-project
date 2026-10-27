@@ -1,38 +1,54 @@
+{% comment %}
+    Navbar, shown on every page (included by base.html).
+    Desktop: links on the left, logo in the middle, account on the right.
+    Phones: logo + ☰ button that opens a dropdown (see static/js/navbar.js).
+    The link for the page you're on gets .is-active (thicker underline).
+{% endcomment %}
 {% with path=request.path %}
 <header class="site-header">
-  <nav class="navbar" aria-label="Main navigation">
-    <div class="navbar-links">
-      <a href="/" class="navbar-link{% if path == '/' %} is-active{% endif %}"{% if path == '/' %} aria-current="page"{% endif %}>Discover</a>
-      <a href="/meal-plan/" class="navbar-link{% if '/meal-plan/' in path %} is-active{% endif %}"{% if '/meal-plan/' in path %} aria-current="page"{% endif %}>Meal Plan</a>
-      <a href="/blog/" class="navbar-link{% if '/blog/' in path %} is-active{% endif %}"{% if '/blog/' in path %} aria-current="page"{% endif %}>Blog</a>
+    <nav class="navbar" aria-label="Main navigation">
+
+        <div class="navbar-links">
+            <a href="/" class="navbar-link{% if path == '/' %} is-active{% endif %}"{% if path == '/' %} aria-current="page"{% endif %}>Discover</a>
+            <a href="/meal-plan/" class="navbar-link{% if '/meal-plan/' in path %} is-active{% endif %}"{% if '/meal-plan/' in path %} aria-current="page"{% endif %}>Meal Plan</a>
+            <a href="/blog/" class="navbar-link{% if '/blog/' in path %} is-active{% endif %}"{% if '/blog/' in path %} aria-current="page"{% endif %}>Blog</a>
+        </div>
+
+        <a href="/" class="navbar-logo" aria-label="SpoonFeed home">
+            {% include 'components/logo.html' %}
+        </a>
+
+        <div class="navbar-actions">
+            {% if user.is_authenticated %}
+                {# TODO (Profile): add photo=<profile photo url> once the Profile model has a photo field #}
+                <a href="/profiles/" class="user-chip">
+                    {% include 'components/avatar.html' with name=user.username size='sm' %}
+                    {{ user.username }}
+                </a>
+            {% else %}
+                <a href="/profiles/register/" class="navbar-link">Sign Up</a>
+                <a href="/profiles/login/" class="btn btn-accent btn-pill">Login</a>
+            {% endif %}
+        </div>
+
+        <button type="button" id="navbar-toggle" class="navbar-toggle" aria-expanded="false" aria-controls="navbar-mobile" aria-label="Toggle menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <path d="M4 7h16M4 12h16M4 17h16"/>
+            </svg>
+        </button>
+
+    </nav>
+
+    <div id="navbar-mobile" class="navbar-mobile">
+        <a href="/" class="navbar-link{% if path == '/' %} is-active{% endif %}">Discover</a>
+        <a href="/meal-plan/" class="navbar-link{% if '/meal-plan/' in path %} is-active{% endif %}">Meal Plan</a>
+        <a href="/blog/" class="navbar-link{% if '/blog/' in path %} is-active{% endif %}">Blog</a>
+        {% if user.is_authenticated %}
+            <a href="/profiles/" class="navbar-link">{{ user.username }}</a>
+        {% else %}
+            <a href="/profiles/register/" class="navbar-link">Sign Up</a>
+            <a href="/profiles/login/" class="btn btn-accent btn-pill">Login</a>
+        {% endif %}
     </div>
-    <a href="/" class="navbar-logo" aria-label="SpoonFed home">
-      {% include 'components/logo.html' %}
-    </a>
-    <div class="navbar-actions">
-      {% if user.is_authenticated %}
-        <a href="/profiles/" class="btn btn-accent btn-pill">{{ user.username }}</a>
-      {% else %}
-        <a href="/profiles/register/" class="navbar-link">Sign Up</a>
-        <a href="/profiles/login/" class="btn btn-accent btn-pill">Login</a>
-      {% endif %}
-    </div>
-    <button type="button" id="navbar-toggle" class="navbar-toggle" aria-expanded="false" aria-controls="navbar-mobile" aria-label="Toggle menu">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-        <path d="M4 7h16M4 12h16M4 17h16"/>
-      </svg>
-    </button>
-  </nav>
-  <div id="navbar-mobile" class="navbar-mobile">
-    <a href="/" class="navbar-link{% if path == '/' %} is-active{% endif %}">Discover</a>
-    <a href="/meal-plan/" class="navbar-link{% if '/meal-plan/' in path %} is-active{% endif %}">Meal Plan</a>
-    <a href="/blog/" class="navbar-link{% if '/blog/' in path %} is-active{% endif %}">Blog</a>
-    {% if user.is_authenticated %}
-      <a href="/profiles/" class="navbar-link">{{ user.username }}</a>
-    {% else %}
-      <a href="/profiles/register/" class="navbar-link">Sign Up</a>
-      <a href="/profiles/login/" class="btn btn-accent btn-pill">Login</a>
-    {% endif %}
-  </div>
 </header>
 {% endwith %}
