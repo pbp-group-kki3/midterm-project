@@ -14,6 +14,7 @@ HEADERS = {"User-Agent": os.environ.get("OFF_USER_AGENT", "SpoonFed/1.0")}
 FIELDS = "code,product_name,brands,quantity,image_front_small_url,nutriscore_grade,ecoscore_grade,ecoscore_score,nova_group,labels_tags,allergens_tags,categories_tags,ingredients_analysis_tags"
 
 # return one product as a dict, or none if it's missing/API fails
+# function : get product and it's detail from the API
 def get_product(barcode):
     key = f"off:product:{barcode}"
     product = cache.get(key)
@@ -34,3 +35,33 @@ def get_product(barcode):
 
     cache.set(key, product, 60 * 60 * 6) # store the product for 6 hrs ( 60 sec * 60 min * 6)
     return product # return product dict to caller
+
+# returns a list of products matching text, [] if none, or None if API fails
+# function : to search products in the search bar
+def search_products(text):
+    text = text.strip().lower() # turns into lower case for easier caching
+
+    key = f"off:search:{text}"
+    products = cache.get(key)
+    if products is not None:
+        return products
+
+    try: 
+        response = requests.get(
+            f"{BASE_URL}/cgi/search.pl",
+            params={
+                "search_terms":text, 
+                "search_simple":1,
+                "action":"process",
+                "json":1,
+                "page_size":24,
+                "fields":FIELDS},
+            headers=HEADERS,
+            timeout=10,
+        )
+        response.raise_for_status()
+        products = response.json().get("products", [])
+    except requests.RequestException:
+        return None
+    cache.set(key, products, 60 * 60)
+    return products
