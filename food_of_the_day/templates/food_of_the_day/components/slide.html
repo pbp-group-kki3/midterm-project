@@ -1,28 +1,10 @@
 {% if meal and recipe %}
-<div class="w-full relative">
-  <!-- Dark Green Hero Slide Card matching SpoonFeed Design System & Figma Wireframe -->
-  <section class="feature-card relative overflow-hidden">
-
-    <!-- Carousel Arrow Buttons matching Figma (icon-btn-dark) -->
-    <button 
-      type="button"
-      class="icon-btn icon-btn-dark absolute left-3 md:left-4 top-1/2 -translate-y-1/2 z-10 hidden sm:inline-flex"
-      aria-label="Previous slide"
-      title="Previous slide"
-    >
-      <span aria-hidden="true">&lsaquo;</span>
-    </button>
-    <button 
-      type="button"
-      class="icon-btn icon-btn-dark absolute right-3 md:right-4 top-1/2 -translate-y-1/2 z-10 hidden sm:inline-flex"
-      aria-label="Next slide"
-      title="Next slide"
-    >
-      <span aria-hidden="true">&rsaquo;</span>
-    </button>
+<div class="w-full">
+  <!-- Dark Green Hero Card matching SpoonFeed Design System -->
+  <section class="feature-card">
 
     <!-- Left Content Column -->
-    <div class="feature-card-text sm:pl-8 md:pl-10">
+    <div class="feature-card-text">
       <div>
         <span class="feature-card-overline">Meal of the day</span>
         <span class="type-caption block opacity-80 mt-0.5" style="color: var(--color-text-on-feature-muted);">
@@ -75,7 +57,7 @@
     </div>
 
     <!-- Right Image Column (Recipe photo from Spoonacular) -->
-    <div class="feature-card-img sm:pr-8 md:pr-10">
+    <div class="feature-card-img">
       {% if recipe.image %}
         <img 
           src="{{ recipe.image }}" 
@@ -90,11 +72,6 @@
       {% endif %}
     </div>
 
-    <!-- Carousel Indicator Dots (Centered at bottom inside/under card) -->
-    <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2" aria-hidden="true">
-      <span class="w-1.5 h-1.5 rounded-full bg-white opacity-40"></span>
-      <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
-    </div>
   </section>
 
   <!-- Expandable Recipe Details Panel for Authenticated Users -->
