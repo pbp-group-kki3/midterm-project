@@ -38,13 +38,24 @@ def build_ranked_cells(displays, ranks):
 
 
 def build_score_rows(products):
+    displays = []
+    ranks = []
+
+    for product in products:
+        score = get_numeric_value(product.get("compare_score"))
+        grade = product.get("compare_grade", "?")
+
+        if score is None:
+            displays.append("Not available")
+            ranks.append(None)
+        else:
+            displays.append(f"{grade} ({score:g})")
+            ranks.append(-score)
+
     rows = [
         {
             "label": "SpoonFeed grade",
-            "cells": [
-                {"display": "?", "is_better": False}
-                for product in products
-            ],
+            "cells": build_ranked_cells(displays, ranks),
         },
     ]
 

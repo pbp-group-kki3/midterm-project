@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 from main.services.openfoodfacts import get_product
+from main.services.grading import spoonfeed_grade
 from comparison.services import (
     build_label_rows,
     build_score_rows,
@@ -23,6 +24,10 @@ def compare_products(request):
         if product:
             product = product.copy()
             product["compare_barcode"] = barcode
+
+            grading = spoonfeed_grade(product)
+            product["compare_grade"] = grading["grade"]
+            product["compare_score"] = grading["score"]
 
             product["compare_nutri"] = normalize_grade(
                 product.get("nutriscore_grade")
