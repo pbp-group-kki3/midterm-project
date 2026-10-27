@@ -1,23 +1,160 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Compare | SpoonFeed{% endblock %}
+
+{% block extra_head %}
+    <link
+        rel="stylesheet"
+        href="{% static 'comparison/comparison.css' %}"
+    >
+{% endblock %}
 
 {% block content %}
     <header class="page-header">
         <div>
-            <a href="/" class="back-link">← Back to Discover</a>
+            <a href="/" class="back-link mb-3">
+                ← Back to Discover
+            </a>
 
             <h1 class="page-title page-title-lg">Compare</h1>
 
             <p class="page-subtitle">
-                Compare up to three products side by side.
+                Green highlights better available values.
+                Equal or incomplete rows are not highlighted.
             </p>
         </div>
     </header>
 
-    <section class="card">
-        <div class="empty-state">
-            <h2 class="empty-state-title">
+    {% if unavailable_barcodes %}
+        <div class="alert alert-warning mb-6" role="status">
+            Some selected products could not be loaded.
+            Please try again later.
+        </div>
+    {% endif %}
+
+    {% if products %}
+        {% if products|length < 2 %}
+            <div class="alert alert-info mb-6" role="status">
+                Select at least two available products to compare.
+            </div>
+        {% endif %}
+
+        <div
+            class="card compare-panel"
+            role="region"
+            aria-label="Product comparison"
+            tabindex="0"
+        >
+            <table class="compare-table">
+                <caption class="sr-only">
+                    Scores, nutrition, labels and allergens
+                    for the selected products
+                </caption>
+
+                <colgroup>
+                    <col class="compare-label-column">
+
+                    {% for product in products %}
+                        <col>
+                    {% endfor %}
+                </colgroup>
+
+                <thead>
+                    <tr>
+                        <th scope="col">
+                            <span class="sr-only">Comparison criteria</span>
+                        </th>
+
+                        {% for product in products %}
+                            <th scope="col" class="compare-product-heading">
+                                <div class="compare-product">
+                                    <div class="compare-product-photo">
+                                        {% if product.image_front_small_url %}
+                                            <img
+                                                src="{{ product.image_front_small_url }}"
+                                                alt="{{ product.product_name|default:'Product photo' }}"
+                                            >
+                                        {% else %}
+                                            <span class="type-caption text-tertiary">
+                                                No image available
+                                            </span>
+                                        {% endif %}
+                                    </div>
+
+                                    <h2 class="type-card-title compare-product-name">
+                                        {{ product.product_name|default:"Unnamed product" }}
+                                    </h2>
+
+                                    <p class="type-caption compare-product-meta">
+                                        {{ product.brands|default:"Brand not available" }}
+                                    </p>
+
+                                    <p class="type-caption compare-product-meta">
+                                        {{ product.quantity|default:"Quantity not available" }}
+                                    </p>
+                                </div>
+                            </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+
+                {% if products|length >= 2 %}
+                    {% for section in comparison_sections %}
+                        <tbody>
+                            <tr>
+                                <th
+                                    colspan="{{ products|length|add:'1' }}"
+                                    class="compare-section-title type-overline text-brand"
+                                >
+                                    {{ section.title }}
+                                </th>
+                            </tr>
+
+                            {% for row in section.rows %}
+                                <tr>
+                                    <th scope="row" class="compare-criterion">
+                                        {{ row.label }}
+                                    </th>
+
+                                    {% for cell in row.cells %}
+                                        <td class="compare-value">
+                                            <div class="data-table-cell{% if cell.is_better %} is-better{% endif %}">
+                                                <span class="compare-value-content">
+                                                    {{ cell.display }}
+                                                </span>
+
+                                                {% if cell.is_better %}
+                                                    <span class="better-tag">
+                                                        ✓ Better
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    {% endfor %}
+                {% endif %}
+            </table>
+        </div>
+
+        <p class="type-caption text-secondary mt-4">
+            SpoonFeed grade is not available yet.
+            Compare nutrition on the same measurement basis.
+            Missing allergen data does not mean allergen-free.
+        </p>
+
+        <p class="type-caption text-secondary mt-2">
+            Product data from
+            <a href="https://world.openfoodfacts.org/" class="link">
+                Open Food Facts
+            </a>.
+        </p>
+    {% else %}
+        <section class="empty-state" aria-labelledby="compare-empty-title">
+            <h2 class="empty-state-title" id="compare-empty-title">
                 No comparison available yet
             </h2>
 
@@ -28,6 +165,6 @@
             <a href="/" class="btn btn-primary">
                 Browse products
             </a>
-        </div>
-    </section>
+        </section>
+    {% endif %}
 {% endblock %}
