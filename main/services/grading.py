@@ -18,9 +18,9 @@ def spoonfeed_grade(product):
     parts["nutrition"] = NUTRI_POINTS[nutri] # assigns the value of key nutri as the value of key nutrition
 
     eco_score = product.get("ecoscore_score")
-    eco_grade = (product.get("ecoscore_grade" or "")).lower()
+    eco_grade = (product.get("ecoscore_grade") or "").lower()
     if isinstance(eco_score, (int, float)):
-        parts["enviroment"] = max(0, min(100, eco_score))
+        parts["environment"] = max(0, min(100, eco_score))
     elif eco_grade in GREEN_POINTS:                           
         parts["environment"] = GREEN_POINTS[eco_grade]
 
