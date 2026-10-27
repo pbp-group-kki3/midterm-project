@@ -9,7 +9,7 @@ register = template.Library()
 @register.inclusion_tag('food_of_the_day/components/slide.html', takes_context=True)
 def meal_of_the_day_slide(context):
     """
-    Renders the second slide on the home page for Meal of the Day.
+    Renders the Meal of the Day card for home page carousel or embed.
     If no entry exists for today, meal is None and the component can be cleanly skipped.
     """
     request = context.get('request')
@@ -18,5 +18,4 @@ def meal_of_the_day_slide(context):
     data = _prepare_meal_context(today_meal, request)
     data['request'] = request
     data['user'] = context.get('user')
-    data['show_carousel_dots'] = True
     return data

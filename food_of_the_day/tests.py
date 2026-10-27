@@ -4,6 +4,7 @@ from django.test import TestCase, Client, override_settings
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.core.cache import cache
+from django.core.management import call_command
 from django.db.utils import IntegrityError
 from django.core.exceptions import ValidationError
 
@@ -310,3 +311,26 @@ class FoodOfTheDayViewsTest(TestCase):
         response = self.client.get(reverse('food_of_the_day:slide_partial'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Healthy Green Bowl")
+
+
+class SeedMealsCommandTest(TestCase):
+    def test_seed_meals_creates_entries(self):
+        MealOfTheDay.objects.all().delete()
+        call_command('seed_meals', days=10)
+        self.assertEqual(MealOfTheDay.objects.count(), 10)
+
+    def test_seed_meals_preserves_existing_entry(self):
+        MealOfTheDay.objects.all().delete()
+        today = datetime.date.today()
+        MealOfTheDay.objects.create(date=today, recipe_id=999999)
+        call_command('seed_meals', days=5)
+        # 1 existing + 4 new
+        self.assertEqual(MealOfTheDay.objects.count(), 5)
+        self.assertEqual(MealOfTheDay.objects.get(date=today).recipe_id, 999999)
+
+    def test_seed_meals_clear_flag(self):
+        today = datetime.date.today()
+        MealOfTheDay.objects.create(date=today, recipe_id=123)
+        call_command('seed_meals', days=3, clear=True)
+        self.assertEqual(MealOfTheDay.objects.count(), 3)
+
