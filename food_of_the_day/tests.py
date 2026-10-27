@@ -228,7 +228,8 @@ class FoodOfTheDayViewsTest(TestCase):
         response = self.client.get(reverse('food_of_the_day:detail', args=[self.meal.id]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Log in to see the recipe")
-        self.assertNotContains(response, "Preparation Steps")
+        self.assertNotContains(response, "Mix everything in a bowl.")
+        self.assertNotContains(response, "Ingredients (serves")
 
     @patch('food_of_the_day.views.get_recipe')
     def test_detail_view_authenticated_user(self, mock_get_recipe):
@@ -236,9 +237,9 @@ class FoodOfTheDayViewsTest(TestCase):
         self.client.login(username='dineder', password='password123')
         response = self.client.get(reverse('food_of_the_day:detail', args=[self.meal.id]))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Preparation Steps")
+        self.assertContains(response, "Steps")
         self.assertContains(response, "Mix everything in a bowl.")
-        self.assertContains(response, "Ingredients")
+        self.assertContains(response, "Ingredients (serves")
         self.assertContains(response, "1 cup spinach")
 
     @patch('food_of_the_day.views.get_recipe')
