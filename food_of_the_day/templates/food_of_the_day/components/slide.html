@@ -1,0 +1,104 @@
+{% if meal and recipe %}
+<div class="w-full">
+  <!-- Dark Green Hero Card matching SpoonFeed Design System -->
+  <section class="feature-card">
+
+    <!-- Left Content Column -->
+    <div class="feature-card-text">
+      <div>
+        <span class="feature-card-overline">Meal of the day</span>
+        <span class="type-caption block opacity-80 mt-0.5" style="color: var(--color-text-on-feature-muted);">
+          {{ meal.date|date:"l, j F" }}
+        </span>
+      </div>
+
+      <h2 class="feature-card-title">{{ recipe.title }}</h2>
+
+      <p class="feature-card-meta">
+        {% if ready_in_minutes %}{{ ready_in_minutes }} min{% else %}30 min{% endif %} | 
+        Serves {% if servings %}{{ servings }}{% else %}2{% endif %} | 
+        {% if calories %}{{ calories }} kcal per serving{% else %}N/A{% endif %}
+      </p>
+
+      {% if dish_types %}
+        <div class="badge-row">
+          {% for dt in dish_types|slice:":3" %}
+            <span class="badge badge-on-feature capitalize">{{ dt }}</span>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="pt-2 flex items-center gap-3">
+        {% if user.is_authenticated %}
+          <button 
+            type="button" 
+            onclick="toggleRecipePanel()" 
+            id="recipe-toggle-btn"
+            class="btn btn-on-feature btn-pill btn-sm"
+          >
+            <span id="recipe-toggle-text">See recipe</span>
+            <span id="recipe-toggle-arrow">&darr;</span>
+          </button>
+          <a 
+            href="{% url 'food_of_the_day:detail' meal.id %}" 
+            class="type-body-sm underline text-white opacity-80 hover:opacity-100 hidden sm:inline-block"
+          >
+            Direct link &rarr;
+          </a>
+        {% else %}
+          <a 
+            href="/profiles/login/" 
+            class="btn btn-on-feature btn-pill btn-sm"
+          >
+            Login to see the recipe &rarr;
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Right Image Column (Recipe photo from Spoonacular) -->
+    <div class="feature-card-img">
+      {% if recipe.image %}
+        <img 
+          src="{{ recipe.image }}" 
+          alt="{{ recipe.title }}" 
+          loading="lazy"
+        />
+      {% else %}
+        <div class="w-full h-full flex flex-col items-center justify-center p-6 text-center" style="background: var(--color-bg-brand-subtle); color: var(--color-text-brand);">
+          <span class="text-4xl block mb-2">🍲</span>
+          <span class="type-body-sm">Recipe photo from Spoonacular</span>
+        </div>
+      {% endif %}
+    </div>
+
+  </section>
+
+  <!-- Expandable Recipe Details Panel for Authenticated Users -->
+  {% if user.is_authenticated %}
+    <div id="recipe-expanded-panel" class="hidden transition-all duration-300">
+      {% include 'food_of_the_day/components/recipe_panel.html' %}
+    </div>
+
+    <script>
+      function toggleRecipePanel() {
+        const panel = document.getElementById('recipe-expanded-panel');
+        const text = document.getElementById('recipe-toggle-text');
+        const arrow = document.getElementById('recipe-toggle-arrow');
+        if (!panel) return;
+
+        if (panel.classList.contains('hidden')) {
+          panel.classList.remove('hidden');
+          if (text) text.innerText = 'Hide recipe';
+          if (arrow) arrow.innerHTML = '&uarr;';
+          panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          panel.classList.add('hidden');
+          if (text) text.innerText = 'See recipe';
+          if (arrow) arrow.innerHTML = '&darr;';
+        }
+      }
+    </script>
+  {% endif %}
+</div>
+{% endif %}

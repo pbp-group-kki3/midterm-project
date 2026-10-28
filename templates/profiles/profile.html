@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}SpoonFeed — Profile Settings{% endblock %}
+
+{% block content %}
+{% if messages %}
+    <div id="toast-container" class="fixed top-5 right-5 z-50 space-y-3">
+        {% for message in messages %}
+            <div class="toast-message flex items-center p-4 w-full max-w-xs bg-white rounded-lg shadow-lg border-l-4 {% if message.tags == 'error' %}border-red-500{% else %}border-[#1e3a29]{% endif %} transform transition-all translate-x-full opacity-0">
+                <div class="text-sm font-semibold {% if message.tags == 'error' %}text-red-600{% else %}text-[#1e3a29]{% endif %}">
+                    {{ message }}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col md:flex-row min-h-[600px]">
+    <aside class="w-full md:w-64 bg-[#fbf9f4] border-r border-gray-200 p-6 flex flex-col justify-between shrink-0">
+        <div class="space-y-6">
+            <div class="flex items-center space-x-3 pb-4 border-b border-gray-200">
+                <div class="w-12 h-12 rounded-full overflow-hidden bg-[#1e3a29] text-white flex items-center justify-center font-serif font-bold text-lg shrink-0">
+                    {% if profile.profile_picture %}
+                        <img src="{{ profile.profile_picture.url }}" alt="Profile" class="w-full h-full object-cover">
+                    {% else %}
+                        {{ request.user.username|slice:":1"|upper }}
+                    {% endif %}
+                </div>
+                <div class="truncate">
+                    <p class="font-bold text-sm text-gray-900 truncate">{{ request.user.username }}</p>
+                    <p class="text-xs text-gray-500 truncate">{{ request.user.email }}</p>
+                </div>
+            </div>
+
+            <nav class="space-y-1 text-xs font-semibold text-gray-600">
+                <button onclick="showSection('account')" id="nav-account" class="sidebar-btn w-full text-left px-3 py-2.5 rounded-lg bg-[#1e3a29] text-white transition-all flex items-center space-x-2">
+                    <span>👤</span> <span>Account Info</span>
+                </button>
+                <button onclick="showSection('diet')" id="nav-diet" class="sidebar-btn w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-200 hover:text-gray-900 transition-all flex items-center space-x-2">
+                    <span>🥗</span> <span>Diet &amp; Allergies</span>
+                </button>
+                <button onclick="showSection('security')" id="nav-security" class="sidebar-btn w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-200 hover:text-gray-900 transition-all flex items-center space-x-2">
+                    <span>🔒</span> <span>Security &amp; Avatar</span>
+                </button>
+                <button onclick="showSection('activity')" id="nav-activity" class="sidebar-btn w-full text-left px-3 py-2.5 rounded-lg hover:bg-gray-200 hover:text-gray-900 transition-all flex items-center space-x-2">
+                    <span>🔖</span> <span>Activity Hub</span>
+                </button>
+            </nav>
+        </div>
+
+        <div class="pt-6 border-t border-gray-200 mt-6 space-y-2">
+            <button onclick="openModal('deleteModal')" class="w-full text-left px-3 py-2.5 rounded-lg text-red-600 hover:bg-red-50 transition-all flex items-center space-x-2 text-xs font-semibold">
+                <span>⚠️</span> <span>Delete Account</span>
+            </button>
+            <a href="{% url 'logout' %}" class="block text-center py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-semibold rounded-lg transition-all">
+                Log Out
+            </a>
+        </div>
+    </aside>
+
+    <main class="flex-1 p-6 md:p-10">
+        <section id="sec-account" class="profile-section space-y-6">
+            <div>
+                <h2 class="text-2xl font-serif font-bold text-gray-900">Account Information</h2>
+                <p class="text-xs text-gray-500 mt-1">Manage your basic public information.</p>
+            </div>
+            <form method="POST" action="{% url 'profile_edit' %}" class="space-y-4 max-w-lg">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Username</label>
+                    <input type="text" name="username" value="{{ request.user.username }}" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1e3a29]">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
+                    <input type="email" name="email" value="{{ request.user.email }}" required class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1e3a29]">
+                </div>
+                <button type="submit" class="px-5 py-2.5 bg-[#1e3a29] hover:bg-[#15291d] text-white font-medium text-xs rounded-lg transition-all">
+                    Save Changes
+                </button>
+            </form>
+        </section>
+
+        <section id="sec-diet" class="profile-section space-y-6 hidden">
+            <div>
+                <h2 class="text-2xl font-serif font-bold text-gray-900">Dietary Preferences</h2>
+                <p class="text-xs text-gray-500 mt-1">Filter products and build personalized meal plans.</p>
+            </div>
+            <form method="POST" action="{% url 'profile_edit' %}" class="space-y-4 max-w-lg">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Dietary Preferences</label>
+                    <input type="text" name="dietary_preferences" value="{{ profile.dietary_preferences }}" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1e3a29]">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Allergies</label>
+                    <input type="text" name="allergies" value="{{ profile.allergies }}" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1e3a29]">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Nutritional Goals</label>
+                    <textarea name="nutritional_goals" rows="3" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1e3a29]">{{ profile.nutritional_goals }}</textarea>
+                </div>
+                <button type="submit" class="px-5 py-2.5 bg-[#1e3a29] hover:bg-[#15291d] text-white font-medium text-xs rounded-lg transition-all">
+                    Save Preferences
+                </button>
+            </form>
+        </section>
+
+        <section id="sec-security" class="profile-section space-y-6 hidden">
+            <div>
+                <h2 class="text-2xl font-serif font-bold text-gray-900">Security &amp; Avatar</h2>
+                <p class="text-xs text-gray-500 mt-1">Update your password and profile picture.</p>
+            </div>
+            <div class="space-y-4 max-w-lg pb-6 border-b border-gray-200">
+                <form method="POST" action="{% url 'profile_edit' %}" enctype="multipart/form-data" class="flex items-center space-x-4">
+                    {% csrf_token %}
+                    <div class="w-16 h-16 rounded-full overflow-hidden bg-gray-100 shrink-0">
+                        {% if profile.profile_picture %}
+                            <img src="{{ profile.profile_picture.url }}" class="w-full h-full object-cover">
+                        {% endif %}
+                    </div>
+                    <div class="flex-1 space-y-2">
+                        <input type="file" name="profile_picture" accept="image/*" class="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200">
+                        <button type="submit" class="px-4 py-2 bg-[#1e3a29] text-white font-medium text-xs rounded-lg">Upload</button>
+                    </div>
+                </form>
+                {% if profile.profile_picture %}
+                <form method="POST" action="{% url 'profile_picture_delete' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="text-xs text-red-600 hover:underline">Remove current picture</button>
+                </form>
+                {% endif %}
+            </div>
+            <form method="POST" action="{% url 'profile_edit' %}" class="space-y-4 max-w-lg">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">New Password</label>
+                    <input type="password" name="new_password" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1e3a29]">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Confirm New Password</label>
+                    <input type="password" name="confirm_password" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1e3a29]">
+                </div>
+                <button type="submit" class="px-5 py-2.5 bg-[#1e3a29] hover:bg-[#15291d] text-white font-medium text-xs rounded-lg transition-all">
+                    Update Password
+                </button>
+            </form>
+        </section>
+
+        <section id="sec-activity" class="profile-section space-y-6 hidden">
+            <div>
+                <h2 class="text-2xl font-serif font-bold text-gray-900">Activity Hub</h2>
+                <p class="text-xs text-gray-500 mt-1">Quick access to your saved data across SpoonFeed.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <a href="{% url 'meal-plan' %}" class="p-5 border border-gray-200 rounded-xl hover:border-[#1e3a29] transition-all bg-gray-50">
+                    <h3 class="font-bold text-gray-900">Meal Plans</h3>
+                    <p class="text-xs text-gray-600 mt-1">Access weekly schedules</p>
+                </a>
+                <a href="{% url 'blog' %}" class="p-5 border border-gray-200 rounded-xl hover:border-[#1e3a29] transition-all bg-gray-50">
+                    <h3 class="font-bold text-gray-900">Saved Articles</h3>
+                    <p class="text-xs text-gray-600 mt-1">Read your bookmarked posts</p>
+                </a>
+                <a href="{% url 'compare' %}" class="p-5 border border-gray-200 rounded-xl hover:border-[#1e3a29] transition-all bg-gray-50">
+                    <h3 class="font-bold text-gray-900">Comparisons</h3>
+                    <p class="text-xs text-gray-600 mt-1">Saved product comparisons</p>
+                </a>
+            </div>
+        </section>
+    </main>
+</div>
+
+<div id="deleteModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex items-center justify-center backdrop-blur-sm transition-opacity">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 transform transition-all scale-95 opacity-0" id="deleteModalContent">
+        <div class="text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <span class="text-red-600 text-xl">⚠️</span>
+            </div>
+            <h3 class="text-lg font-serif font-bold text-gray-900 mb-2">Delete Account?</h3>
+            <p class="text-sm text-gray-500 mb-6">This action cannot be undone. All your saved meal plans, dietary preferences, and account data will be permanently removed.</p>
+        </div>
+        <form method="POST" action="{% url 'profile_delete' %}" class="flex space-x-3">
+            {% csrf_token %}
+            <button type="button" onclick="closeModal('deleteModal')" class="flex-1 py-2.5 bg-gray-100 text-gray-700 font-semibold text-sm rounded-lg hover:bg-gray-200 transition-all">
+                Cancel
+            </button>
+            <button type="submit" class="flex-1 py-2.5 bg-red-600 text-white font-semibold text-sm rounded-lg hover:bg-red-700 transition-all shadow-sm">
+                Yes, Delete
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function showSection(sectionId) {
+        document.querySelectorAll('.profile-section').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.sidebar-btn').forEach(btn => {
+            btn.classList.remove('bg-[#1e3a29]', 'text-white');
+            btn.classList.add('hover:bg-gray-200', 'hover:text-gray-900');
+            if (btn.id !== 'nav-danger') {
+                btn.classList.remove('text-red-600', 'hover:bg-red-50');
+            }
+        });
+
+        document.getElementById(`sec-${sectionId}`).classList.remove('hidden');
+        
+        const activeBtn = document.getElementById(`nav-${sectionId}`);
+        activeBtn.classList.add('bg-[#1e3a29]', 'text-white');
+        activeBtn.classList.remove('hover:bg-gray-200', 'hover:text-gray-900');
+    }
+
+    function openModal(modalId) {
+        const modal = document.getElementById(modalId);
+        const content = modal.querySelector('div');
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            content.classList.remove('scale-95', 'opacity-0');
+            content.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+
+    function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        const content = modal.querySelector('div');
+        content.classList.remove('scale-100', 'opacity-100');
+        content.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 200);
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const toasts = document.querySelectorAll('.toast-message');
+        toasts.forEach((toast, index) => {
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full', 'opacity-0');
+                toast.classList.add('translate-x-0', 'opacity-100');
+            }, 100 * index);
+            setTimeout(() => {
+                toast.classList.remove('translate-x-0', 'opacity-100');
+                toast.classList.add('translate-x-full', 'opacity-0');
+            }, 3000 + (100 * index));
+        });
+    });
+</script>
+{% endblock %}
