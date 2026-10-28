@@ -14,6 +14,7 @@ from comparison.services import (
     normalize_nova,
 )
 from comparison.forms import SavedComparisonForm
+from comparison.models import SavedComparison
 # Create your views here.
 @require_GET
 def compare_products(request):
@@ -81,6 +82,13 @@ def compare_products(request):
             for barcode in barcodes
         )
     )
+    is_saved = False
+
+    if request.user.is_authenticated and 2 <= len(barcodes) <= 3:
+        is_saved = SavedComparison.objects.filter(
+            user=request.user,
+            barcodes=barcodes,
+        ).exists()
 
     pending_save = request.session.pop("comparison_save_errors", None)
 
@@ -109,6 +117,7 @@ def compare_products(request):
         "can_save": can_save,
         "open_save_dialog": save_form.is_bound,
         "save_login_url": redirect_to_login(reverse("comparison:compare_products")).url,
+        "is_saved": is_saved,
     }
     return render(request, "comparison/compare.html", context)
 
@@ -191,6 +200,18 @@ def save_comparison(request):
             },
             "non_field_errors": list(save_form.non_field_errors()),
         }
+
+        return redirect("comparison:compare_products")
+
+    already_saved = SavedComparison.objects.filter(user=request.user, barcodes=barcodes).exists()
+
+    if already_saved:
+        request.session.pop("comparison_save_errors", None)
+
+        messages.info(
+            request,
+            "This product lineup is already saved.",
+        )
 
         return redirect("comparison:compare_products")
 

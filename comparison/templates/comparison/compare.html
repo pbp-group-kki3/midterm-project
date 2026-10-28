@@ -27,16 +27,16 @@
                     type="button"
                     id="compare-save-open"
                     class="btn btn-primary compare-save-action"
-                    {% if not can_save %}disabled{% endif %}
+                    {% if is_saved or not can_save %}disabled{% endif %}
                 >
-                    Save comparison
-                    <span class="icon icon-bookmark" aria-hidden="true"></span>
+                    {% if is_saved %}
+                        Saved
+                        <span class="icon icon-check" aria-hidden="true"></span>
+                    {% else %}
+                        Save comparison
+                        <span class="icon icon-bookmark" aria-hidden="true"></span>
+                    {% endif %}
                 </button>
-            {% else %}
-                <a href="{{ save_login_url }}" class="btn btn-primary compare-save-action">
-                    Save comparison
-                    <span class="icon icon-bookmark" aria-hidden="true"></span>
-                </a>
             {% endif %}
         </div>
 
