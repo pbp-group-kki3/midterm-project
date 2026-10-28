@@ -1,9 +1,11 @@
 from django.shortcuts import render, redirect
+from django.http import JsonResponse # the heart answers with JSON when clicked (no page reload)
 from django.contrib import messages # one-time notes like "Remove one to add another"
 from django.http import HttpResponse
 from main.services.openfoodfacts import search_products, browse_products, get_product, get_alternatives # import search function + to call API
 from main.services.grading import spoonfeed_grade, grade_value, NUTRI_POINTS, GREEN_POINTS,NOVA_POINTS # import gradings
 from main.services.filters import passes_filters, best_grade_key, preference_fit
+from main.services.details import build_grade_rows, nutrition_unit, build_nutrition, build_ingredient_badges, build_environment, clean_ingredients # detail page panels
 from profiles.services import get_preferences # Serafin's helper: the user's diet and allergies # filters for the search results
 from urllib.parse import urlencode # builds ?q=... safely
 from django.contrib.auth.decorators import login_required
@@ -11,17 +13,6 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from main.models import FavoriteProduct, ViewHistory
 
-# nutrition constant
-NUTRIENTS = [
-    ("Energy", "energy-kcal_100g", "kcal"),
-    ("Fat", "fat_100g", "g"),
-    ("Saturated fat", "saturated-fat_100g", "g"),
-    ("Carbohydrates", "carbohydrates_100g", "g"),
-    ("Sugars", "sugars_100g", "g"),
-    ("Fiber", "fiber_100g", "g"),
-    ("Protein", "proteins_100g", "g"),
-    ("Salt", "salt_100g", "g"),
-]
 
 # Tags on a card (Figma: up to 2 slots, read from labels_tags). (tag, text, badge style)
 TAG_RULES = [
@@ -49,8 +40,9 @@ PAGE_STEP = 6   # cards shown at first, and how many more "Load more" adds (Figm
 
 # preparation function
 # adds what the product card needs = grade + 3 tile values + tags
-def prepare_card(p, prefs=None):
+def prepare_card(p, prefs=None, saved=None):
     p["spoonfeed"] = spoonfeed_grade(p)
+    p["is_favorite"] = bool(saved) and p.get("code") in saved   # red heart if the user saved it
     p["fit"] = preference_fit(p, prefs)   # "Fits your preferences" chip, None when logged out / no preferences
     p["tiles"] = {
         "nutri" : grade_value(p.get("nutriscore_grade"), NUTRI_POINTS),
@@ -80,6 +72,13 @@ def toggled_url(request, key, values):
     params.setlist(key, current)
     return "?" + params.urlencode(), is_on
 
+
+
+# helper : the barcodes this user saved, as a set (fast "is it in there?" checks). Empty when logged out
+def saved_barcodes(request):
+    if not request.user.is_authenticated:
+        return set()
+    return set(request.user.favorite_products.values_list("barcode", flat=True))   # related_name from models.py
 
 
 COMPARE_MAX = 3   # agreed with Alyssa: her page reads up to 3 barcodes from request.session["compare"]
@@ -122,11 +121,12 @@ def show_main(request):
     products = []
     error = False
     prefs = get_preferences(request.user) if request.user.is_authenticated else None   # logged out: no chip
+    saved = saved_barcodes(request)                                                     # for the red hearts
     results = search_products(q) if q else browse_products()   # nothing typed: show popular products
     if results is None:
         error = True
     else:
-        products = [prepare_card(p, prefs) for p in results]
+        products = [prepare_card(p, prefs, saved) for p in results]
         # filter the cached results in Python: no extra API call per filter (team rule)
         products = [p for p in products if passes_filters(p, grades, labels, processing, avoid)]
         if sort == "grade":
@@ -178,23 +178,15 @@ def product_detail(request, barcode):
         return render(request, "main/product_detail.html", {"product": None})
 
     prefs = get_preferences(request.user) if request.user.is_authenticated else None
-    prepare_card(product, prefs)
-    parts = product["spoonfeed"]["parts"]                   
+    saved = saved_barcodes(request)
+    prepare_card(product, prefs, saved)
+    # panels of the detail page (main/services/details.py), Figma "v2 / Product detail"
+    grade_rows = build_grade_rows(product)            # "How the grade is built" bars
+    nutrition = build_nutrition(product)              # rows + green dots
+    ingredient_badges = build_ingredient_badges(product)
+    environment = build_environment(product)
 
-    
-    why = [
-        {"label": "Nutrition", "points": parts.get("nutrition")},
-        {"label": "Environment", "points": parts.get("environment")},
-        {"label": "Processing", "points": parts.get("processing")},
-    ]
-
-    nutriments = product.get("nutriments") or {}
-    nutrition = [
-        {"label": label, "value": nutriments.get(key), "unit": unit}
-        for label, key, unit in NUTRIENTS
-    ]
-
-    alternatives = [prepare_card(a, prefs) for a in get_alternatives(product)]   
+    alternatives = [prepare_card(a, prefs, saved) for a in get_alternatives(product)]   
 
     is_favorite = False
     if request.user.is_authenticated:                       
@@ -208,8 +200,13 @@ def product_detail(request, barcode):
     context = {
         "product": product,
         "barcode": barcode,
-        "why": why,
+        "grade_rows": grade_rows,
+        "score_whole": round(product["spoonfeed"]["score"]) if product["spoonfeed"]["score"] is not None else None,
         "nutrition": nutrition,
+        "nutrition_unit": nutrition_unit(product),
+        "ingredient_badges": ingredient_badges,
+        "ingredients": clean_ingredients(product),
+        "environment": environment,
         "alternatives": alternatives,
         "is_favorite": is_favorite,
     }
@@ -229,6 +226,12 @@ def toggle_favorite(request, barcode):
             barcode=barcode,
             product_name=request.POST.get("product_name", "")[:255],   # [:255] fits the field's max_length
         )
+
+
+    # Clicked with JavaScript (main.js): answer with JSON so the page doesn't reload and jump to the top
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        saved_now = FavoriteProduct.objects.filter(user=request.user, barcode=barcode).exists()
+        return JsonResponse({"saved": saved_now})
 
     # Go back to the page the heart was clicked on, but only if it's on OUR site (blocks open redirects)
     next_url = request.POST.get("next", "")

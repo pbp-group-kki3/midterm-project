@@ -12,11 +12,14 @@
     {% if user.is_authenticated %}
         <div class="media-card-corner">
             {# Heart = favorite toggle. POST + csrf_token because it changes data #}
-            <form method="post" action="{% url 'main:toggle_favorite' product.code %}">
+            <form method="post" action="{% url 'main:toggle_favorite' product.code %}" class="js-favorite-form">
                 {% csrf_token %}
                 <input type="hidden" name="product_name" value="{{ product.product_name }}">
                 <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                <button type="submit" class="icon-btn discover-fav" aria-label="Save to favorites">♡</button>
+                {# Saved: shared .is-active turns the heart red. main.js toggles it without reloading #}
+                <button type="submit" class="icon-btn discover-fav {% if product.is_favorite %}is-active{% endif %}"
+                        data-favorite-style="icon" aria-pressed="{% if product.is_favorite %}true{% else %}false{% endif %}"
+                        aria-label="{% if product.is_favorite %}Remove from favorites{% else %}Save to favorites{% endif %}">{% if product.is_favorite %}♥{% else %}♡{% endif %}</button>
             </form>
         </div>
     {% endif %}

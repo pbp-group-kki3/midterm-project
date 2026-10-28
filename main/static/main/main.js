@@ -23,4 +23,53 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
     });
+
+    // Heart / Save button: send the form in the background so the page doesn't reload and jump to the top
+    document.querySelectorAll(".js-favorite-form").forEach((form) => {
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();                                   // stop the normal page reload
+            const button = form.querySelector("button");
+            try {
+                const response = await fetch(form.action, {
+                    method: "POST",
+                    body: new FormData(form),                         // includes the csrf token
+                    headers: { "X-Requested-With": "XMLHttpRequest" },   // tells the view to answer with JSON
+                });
+                if (response.redirected || !response.ok) {            // e.g. logged out -> login page
+                    window.location.href = response.url;
+                    return;
+                }
+                const data = await response.json();                   // {"saved": true} or {"saved": false}
+                showFavorite(button, data.saved);
+            } catch (error) {
+                form.submit();                                        // network problem: fall back to the normal form
+            }
+        });
+    });
+
+    // Long ingredient lists: show "Show all ingredients" only when the text is really cut off
+    document.querySelectorAll(".discover-clamp-toggle").forEach((toggle) => {
+        const text = document.getElementById(toggle.dataset.clampTarget);
+        if (text && text.scrollHeight > text.clientHeight) {
+            toggle.classList.remove("is-hidden");
+        }
+        toggle.addEventListener("click", () => {
+            const open = text.classList.toggle("is-open");
+            toggle.textContent = open ? "Show less" : "Show all ingredients";
+        });
+    });
 });
+
+// Switch a heart or Save button between saved and not saved, using the shared classes
+function showFavorite(button, saved) {
+    button.setAttribute("aria-pressed", saved ? "true" : "false");
+    if (button.dataset.favoriteStyle === "icon") {
+        button.classList.toggle("is-active", saved);                  // shared: red heart
+        button.textContent = saved ? "\u2665" : "\u2661";             // filled or empty heart
+        button.setAttribute("aria-label", saved ? "Remove from favorites" : "Save to favorites");
+    } else {
+        button.classList.toggle("btn-danger-subtle", saved);          // shared light red
+        button.classList.toggle("btn-outline", !saved);
+        button.textContent = saved ? "\u2665 Saved" : "\u2661 Save";
+    }
+}

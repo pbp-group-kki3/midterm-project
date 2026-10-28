@@ -240,3 +240,122 @@
 .discover-hero:not(:has(*)) {
     display: none;
 }
+
+/* Detail page panels (Figma: Panel / ...): title, then rows 12px apart */
+.discover-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+/* "Grade C | 56 out of 100" */
+.discover-total {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+/* The thin line between "Grade C" and "56 out of 100" */
+.discover-divider {
+    width: 1px;
+    height: var(--space-md);
+    background: var(--color-border-default);
+}
+
+/* Bar colors (Figma: 75 green, 40 amber, 37 red), tokens from tokens.css */
+.discover-bar-success {
+    background: var(--color-bg-success);
+}
+
+.discover-bar-warning {
+    background: var(--color-bg-warning);
+}
+
+.discover-bar-danger {
+    background: var(--color-bg-danger);
+}
+
+/* A label / value row in the Nutrition and Environment panels */
+.discover-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font: 400 14px/20px var(--font-sans);
+}
+
+.discover-row-label {
+    flex: 1;
+    color: var(--color-text-secondary);
+}
+
+.discover-row-value {
+    color: var(--color-text-primary);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Green dot: Open Food Facts says the amount is "low" (good) */
+.discover-dot {
+    flex-shrink: 0;
+    width: var(--space-sm);
+    height: var(--space-sm);
+    border-radius: var(--radius-full);
+    background: var(--color-bg-success);
+}
+
+/* Long ingredient lists: cut to 4 lines until "Show all ingredients" is clicked (main.js) */
+.discover-clamp {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+}
+
+.discover-clamp.is-open {
+    display: block;
+    overflow: visible;
+}
+
+/* The toggle link sits under the text, left aligned */
+.discover-clamp-toggle {
+    align-self: flex-start;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+.discover-clamp-toggle.is-hidden {
+    display: none;
+}
+
+/* Details row: the two columns end at the same line */
+.discover-details > .card {
+    height: 100%;
+}
+
+/* Right column: Ingredients and Environment grow to fill the column's height together */
+.discover-details-stack > .card {
+    flex: 1;
+}
+
+/* Legend line sits at the bottom of the Nutrition card when the card is stretched */
+.discover-panel-foot {
+    margin-top: auto;
+}
+
+/* "Show all ingredients": same size as the panel's labels (14px semibold), no box after a mouse click */
+.discover-clamp-toggle {
+    font: 600 14px/20px var(--font-sans);
+}
+
+.discover-clamp-toggle:focus {
+    outline: none;
+}
+
+/* Keyboard users still see where they are, same ring as the shared .btn */
+.discover-clamp-toggle:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+}

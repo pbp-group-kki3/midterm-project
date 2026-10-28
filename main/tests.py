@@ -259,3 +259,85 @@ class PreferenceFitTests(TestCase):
         fit = preference_fit({"labels_tags": []}, {"diet": "halal", "off_tags": []})
         self.assertEqual(fit["text"], "? Can't verify halal")
 
+
+# Detail page panels (details.py), checked with the real Open Food Facts data of Ultra Milk Low Fat
+class DetailPanelTests(TestCase):
+    def setUp(self):
+        from main.views import prepare_card
+        self.product = prepare_card(dict(
+            ULTRA_MILK,
+            ecoscore_grade="d",
+            nutriments={"energy-kcal_100g": 44, "fat_100g": 1.2, "salt_100g": 0.125},
+            nutrient_levels={"fat": "low", "salt": "low", "saturated-fat": "low", "sugars": "low"},
+            allergens_tags=["en:milk"],
+            ingredients_analysis_tags=["en:palm-oil-free", "en:non-vegan"],
+            ecoscore_data={
+                "agribalyse": {"co2_total": 1.306214873},
+                "adjustments": {
+                    "packaging": {"warning": "packaging_data_missing"},
+                    "origins_of_ingredients": {"aggregated_origins": [{"origin": "en:unknown", "percent": 100}]},
+                },
+            },
+        ))
+
+    def test_bar_colors_follow_the_figma(self):
+        from main.services.details import build_grade_rows
+        tones = [row["tone"] for row in build_grade_rows(self.product)]
+        self.assertEqual(tones, ["success", "danger", "warning"])     # 75 green, 37 red, 40 amber
+
+    def test_green_dots_and_values(self):
+        from main.services.details import build_nutrition
+        rows = {row["label"]: row for row in build_nutrition(self.product)}
+        self.assertTrue(rows["Fat"]["good"])
+        self.assertFalse(rows["Energy"]["good"])                       # energy has no level
+        self.assertEqual(rows["Energy"]["value"], "44 kcal")
+        self.assertEqual(rows["Salt"]["value"], "0.125 g")
+        self.assertEqual(rows["Fiber"]["value"], "?")                  # missing
+
+    def test_ingredient_badges(self):
+        from main.services.details import build_ingredient_badges
+        texts = [b["text"] for b in build_ingredient_badges(self.product)]
+        self.assertEqual(texts, ["Contains milk", "Non-vegan", "Palm oil free"])
+
+    def test_environment_rows(self):
+        from main.services.details import build_environment
+        rows = {row["label"]: row["value"] for row in build_environment(self.product)}
+        self.assertEqual(rows["Green-Score"], "D, 37 out of 100")
+        self.assertEqual(rows["Carbon footprint"], "131 g CO\u2082e per 100 g")
+        self.assertEqual(rows["Packaging"], "Not indicated")
+        self.assertEqual(rows["Origin of ingredients"], "Not indicated")
+
+
+# Heart without page reload, red when saved, and small detail fixes
+class FavoriteDisplayTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(username="tester", password="test-pass-123")
+        self.client.force_login(self.user)
+        self.url = reverse("main:toggle_favorite", args=[ULTRA_MILK["code"]])
+
+    def test_click_with_javascript_answers_json(self):
+        ajax = {"HTTP_X_REQUESTED_WITH": "XMLHttpRequest"}
+        first = self.client.post(self.url, {"product_name": "Ultra Milk Low Fat"}, **ajax)
+        self.assertEqual(first.json(), {"saved": True})        # no redirect, so no jump to the top
+        second = self.client.post(self.url, **ajax)
+        self.assertEqual(second.json(), {"saved": False})
+
+    @patch("main.views.search_products")
+    def test_saved_product_has_red_heart(self, fake_search):
+        FavoriteProduct.objects.create(user=self.user, barcode=ULTRA_MILK["code"], product_name="Ultra Milk Low Fat")
+        fake_search.return_value = [dict(ULTRA_MILK), dict(ULTRA_MILK, code="999")]
+        response = self.client.get(reverse("main:show_main"), {"q": "susu"})
+        flags = [p["is_favorite"] for p in response.context["products"]]
+        self.assertEqual(flags, [True, False])
+        self.assertContains(response, "is-active")              # shared class: red heart
+
+    def test_unknown_packaging_is_not_indicated(self):
+        from main.services.details import build_environment
+        product = {"ecoscore_data": {"adjustments": {"packaging": {"packagings": [{"material": "en:unknown"}]}}}}
+        rows = {row["label"]: row["value"] for row in build_environment(product)}
+        self.assertEqual(rows["Packaging"], "Not indicated")
+
+    def test_ingredient_underscores_removed(self):
+        from main.services.details import clean_ingredients
+        self.assertEqual(clean_ingredients({"ingredients_text": "Wholegrain _Oat_ Flakes"}), "Wholegrain Oat Flakes")
+
