@@ -1,115 +1,111 @@
+# IMPORTS
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import login, logout
+from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
 from django.contrib import messages
-from .models import Profile
+from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth import update_session_auth_hash
+from django.core.exceptions import ValidationError
 
+# REGISTER VIEW
 def register_view(request):
+    errors = {}
+    
     if request.method == 'POST':
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        confirm_password = request.POST.get('confirm_password')
+        # GET SUBMITTED DATA
+        username = request.POST.get('username', '').strip()
+        email = request.POST.get('email', '').strip()
+        password = request.POST.get('password', '')
+        confirm_password = request.POST.get('confirm_password', '')
 
-        if password != confirm_password:
-            return render(request, 'profiles/register.html', {'error': 'Passwords do not match'})
-
+        # BACKEND VALIDATION CHECKS
         if User.objects.filter(username=username).exists():
-            return render(request, 'profiles/register.html', {'error': 'Username already taken'})
-
-        user = User.objects.create_user(username=username, email=email, password=password)
-        profile, created = Profile.objects.get_or_create(user=user)
-
-        profile.dietary_preferences = request.POST.get('dietary_preferences', '')
-        profile.allergies = request.POST.get('allergies', '')
-
-        if 'picture' in request.FILES:
-            profile.profile_picture = request.FILES['picture']
-
-        profile.save()
-        login(request, user)
-        return redirect('profile')
-
-    return render(request, 'profiles/register.html')
-
-def login_view(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
+            errors['username'] = "This username is already taken."
         
-        if user is not None:
+        if User.objects.filter(email=email).exists():
+            errors['email'] = "This email is already registered."
+            
+        if len(password) < 8:
+            errors['password'] = "Password must be at least 8 characters long."
+            
+        if password != confirm_password:
+            errors['confirm_password'] = "Passwords do not match."
+
+        # IF NO ERRORS, CREATE ACCOUNT
+        if not errors:
+            user = User.objects.create_user(username=username, email=email, password=password)
+            profile = user.profile
+            
+            profile.diet = request.POST.get('diet', 'none')
+            allergies_str = request.POST.get('allergies', '')
+            if allergies_str:
+                profile.allergies = [a.strip() for a in allergies_str.split(',') if a.strip()]
+
+            if 'picture' in request.FILES:
+                profile.profile_picture = request.FILES['picture']
+                
+            profile.save()
             login(request, user)
             return redirect('profile')
-        else:
-            return render(request, 'profiles/login.html', {'error': 'Invalid username or password'})
+            
+        # RETURN ERRORS AND RETAIN DATA IF VALIDATION FAILS
+        return render(request, 'profiles/register.html', {'errors': errors, 'data': request.POST})
+        
+    return render(request, 'profiles/register.html')
 
-    return render(request, 'profiles/login.html')
-
-def logout_view(request):
-    logout(request)
-    return redirect('login')
-
+# PROFILE VIEW
 @login_required
 def profile_view(request):
-    profile, created = Profile.objects.get_or_create(user=request.user)
-    return render(request, 'profiles/profile.html', {'profile': profile})
+    return render(request, 'profiles/profile.html', {'profile': request.user.profile})
 
+# PROFILE EDIT VIEW
 @login_required
 def profile_edit(request):
-    profile, created = Profile.objects.get_or_create(user=request.user)
+    profile = request.user.profile
 
     if request.method == 'POST':
-        new_username = request.POST.get('username')
-        new_email = request.POST.get('email')
+        action = request.POST.get('action')
 
-        if new_username and new_username != request.user.username:
-            if User.objects.filter(username=new_username).exists():
-                messages.error(request, "Username is already taken.")
-                return redirect('profile')
-            request.user.username = new_username
-        
-        if new_email:
-            request.user.email = new_email
+        # 1. SAVE ACCOUNT INFO ONLY
+        if action == 'update_account':
+            profile.full_name = request.POST.get('full_name', '')
+            profile.date_of_birth = request.POST.get('date_of_birth', '')
+            profile.domicile = request.POST.get('domicile', '')
 
-        new_password = request.POST.get('new_password')
-        confirm_password = request.POST.get('confirm_password')
-        if new_password:
-            if new_password == confirm_password:
-                request.user.set_password(new_password)
-                update_session_auth_hash(request, request.user)
-            else:
-                messages.error(request, "Passwords do not match.")
-                return redirect('profile')
+            if 'profile_picture' in request.FILES:
+                profile.profile_picture = request.FILES['profile_picture']
 
-        request.user.save()
+            profile.save()
+            messages.success(request, "Account information updated successfully.")
 
-        if 'dietary_preferences' in request.POST:
-            profile.dietary_preferences = request.POST.get('dietary_preferences')
-        if 'allergies' in request.POST:
-            profile.allergies = request.POST.get('allergies')
-        if 'nutritional_goals' in request.POST:
-            profile.nutritional_goals = request.POST.get('nutritional_goals')
+        # 2. SAVE PREFERENCES ONLY
+        elif action == 'update_preferences':
+            profile.diet = request.POST.get('diet', 'none')
+            
+            calorie_target = request.POST.get('calorie_target')
+            profile.calorie_target = int(calorie_target) if calorie_target else None
 
-        if 'profile_picture' in request.FILES:
-            profile.profile_picture = request.FILES['profile_picture']
+            allergies_str = request.POST.get('allergies', '')
+            profile.allergies = [a.strip() for a in allergies_str.split(',') if a.strip()]
 
-        profile.save()
-        messages.success(request, "Profile updated successfully!")
-        return redirect('profile')
+            profile.save()
+            messages.success(request, "Preferences updated successfully.")
 
     return redirect('profile')
 
+# PROFILE PICTURE DELETE VIEW
 @login_required
 def profile_picture_delete(request):
     if request.method == 'POST':
-        profile, created = Profile.objects.get_or_create(user=request.user)
+        profile = request.user.profile
         if profile.profile_picture:
             profile.profile_picture.delete(save=True)
             messages.success(request, "Profile picture removed.")
     return redirect('profile')
 
+# PROFILE DELETE VIEW
 @login_required
 def profile_delete(request):
     if request.method == 'POST':
@@ -117,4 +113,35 @@ def profile_delete(request):
         logout(request)
         user.delete()
         return redirect('/')
+    return redirect('profile')
+
+# CHANGE PASSWORD VIEW
+@login_required
+def change_password_view(request):
+    if request.method == 'POST':
+        current_password = request.POST.get('current_password')
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+
+        if not request.user.check_password(current_password):
+            messages.error(request, "Current password is incorrect.")
+            return redirect('profile')
+
+        if new_password != confirm_password:
+            messages.error(request, "New passwords do not match.")
+            return redirect('profile')
+
+        try:
+            validate_password(new_password, request.user)
+        except ValidationError as e:
+            for error in e.messages:
+                messages.error(request, error)
+            return redirect('profile')
+
+        request.user.set_password(new_password)
+        request.user.save()
+        update_session_auth_hash(request, request.user)
+        
+        messages.success(request, "Password changed successfully.")
+        
     return redirect('profile')

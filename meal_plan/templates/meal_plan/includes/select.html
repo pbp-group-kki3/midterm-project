@@ -1,0 +1,7 @@
+<div class="mealplan-select" data-mealplan-select data-sheet-title="{{ title }}" data-sheet-text="{{ text }}">
+    <select name="{{ name }}" id="{{ id }}" class="input mealplan-select-native{% if error %} is-error{% endif %}">
+        {% for option in options %}
+            <option value="{{ option.value }}"{% if option.selected %} selected{% endif %}{% if option.helper %} data-helper="{{ option.helper }}"{% endif %}>{{ option.label }}</option>
+        {% endfor %}
+    </select>
+</div>
