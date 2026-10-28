@@ -4,14 +4,11 @@ from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
 from django.urls import reverse
 from main.services.openfoodfacts import get_product
-from main.services.grading import spoonfeed_grade
 
 from comparison.services import (
-    build_label_rows,
-    build_score_rows,
+    build_comparison_sections,
     build_nutrition_rows,
-    normalize_grade,
-    normalize_nova,
+    load_comparison_products,
 )
 from comparison.forms import SavedComparisonForm
 from comparison.models import SavedComparison
@@ -21,57 +18,25 @@ def compare_products(request):
     selected_barcodes = request.session.get("compare", [])
     barcodes = list(dict.fromkeys(selected_barcodes))[:3]
 
-    products = []
-    unavailable_barcodes = []
+    products, unavailable_barcodes = load_comparison_products(barcodes)
 
-    for barcode in barcodes:
-        product = get_product(barcode)
-
-        if product:
-            product = product.copy()
-            product["compare_barcode"] = barcode
-
-            grading = spoonfeed_grade(product)
-            product["compare_grade"] = grading["grade"]
-            product["compare_score"] = grading["score"]
-
-            product["compare_nutri"] = normalize_grade(
-                product.get("nutriscore_grade")
-            )
-            product["compare_green"] = normalize_grade(
-                product.get("ecoscore_grade")
-            )
-            product["compare_nova"] = normalize_nova(
-                product.get("nova_group")
-            )
-
-            products.append(product)
-        else:
-            unavailable_barcodes.append(barcode)
+    if unavailable_barcodes:
+        messages.warning(
+            request,
+            "Some selected products could not be loaded. "
+            "Please try again later.",
+        )
 
     nutrition_rows = build_nutrition_rows(products)
-
-    comparison_sections = [
-        {
-            "title": "Scores",
-            "rows": build_score_rows(products),
-        },
-        {
-            "title": "Nutrition per 100 g/ml",
-            "rows": nutrition_rows,
-        },
-        {
-            "title": "Labels and allergens",
-            "rows": build_label_rows(products),
-        },
-    ]
+    comparison_sections = build_comparison_sections(
+        products,
+        nutrition_rows,
+    )
 
     has_removed = request.session.get("compare_has_removed", False)
     show_add_product = has_removed and len(barcodes) < 3
-
     display_column_count = len(products) + int(show_add_product)
 
-    # SAVE COMPARISON
     can_save = (
         2 <= len(barcodes) <= 3
         and len(products) == len(barcodes)
@@ -82,6 +47,7 @@ def compare_products(request):
             for barcode in barcodes
         )
     )
+
     is_saved = False
 
     if request.user.is_authenticated and 2 <= len(barcodes) <= 3:
