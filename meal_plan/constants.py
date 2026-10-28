@@ -13,6 +13,7 @@ DIET_CHOICES = [(key, label) for key, label, _, _ in DIETS]
 DIET_LABELS = {key: label for key, label, _, _ in DIETS}
 DIET_HELPERS = {key: helper for key, _, _, helper in DIETS if helper}
 SPOONACULAR_DIETS = {key: word for key, _, word, _ in DIETS}
+MAIN_DIET_ORDER = ['vegan', 'vegetarian', 'pescatarian', 'ketogenic', 'halal']
 
 HALAL_EXCLUDE = ['pork', 'bacon', 'ham', 'wine', 'beer']
 HALAL_BADGE = 'Halal not verified'
