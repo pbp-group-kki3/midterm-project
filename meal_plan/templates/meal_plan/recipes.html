@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Recipes | SpoonFeed{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'meal_plan/meal_plan.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="mealplan-page">
+        <header class="page-header mealplan-header">
+            <div class="mealplan-heading">
+                <h1 class="page-title page-title-lg">Recipes</h1>
+            </div>
+            <div class="page-actions mealplan-actions">
+                <a href="{% url 'meal_plan:plan_list' %}" class="btn btn-secondary mealplan-action">My plans</a>
+                <a href="{% url 'meal_plan:plan_create' %}" class="btn btn-primary mealplan-action">Create meal plan</a>
+            </div>
+        </header>
+
+        {% include 'meal_plan/includes/messages.html' %}
+
+        <form method="get" action="{% url 'meal_plan:recipes' %}" class="card mealplan-filters" role="search" aria-label="Filter recipes">
+            <div class="mealplan-filter-fields">
+                <div class="field mealplan-filter-search">
+                    <label class="field-label" for="{{ form.q.id_for_label }}">{{ form.q.label }}</label>
+                    <input type="search" name="{{ form.q.html_name }}" id="{{ form.q.id_for_label }}" class="input{% if form.q.errors %} is-error{% endif %}" value="{{ form.q.value|default_if_none:'' }}" maxlength="80" placeholder="e.g. oats">
+                    {% for error in form.q.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                </div>
+                <div class="field">
+                    <label class="field-label" for="{{ form.meal.id_for_label }}">{{ form.meal.label }}</label>
+                    {% include 'meal_plan/includes/select.html' with name=form.meal.html_name id=form.meal.id_for_label options=meal_options title='Meal' text='Choose which meal to show.' %}
+                </div>
+                <div class="field">
+                    <label class="field-label" for="{{ form.diet.id_for_label }}">{{ form.diet.label }}</label>
+                    {% include 'meal_plan/includes/select.html' with name=form.diet.html_name id=form.diet.id_for_label options=diet_options title='Diet' text='Choose one. You can change it later.' %}
+                </div>
+                <div class="field">
+                    <label class="field-label" for="{{ form.max_calories.id_for_label }}">{{ form.max_calories.label }}</label>
+                    <input type="number" name="{{ form.max_calories.html_name }}" id="{{ form.max_calories.id_for_label }}" class="input{% if form.max_calories.errors %} is-error{% endif %}" value="{{ form.max_calories.value|default_if_none:'' }}" min="50" max="3000" inputmode="numeric" placeholder="e.g. 600">
+                    {% for error in form.max_calories.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                </div>
+                <div class="field">
+                    <label class="field-label" for="{{ form.max_minutes.id_for_label }}">{{ form.max_minutes.label }}</label>
+                    <input type="number" name="{{ form.max_minutes.html_name }}" id="{{ form.max_minutes.id_for_label }}" class="input{% if form.max_minutes.errors %} is-error{% endif %}" value="{{ form.max_minutes.value|default_if_none:'' }}" min="5" max="600" inputmode="numeric" placeholder="e.g. 30">
+                    {% for error in form.max_minutes.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                </div>
+            </div>
+
+            <div class="mealplan-filter-toggles">
+                <label class="checkbox">
+                    <input type="checkbox" name="{{ form.gluten_free.html_name }}"{% if form.gluten_free.value %} checked{% endif %}>
+                    {{ form.gluten_free.label }}
+                </label>
+                <label class="checkbox">
+                    <input type="checkbox" name="{{ form.dairy_free.html_name }}"{% if form.dairy_free.value %} checked{% endif %}>
+                    {{ form.dairy_free.label }}
+                </label>
+                <label class="checkbox" title="Plant-based recipes, which usually have a smaller environmental footprint">
+                    <input type="checkbox" name="{{ form.sustainable.html_name }}"{% if form.sustainable.value %} checked{% endif %}>
+                    {{ form.sustainable.label }}
+                </label>
+            </div>
+
+            <div class="mealplan-filter-actions">
+                <button type="submit" class="btn btn-primary mealplan-action">Apply filters</button>
+                <a href="{% url 'meal_plan:recipes' %}" class="btn btn-secondary mealplan-action">Reset</a>
+            </div>
+        </form>
+
+        {% if error_message %}
+            <div class="alert alert-warning" role="status">{{ error_message }}</div>
+        {% elif form.errors %}
+            <div class="alert alert-warning" role="status">Fix the filters above to see recipes.</div>
+        {% elif cards %}
+            <div class="mealplan-results">
+                <p class="mealplan-count" data-recipe-count aria-live="polite">{{ count_text }}</p>
+                <div class="card-grid card-grid-4" data-recipe-grid>
+                    {% include 'meal_plan/includes/recipe_cards.html' %}
+                </div>
+            </div>
+            {% if next_url %}
+                <a href="{{ next_url }}" class="btn btn-load-more mealplan-load-more" data-load-more>
+                    Load more recipes
+                    <span class="icon icon-chevron-right mealplan-load-more-icon" aria-hidden="true"></span>
+                </a>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <h2 class="empty-state-title">No recipes match your filters</h2>
+                <p class="empty-state-text">Try a shorter search or turn off a filter.</p>
+                <a href="{% url 'meal_plan:recipes' %}" class="btn btn-primary">Reset filters</a>
+            </div>
+        {% endif %}
+
+        {% include 'meal_plan/includes/credit.html' %}
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'meal_plan/meal_plan.js' %}" defer></script>
+{% endblock %}
