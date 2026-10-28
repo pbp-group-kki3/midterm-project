@@ -32,7 +32,7 @@ urlpatterns = [
 
     path('styleguide/', styleguide),
 
-    path('meal-plan/', coming_soon, {'slug': 'meal-plan'}),
+    path('meal-plan/', include('meal_plan.urls')),
 
     path('compare/', coming_soon, {'slug': 'compare'}),
 
