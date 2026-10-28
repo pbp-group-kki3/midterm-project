@@ -50,3 +50,54 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+    const dialog = document.getElementById("compare-save-dialog");
+    const openButton = document.getElementById("compare-save-open");
+    const cancelButton = document.getElementById("compare-save-cancel");
+    const form = document.getElementById("compare-save-form");
+    const submitButton = document.getElementById("compare-save-submit");
+
+    if (!dialog || !cancelButton || !form || !submitButton) {
+        return;
+    }
+
+    function openSaveDialog() {
+        if (!dialog.open) {
+            dialog.showModal();
+        }
+
+        const invalidField = form.querySelector(
+            '[aria-invalid="true"]'
+        );
+        const nameField = form.querySelector('[name="name"]');
+        const focusTarget = invalidField || nameField;
+
+        if (focusTarget) {
+            focusTarget.focus();
+        }
+    }
+
+    if (openButton) {
+        openButton.addEventListener("click", openSaveDialog);
+    }
+
+    cancelButton.addEventListener("click", () => {
+        dialog.close();
+    });
+
+    dialog.addEventListener("close", () => {
+        if (openButton) {
+            openButton.focus();
+        }
+    });
+
+    form.addEventListener("submit", () => {
+        submitButton.disabled = true;
+        submitButton.textContent = "Saving...";
+    });
+
+    if (dialog.dataset.openOnLoad === "true") {
+        openSaveDialog();
+    }
+});

@@ -125,7 +125,7 @@ EXAMPLES = [
     {
         'id': 'icons',
         'title': 'Icons',
-        'note': 'All 16 original Figma variants. Use .icon plus .icon-name. Every icon is 20 × 20. bookmark includes a plus for saving; saved is the plain bookmark outline. Hide decorative icons with aria-hidden="true".',
+        'note': 'All 17 original Figma variants. Use .icon plus .icon-name. Every icon is 20 × 20. bookmark includes a plus for saving; saved is the plain bookmark outline; bookmark-filled is the solid saved-state icon. Hide decorative icons with aria-hidden="true".',
         'html': '''<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
     <div class="flex items-center gap-3">
         <span class="icon icon-trash icon-default" aria-hidden="true"></span>
@@ -184,6 +184,10 @@ EXAMPLES = [
         <code>icon-bookmark</code>
     </div>
     <div class="flex items-center gap-3">
+        <span class="icon icon-bookmark-filled icon-default" aria-hidden="true"></span>
+        <code>icon-bookmark-filled</code>
+    </div>
+    <div class="flex items-center gap-3">
         <span class="icon icon-edit icon-default" aria-hidden="true"></span>
         <code>icon-edit</code>
     </div>
@@ -200,6 +204,10 @@ EXAMPLES = [
         'html': '''<button type="button" class="btn btn-primary">
     Save comparison
     <span class="icon icon-bookmark" aria-hidden="true"></span>
+</button>
+<button type="button" class="btn btn-primary">
+    Saved
+    <span class="icon icon-bookmark-filled" aria-hidden="true"></span>
 </button>
 <button type="button" class="btn btn-danger-subtle">
     <span class="icon icon-trash" aria-hidden="true"></span>
