@@ -40,14 +40,14 @@ urlpatterns = [
 
     path('blog/', coming_soon, {'slug': 'blog'}),
 
-    path('profile/register/', register_view, name='register'),
-    path('profile/login/', LoginView.as_view(template_name='profiles/login.html'), name='login'),
-    path('profile/logout/', LogoutView.as_view(next_page='login'), name='logout'),
+    path('profiles/register/', register_view, name='register'),
+    path('profiles/login/', LoginView.as_view(template_name='profiles/login.html'), name='login'),
+    path('profiles/logout/', LogoutView.as_view(next_page='login'), name='logout'),
 
-    path('profile/', profile_view, name='profile'),
-    path('profile/edit/', profile_edit, name='profile_edit'),
-    path('profile/delete/', profile_delete, name='profile_delete'),
-    path('profile/picture/delete/', profile_picture_delete, name='profile_picture_delete'),
+    path('profiles/', profile_view, name='profile'),
+    path('profiles/edit/', profile_edit, name='profile_edit'),
+    path('profiles/delete/', profile_delete, name='profile_delete'),
+    path('profiles/picture/delete/', profile_picture_delete, name='profile_picture_delete'),
 ]
 
 if settings.DEBUG:
