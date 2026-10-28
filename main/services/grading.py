@@ -45,3 +45,11 @@ def spoonfeed_grade(product):
         grade = "E"
 
     return {"score": round(score, 1), "grade": grade, "parts": parts}
+
+# helper function - to get the value easily
+def grade_value(value, valid): # value - actual grade of product, valid - dict of real grades
+    if isinstance(value, str): # is value a string = returns boolean
+        value = value.lower()
+    if value not in valid:
+        return "?"
+    return str(value).upper().replace("-PLUS","+") # if it has -PLUS, switch that with +
