@@ -3,14 +3,37 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 from django.contrib import messages
 
 # REGISTER VIEW
+# REGISTER VIEW
 def register_view(request):
+    errors = {}
+    
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
+        # GET SUBMITTED DATA
+        username = request.POST.get('username', '').strip()
+        email = request.POST.get('email', '').strip()
+        password = request.POST.get('password', '')
+        confirm_password = request.POST.get('confirm_password', '')
+
+        # BACKEND VALIDATION CHECKS
+        if User.objects.filter(username=username).exists():
+            errors['username'] = "This username is already taken."
+        
+        if User.objects.filter(email=email).exists():
+            errors['email'] = "This email is already registered."
+            
+        if len(password) < 8:
+            errors['password'] = "Password must be at least 8 characters long."
+            
+        if password != confirm_password:
+            errors['confirm_password'] = "Passwords do not match."
+
+        # IF NO ERRORS, CREATE ACCOUNT
+        if not errors:
+            user = User.objects.create_user(username=username, email=email, password=password)
             profile = user.profile
             
             profile.diet = request.POST.get('diet', 'none')
@@ -24,10 +47,10 @@ def register_view(request):
             profile.save()
             login(request, user)
             return redirect('profile')
-        else:
-            messages.error(request, "Registration failed. Check password requirements.")
-            return render(request, 'profiles/register.html', {'error': 'Invalid registration data.'})
             
+        # RETURN ERRORS AND RETAIN DATA IF VALIDATION FAILS
+        return render(request, 'profiles/register.html', {'errors': errors, 'data': request.POST})
+        
     return render(request, 'profiles/register.html')
 
 # PROFILE VIEW

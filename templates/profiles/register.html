@@ -43,13 +43,13 @@
         <!-- FORM -->
         <form method="POST" action="{% url 'register' %}" enctype="multipart/form-data" id="spoonfeedForm" class="w-full max-w-md mx-auto">
             {% csrf_token %}
-            <input type="hidden" name="diet" id="diet_input" value="none">
-            <input type="hidden" name="allergies" id="allergies_input" value="">
+            <input type="hidden" name="diet" id="diet_input" value="{{ data.diet|default:'none' }}">
+            <input type="hidden" name="allergies" id="allergies_input" value="{{ data.allergies|default:'' }}">
 
-            <!-- ALERTS -->
-            {% if error %}
+            <!-- GENERAL ALERT -->
+            {% if errors %}
             <div class="alert alert-danger mb-6">
-                {{ error }}
+                Please fix the errors below to continue.
             </div>
             {% endif %}
 
@@ -61,20 +61,32 @@
                 <div class="form-stack">
                     <div class="field">
                         <label class="field-label">Username</label>
-                        <input type="text" name="username" id="input_username" required placeholder="JoeVeggieLover" class="input">
+                        <input type="text" name="username" id="input_username" value="{{ data.username|default:'' }}" placeholder="JoeVeggieLover" class="input {% if errors.username %}is-error{% endif %}">
+                        {% if errors.username %}<p class="field-error">{{ errors.username }}</p>{% endif %}
+                        <p class="field-error hidden js-error" id="err_input_username"></p>
                     </div>
+                    
                     <div class="field">
                         <label class="field-label">Email</label>
-                        <input type="email" name="email" id="input_email" required placeholder="joe@example.com" class="input">
+                        <input type="email" name="email" id="input_email" value="{{ data.email|default:'' }}" placeholder="joe@example.com" class="input {% if errors.email %}is-error{% endif %}">
+                        {% if errors.email %}<p class="field-error">{{ errors.email }}</p>{% endif %}
+                        <p class="field-error hidden js-error" id="err_input_email"></p>
                     </div>
+                    
                     <div class="field">
                         <label class="field-label">Password</label>
-                        <input type="password" name="password" id="input_password" required placeholder="••••••••" class="input">
+                        <input type="password" name="password" id="input_password" placeholder="••••••••" class="input {% if errors.password %}is-error{% endif %}">
+                        {% if errors.password %}<p class="field-error">{{ errors.password }}</p>{% endif %}
+                        <p class="field-error hidden js-error" id="err_input_password"></p>
                     </div>
+                    
                     <div class="field">
                         <label class="field-label">Confirm password</label>
-                        <input type="password" name="confirm_password" id="input_confirm_password" required placeholder="••••••••" class="input">
+                        <input type="password" name="confirm_password" id="input_confirm_password" placeholder="••••••••" class="input {% if errors.confirm_password %}is-error{% endif %}">
+                        {% if errors.confirm_password %}<p class="field-error">{{ errors.confirm_password }}</p>{% endif %}
+                        <p class="field-error hidden js-error" id="err_input_confirm_password"></p>
                     </div>
+                    
                     <div class="pt-4 flex flex-col gap-4">
                         <button type="button" onclick="goToStep(2)" class="btn btn-primary btn-block">Continue</button>
                         <p class="type-body-sm text-center text-secondary">
@@ -131,12 +143,15 @@
                     <div class="field items-center">
                         <label class="field-label">Profile Picture (Optional)</label>
                         <div class="photo-picker relative group">
-                            <span class="avatar avatar-xl bg-subtle text-secondary" id="imagePreviewContainer">
-                                📸
+                            <!-- AVATAR INCLUSION -->
+                            <span id="imagePreviewContainer">
+                                {% include 'components/avatar.html' with name="Upload" size="xl" %}
                             </span>
                             <img id="uploadedImagePreview" src="" alt="Profile Preview" class="hidden avatar avatar-xl object-cover">
-                            <label class="btn btn-secondary btn-sm btn-block cursor-pointer" for="pictureInput">Add photo</label>
+                            
+                            <label class="btn btn-secondary btn-sm btn-block cursor-pointer mt-2" for="pictureInput">Add photo</label>
                             <input type="file" name="picture" id="pictureInput" accept="image/*" class="hidden" onchange="previewProfilePicture(event)">
+                            <span class="photo-picker-hint">Optional</span>
                         </div>
                     </div>
                     <div class="pt-4 flex flex-col gap-4">
@@ -159,21 +174,43 @@
     let selectedDiet = 'none';
     const selectedAllergies = new Set();
 
+    function validateStep1() {
+        let isValid = true;
+        const username = document.getElementById('input_username');
+        const email = document.getElementById('input_email');
+        const pass = document.getElementById('input_password');
+        const confirmPass = document.getElementById('input_confirm_password');
+
+        // Clear existing JS errors
+        document.querySelectorAll('.js-error').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.input').forEach(el => el.classList.remove('is-error'));
+
+        // Client-side checks
+        if (!username.value.trim()) { showError(username, "Username is required."); isValid = false; }
+        if (!email.value.trim()) { showError(email, "Email is required."); isValid = false; }
+        if (pass.value.length < 8) { showError(pass, "Password must be at least 8 characters."); isValid = false; }
+        if (pass.value !== confirmPass.value) { showError(confirmPass, "Passwords do not match."); isValid = false; }
+
+        return isValid;
+    }
+
+    function showError(inputElement, message) {
+        inputElement.classList.add('is-error');
+        const errorElement = document.getElementById(`err_${inputElement.id}`);
+        if (errorElement) {
+            errorElement.innerText = message;
+            errorElement.classList.remove('hidden');
+        }
+    }
+
     function goToStep(step) {
+        // Lock progression if moving forward from step 1
         if (currentStep === 1 && step > 1) {
-            const username = document.getElementById('input_username').value;
-            const email = document.getElementById('input_email').value;
-            const pass = document.getElementById('input_password').value;
-            const confirmPass = document.getElementById('input_confirm_password').value;
-            if (!username || !email || !pass || !confirmPass) {
-                alert("Please fill out all required fields.");
-                return;
-            }
-            if (pass !== confirmPass) {
-                alert("Passwords do not match.");
-                return;
+            if (!validateStep1()) {
+                return; // Stop execution, don't change steps
             }
         }
+        
         document.getElementById(`step-${currentStep}`).classList.add('hidden');
         document.getElementById(`step-${step}`).classList.remove('hidden');
         updateProgressIndicators(step);
