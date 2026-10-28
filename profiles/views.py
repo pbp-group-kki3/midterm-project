@@ -10,7 +10,6 @@ from django.contrib.auth import update_session_auth_hash
 from django.core.exceptions import ValidationError
 
 # REGISTER VIEW
-# REGISTER VIEW
 def register_view(request):
     errors = {}
     
@@ -67,24 +66,32 @@ def profile_edit(request):
     profile = request.user.profile
 
     if request.method == 'POST':
-        profile.diet = request.POST.get('diet', 'none')
-        
-        calorie_target = request.POST.get('calorie_target')
-        profile.calorie_target = int(calorie_target) if calorie_target else None
-        
-        meals_per_day = request.POST.get('meals_per_day')
-        if meals_per_day:
-            profile.meals_per_day = int(meals_per_day)
+        action = request.POST.get('action')
 
-        allergies_str = request.POST.get('allergies', '')
-        profile.allergies = [a.strip() for a in allergies_str.split(',') if a.strip()]
+        # 1. SAVE ACCOUNT INFO ONLY
+        if action == 'update_account':
+            profile.full_name = request.POST.get('full_name', '')
+            profile.date_of_birth = request.POST.get('date_of_birth', '')
+            profile.domicile = request.POST.get('domicile', '')
 
-        if 'profile_picture' in request.FILES:
-            profile.profile_picture = request.FILES['profile_picture']
+            if 'profile_picture' in request.FILES:
+                profile.profile_picture = request.FILES['profile_picture']
 
-        profile.save()
-        messages.success(request, "Preferences updated successfully.")
-        return redirect('profile')
+            profile.save()
+            messages.success(request, "Account information updated successfully.")
+
+        # 2. SAVE PREFERENCES ONLY
+        elif action == 'update_preferences':
+            profile.diet = request.POST.get('diet', 'none')
+            
+            calorie_target = request.POST.get('calorie_target')
+            profile.calorie_target = int(calorie_target) if calorie_target else None
+
+            allergies_str = request.POST.get('allergies', '')
+            profile.allergies = [a.strip() for a in allergies_str.split(',') if a.strip()]
+
+            profile.save()
+            messages.success(request, "Preferences updated successfully.")
 
     return redirect('profile')
 
@@ -108,7 +115,7 @@ def profile_delete(request):
         return redirect('/')
     return redirect('profile')
 
-
+# CHANGE PASSWORD VIEW
 @login_required
 def change_password_view(request):
     if request.method == 'POST':

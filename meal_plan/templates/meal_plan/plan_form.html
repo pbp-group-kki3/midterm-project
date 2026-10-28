@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create a meal plan | SpoonFeed{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'meal_plan/meal_plan.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="mealplan-page">
+        <header class="mealplan-heading">
+            <a href="{% url 'meal_plan:plan_list' %}" class="back-link">← Back to Meal Plan</a>
+            <h1 class="page-title page-title-lg">Create a meal plan</h1>
+            <p class="page-subtitle mealplan-mobile-only">Spoonacular picks the recipes. Allergy filters use Spoonacular's labels, so always check the recipe too.</p>
+        </header>
+
+        {% include 'meal_plan/includes/messages.html' %}
+
+        <div class="mealplan-create">
+            <form method="post" class="card mealplan-form-card" novalidate data-plan-form data-profile-target="{{ profile_target }}" data-default-calories="{{ default_calories }}">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {% for error in form.non_field_errors %}{{ error }}{% if not forloop.last %} {% endif %}{% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="field">
+                    <label class="field-label" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+                    <input type="text" name="{{ form.name.html_name }}" id="{{ form.name.id_for_label }}" class="input{% if form.name.errors %} is-error{% endif %}" value="{{ form.name.value|default_if_none:'' }}" maxlength="60" placeholder="e.g. Green week" autocomplete="off" required{% if form.name.errors %} aria-invalid="true" aria-describedby="name-error"{% endif %}>
+                    {% for error in form.name.errors %}<p class="field-error" id="name-error">{{ error }}</p>{% endfor %}
+                </div>
+
+                <div class="mealplan-field-row">
+                    <div class="field">
+                        <label class="field-label" for="{{ form.start_date.id_for_label }}">{{ form.start_date.label }}</label>
+                        <input type="date" name="{{ form.start_date.html_name }}" id="{{ form.start_date.id_for_label }}" class="input{% if form.start_date.errors %} is-error{% endif %}" value="{% if form.start_date.value.isoformat %}{{ form.start_date.value.isoformat }}{% else %}{{ form.start_date.value|default_if_none:'' }}{% endif %}" required data-plan-start{% if form.start_date.errors %} aria-invalid="true" aria-describedby="start-error"{% endif %}>
+                        {% for error in form.start_date.errors %}<p class="field-error" id="start-error">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div class="field">
+                        <label class="field-label" for="{{ form.days.id_for_label }}">{{ form.days.label }}</label>
+                        <input type="number" name="{{ form.days.html_name }}" id="{{ form.days.id_for_label }}" class="input{% if form.days.errors %} is-error{% endif %}" value="{{ form.days.value|default_if_none:'' }}" min="1" max="14" inputmode="numeric" required data-plan-days aria-describedby="days-help{% if form.days.errors %} days-error{% endif %}"{% if form.days.errors %} aria-invalid="true"{% endif %}>
+                        {% for error in form.days.errors %}<p class="field-error" id="days-error">{{ error }}</p>{% endfor %}
+                        <p class="field-helper" id="days-help">{{ form.days.help_text }}</p>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="field-label" for="{{ form.diet.id_for_label }}">{{ form.diet.label }}</label>
+                    {% include 'meal_plan/includes/select.html' with name=form.diet.html_name id=form.diet.id_for_label options=diet_options title='Diet' text='Choose one. You can change it later.' error=form.diet.errors %}
+                    {% for error in form.diet.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                </div>
+
+                <fieldset class="mealplan-fieldset">
+                    <legend class="type-label-md mealplan-legend">{{ form.allergies.label }}</legend>
+                    <div class="chip-row">
+                        {% for chip in allergy_chips %}
+                            <label class="chip mealplan-chip{% if chip.checked %} is-selected{% endif %}">
+                                <input type="checkbox" name="{{ form.allergies.html_name }}" value="{{ chip.key }}" class="mealplan-chip-input" data-plan-allergy data-name="{{ chip.name }}"{% if chip.checked %} checked{% endif %}>
+                                {{ chip.label }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% for error in form.allergies.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                </fieldset>
+
+                <label class="checkbox">
+                    <input type="checkbox" name="{{ form.include_snack.html_name }}" id="{{ form.include_snack.id_for_label }}" data-plan-snack{% if form.include_snack.value %} checked{% endif %}>
+                    {{ form.include_snack.label }}
+                </label>
+
+                <div class="field">
+                    <label class="field-label" for="{{ form.calorie_goal.id_for_label }}">{{ form.calorie_goal.label }}</label>
+                    <input type="number" name="{{ form.calorie_goal.html_name }}" id="{{ form.calorie_goal.id_for_label }}" class="input{% if form.calorie_goal.errors %} is-error{% endif %}" value="{{ form.calorie_goal.value|default_if_none:'' }}" min="1000" max="5000" step="50" inputmode="numeric" placeholder="e.g. 2000" data-plan-calories aria-describedby="calories-help{% if form.calorie_goal.errors %} calories-error{% endif %}"{% if form.calorie_goal.errors %} aria-invalid="true"{% endif %}>
+                    {% for error in form.calorie_goal.errors %}<p class="field-error" id="calories-error">{{ error }}</p>{% endfor %}
+                    <p class="field-helper" id="calories-help">{{ form.calorie_goal.help_text }}</p>
+                </div>
+
+                <div class="mealplan-form-actions">
+                    <button type="submit" class="btn btn-primary mealplan-action" data-plan-submit>Create plan</button>
+                    <a href="{% url 'meal_plan:plan_list' %}" class="btn btn-secondary mealplan-action">Cancel</a>
+                </div>
+            </form>
+
+            <aside class="card mealplan-summary" aria-labelledby="summary-title">
+                <h2 class="type-h3" id="summary-title">Plan summary</h2>
+                <dl class="mealplan-summary-list">
+                    <div class="mealplan-summary-row">
+                        <dt>Duration</dt>
+                        <dd data-summary="duration">{{ summary.duration }}</dd>
+                    </div>
+                    <div class="mealplan-summary-row">
+                        <dt>Meals per day</dt>
+                        <dd data-summary="meals">{{ summary.meals }}</dd>
+                    </div>
+                    <div class="mealplan-summary-row">
+                        <dt>Diet</dt>
+                        <dd data-summary="diet">{{ summary.diet }}</dd>
+                    </div>
+                    <div class="mealplan-summary-row">
+                        <dt>Avoiding</dt>
+                        <dd data-summary="avoiding">{{ summary.avoiding }}</dd>
+                    </div>
+                    <div class="mealplan-summary-row">
+                        <dt>Calories</dt>
+                        <dd data-summary="calories">{{ summary.calories }}</dd>
+                    </div>
+                </dl>
+                <p class="mealplan-summary-note">Recipes are picked by Spoonacular's meal planner to fit these choices. Always check a recipe's ingredients if you have an allergy.</p>
+            </aside>
+        </div>
+
+        {% include 'meal_plan/includes/credit.html' %}
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'meal_plan/meal_plan.js' %}" defer></script>
+{% endblock %}
