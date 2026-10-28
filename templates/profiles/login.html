@@ -40,7 +40,7 @@
             <!-- ALERTS -->
             {% if form.errors or error %}
             <div class="alert alert-danger mb-6">
-                Please correct the errors below.
+                Wrong username or password. Please try again.
             </div>
             {% endif %}
 
@@ -49,14 +49,11 @@
                 {% csrf_token %}
                 <div class="field">
                     <label for="username" class="field-label">Username</label>
-                    <input type="text" id="username" name="username" placeholder="[username]" required class="input {% if form.errors %}is-error{% endif %}"/>
+                    <input type="text" id="username" name="username" placeholder="username" required class="input {% if form.errors %}is-error{% endif %}"/>
                 </div>
                 <div class="field">
                     <label for="password" class="field-label">Password</label>
                     <input type="password" id="password" name="password" placeholder="••••••••" required class="input {% if form.errors %}is-error{% endif %}"/>
-                    {% if form.errors %}
-                        <p class="field-error">Wrong username or password</p>
-                    {% endif %}
                 </div>
                 
                 <!-- SUBMIT -->
