@@ -211,11 +211,16 @@ function setUpCarousel() {
         }
     }
 
-    function show(index, fromLeft) {
+    const track = carousel.querySelector(".discover-carousel-track");
+
+    // change: no more fromLeft, the track itself slides the right way (left or right) on its own
+    function show(index) {
         current = (index + slides.length) % slides.length;               // wraps around: after the last comes the first
+        carousel.classList.add("is-moving");                             // change: freeze the rounded frame while sliding
+        track.style.setProperty("--slide-index", current);              // CSS moves the track to this slide
         slides.forEach((slide, i) => {
             slide.classList.toggle("is-active", i === current);
-            slide.classList.toggle("is-from-left", i === current && fromLeft);
+            slide.inert = i !== current;                                 // can't tab into the hidden slide's buttons
         });
         dots.forEach((dot, i) => {
             dot.classList.toggle("is-active", i === current);
@@ -228,9 +233,48 @@ function setUpCarousel() {
         measure();
     }
 
-    carousel.querySelector(".js-carousel-prev").addEventListener("click", () => show(current - 1, true));
-    carousel.querySelector(".js-carousel-next").addEventListener("click", () => show(current + 1, false));
-    dots.forEach((dot, i) => dot.addEventListener("click", () => show(i, i < current)));
+    carousel.querySelector(".js-carousel-prev").addEventListener("click", () => show(current - 1));
+    carousel.querySelector(".js-carousel-next").addEventListener("click", () => show(current + 1));
+    dots.forEach((dot, i) => dot.addEventListener("click", () => show(i)));
+
+    // change: slide finished moving, give the slides their own rounded corners back
+    // (only the track's own slide, not e.g. a button inside finishing its hover colour change)
+    track.addEventListener("transitionend", (event) => {
+        if (event.target === track) {
+            carousel.classList.remove("is-moving");
+        }
+    });
+
+    // change: swipe with a finger on phones. The slide follows your finger, then snaps to the next one
+    let startX = null;
+    track.addEventListener("touchstart", (event) => {
+        startX = event.touches[0].clientX;
+        track.classList.add("is-dragging");                              // no delay while dragging
+        carousel.classList.add("is-moving");                             // change: fixed frame while dragging too
+        paused = true;
+    }, { passive: true });
+    track.addEventListener("touchmove", (event) => {
+        if (startX === null) {
+            return;
+        }
+        const moved = event.touches[0].clientX - startX;                 // how far the finger went (px)
+        track.style.transform = `translateX(calc(${-current * 100}% + ${moved}px))`;
+    }, { passive: true });
+    track.addEventListener("touchend", (event) => {
+        if (startX === null) {
+            return;
+        }
+        const moved = event.changedTouches[0].clientX - startX;
+        startX = null;
+        track.classList.remove("is-dragging");
+        track.style.transform = "";                                      // hand control back to the CSS
+        paused = false;
+        if (Math.abs(moved) > 50) {                                      // a real swipe, not a tap
+            show(moved < 0 ? current + 1 : current - 1);
+        } else {
+            show(current);                                               // change: tiny drag, slide back into place
+        }
+    });
 
     // don't slide away while the mouse is on it, or while someone is using the buttons with the keyboard
     carousel.addEventListener("mouseenter", () => { paused = true; });
@@ -249,12 +293,13 @@ function setUpCarousel() {
     if (!calm) {
         setInterval(() => {
             if (!paused && !recipeOpen() && !document.hidden) {
-                show(current + 1, false);
+                show(current + 1);
             }
         }, 6000);
     }
 
     window.addEventListener("resize", measure);
-    measure();
+    show(0);                                                             // change: start on slide 1 (also hides slide 2 from the Tab key)
+    carousel.classList.remove("is-moving");                             // nothing is moving yet on page load
 }
 
