@@ -3,8 +3,12 @@
     class="alert alert-info compare-toast toast-hidden"
     popover="manual"
 >
+    <span class="compare-toast-badge" aria-hidden="true">
+        <span id="toast-symbol" class="compare-toast-letter">i</span>
+    </span>
+
     <div class="compare-toast-content" role="status" aria-atomic="true">
-        <h3 id="toast-title" class="compare-toast-title"></h3>
+        <span id="toast-title" class="sr-only"></span>
         <p id="toast-message" class="compare-toast-message"></p>
     </div>
 
@@ -14,7 +18,7 @@
         class="compare-toast-close"
         aria-label="Dismiss notification"
     >
-        <span aria-hidden="true">×</span>
+        <span class="icon icon-x" aria-hidden="true"></span>
     </button>
 </div>
 

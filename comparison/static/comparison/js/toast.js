@@ -29,8 +29,9 @@ function showToast(title, message, type = "normal", duration = 5000) {
     const toast = document.getElementById("toast-component");
     const toastTitle = document.getElementById("toast-title");
     const toastMessage = document.getElementById("toast-message");
+    const toastSymbol = document.getElementById("toast-symbol");
 
-    if (!toast || !toastTitle || !toastMessage) return;
+    if (!toast || !toastTitle || !toastMessage || !toastSymbol) return;
 
     clearTimeout(toastTimer);
     clearTimeout(toastHideTimer);
@@ -50,6 +51,17 @@ function showToast(title, message, type = "normal", duration = 5000) {
     };
 
     toast.classList.add(types[type] || types.normal);
+
+    toastSymbol.textContent = "";
+
+    if (type === "success") {
+        toastSymbol.className = "icon icon-check";
+    } else if (type === "error") {
+        toastSymbol.className = "icon icon-x";
+    } else {
+        toastSymbol.className = "compare-toast-letter";
+        toastSymbol.textContent = type === "warning" ? "!" : "i";
+    }
 
     toastTitle.textContent = title;
     toastMessage.textContent = message;
