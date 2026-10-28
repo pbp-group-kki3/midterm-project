@@ -1,0 +1,22 @@
+<a href="{{ card.source_url }}" class="media-card mealplan-recipe" target="_blank" rel="noopener" aria-label="{{ card.title }}{% if card.source_name %}, original recipe on {{ card.source_name }}{% endif %} (opens in a new tab)">
+    <div class="media-card-img">
+        {% if card.image_url %}
+            <img src="{{ card.image_url }}" alt="" loading="lazy">
+        {% else %}
+            <span>No photo</span>
+        {% endif %}
+    </div>
+    <div class="media-card-body">
+        {% if card.labels or halal %}
+            <div class="mealplan-badges">
+                {% for label in card.labels %}
+                    <span class="badge{% if forloop.first %} badge-success{% endif %}">{{ label }}</span>
+                {% endfor %}
+                {% if halal %}<span class="badge">Halal not verified</span>{% endif %}
+            </div>
+        {% endif %}
+        <h3 class="media-card-title">{{ card.title }}</h3>
+        {% if card.grid_meta %}<p class="media-card-subtitle">{{ card.grid_meta }}</p>{% endif %}
+        {% if card.grid_nutrition %}<p class="mealplan-recipe-nutrition">{{ card.grid_nutrition }}</p>{% endif %}
+    </div>
+</a>

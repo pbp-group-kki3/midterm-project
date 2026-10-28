@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ plan.name }} | SpoonFeed{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'meal_plan/meal_plan.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="mealplan-page">
+        <header class="page-header mealplan-header">
+            <div class="mealplan-heading">
+                <a href="{% url 'meal_plan:plan_list' %}" class="back-link">← My plans</a>
+                <h1 class="page-title page-title-lg">{{ plan.name }}</h1>
+                <p class="mealplan-subtitle text-secondary">{{ plan.date|date:"j M Y" }}{% if plan.days > 1 %} – {{ plan.end_date|date:"j M Y" }}{% endif %} · {{ plan.days_label }}</p>
+                <div class="mealplan-badges">
+                    <span class="badge">{{ plan.diet_label }}</span>
+                    {% for allergy in plan.allergy_badges %}
+                        <span class="badge">{{ allergy }}</span>
+                    {% endfor %}
+                    <span class="badge">{{ plan.calorie_label }}</span>
+                </div>
+            </div>
+            <div class="page-actions mealplan-actions">
+                <a href="{% url 'meal_plan:plan_list' %}" class="btn btn-secondary mealplan-action mealplan-desktop-only">My plans</a>
+                <button type="button" class="btn btn-danger mealplan-action" data-dialog-open="delete-dialog">Delete plan</button>
+            </div>
+        </header>
+
+        {% include 'meal_plan/includes/messages.html' %}
+
+        {% if error_message %}
+            <div class="alert alert-warning" role="status">{{ error_message }} Your plan is saved, so you can come back to it later.</div>
+        {% endif %}
+
+        {% if plan.diet == 'halal' %}
+            <p class="mealplan-note">{{ halal_badge }}: these recipes skip pork and alcohol, but Spoonacular can't confirm that a recipe is halal.</p>
+        {% endif %}
+
+        {% if plan.days > 1 %}
+            <nav class="mealplan-jump" aria-label="Jump to a day">
+                <span class="type-caption text-secondary mealplan-jump-label">Jump to</span>
+                <div class="mealplan-jump-chips">
+                    {% for day in days %}
+                        <a href="#day-{{ day.number }}" class="chip mealplan-day-chip{% if forloop.first %} is-selected{% endif %}" data-day-chip="{{ day.number }}">Day {{ day.number }}</a>
+                    {% endfor %}
+                </div>
+            </nav>
+        {% endif %}
+
+        {% for day in days %}
+            <section class="card mealplan-day" id="day-{{ day.number }}" aria-labelledby="day-{{ day.number }}-title" data-day="{{ day.number }}">
+                <div class="mealplan-day-header">
+                    <h2 class="mealplan-day-title" id="day-{{ day.number }}-title">Day {{ day.number }} <span class="mealplan-day-date">{{ day.date|date:"D, j M" }}</span></h2>
+                    {% if day.calories_label %}<span class="badge badge-success mealplan-kcal-badge">{{ day.calories_label }}</span>{% endif %}
+                </div>
+                <div class="mealplan-meals">
+                    {% for meal in day.meals %}
+                        {% include 'meal_plan/includes/meal_card.html' with entry=meal.entry recipe=meal.recipe %}
+                    {% endfor %}
+                </div>
+            </section>
+        {% endfor %}
+
+        {% include 'meal_plan/includes/credit.html' %}
+    </div>
+
+    <dialog class="dialog dialog-lg mealplan-dialog mealplan-sheet" id="replace-dialog" aria-labelledby="replace-title">
+        <div class="mealplan-replace-loading" data-replace-body>
+            <p class="type-body-sm text-secondary" role="status">Finding recipes that fit your plan…</p>
+        </div>
+    </dialog>
+
+    <dialog class="dialog mealplan-dialog" id="delete-dialog" aria-labelledby="delete-title">
+        <h2 class="dialog-title" id="delete-title">Delete this plan?</h2>
+        <p class="mealplan-dialog-text">“{{ plan.name }}” and its {{ plan.days_label }} of meals will be removed. This can't be undone.</p>
+        <div class="mealplan-dialog-actions">
+            <button type="button" class="btn btn-secondary mealplan-dialog-button" data-dialog-close>Cancel</button>
+            <form method="post" action="{% url 'meal_plan:plan_delete' plan.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger mealplan-dialog-button">Delete plan</button>
+            </form>
+        </div>
+    </dialog>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'meal_plan/meal_plan.js' %}" defer></script>
+{% endblock %}

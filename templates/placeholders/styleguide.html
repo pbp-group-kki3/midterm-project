@@ -35,7 +35,7 @@
             <div class="sg-swatches">
                 {% for variable, tailwind_class, use in items %}
                     <div class="sg-swatch">
-                        <div class="sg-swatch-color" style="background: var({{ variable }});"></div>
+                        <div class="sg-swatch-color {{ tailwind_class }}"></div>
                         <div class="sg-swatch-name">
                             {{ variable }}
                             <span>.{{ tailwind_class }} · {{ use }}</span>

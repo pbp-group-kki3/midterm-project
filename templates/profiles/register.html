@@ -1,159 +1,164 @@
+<!-- EXTENDS -->
 {% extends 'base.html' %}
 {% load static %}
 
+<!-- CONTENT -->
 {% block title %}SpoonFeed — Create an Account{% endblock %}
 
-{% block extra_head %}
-<style>
-    .chip-active {
-        background-color: #1e3a29 !important;
-        color: #ffffff !important;
-        border-color: #1e3a29 !important;
-    }
-    .step-content {
-        transition: opacity 0.25s ease-in-out;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="w-full max-w-6xl mx-auto bg-[#fbf9f4] rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row border border-gray-200 min-h-[620px]">
-    <div class="w-full md:w-5/12 bg-[#1e3a29] text-white p-8 md:p-12 flex flex-col justify-between shrink-0 relative overflow-hidden">
-        <div class="flex items-center space-x-2">
-            <span class="text-2xl font-bold tracking-tight text-white font-serif flex items-center">
-                Spoon<span class="text-yellow-400">Feed</span>
-            </span>
+<!-- LAYOUT -->
+<div class="flex flex-col md:flex-row w-full max-w-6xl mx-auto rounded-xl shadow-lg overflow-hidden min-h-[620px] border border-default">
+    
+    <!-- HERO SECTION -->
+    <div class="w-full md:w-5/12 bg-feature text-on-feature p-8 md:p-12 flex flex-col justify-between shrink-0">
+        
+        <!-- LOGO -->
+        <div class="flex items-center gap-2">
+            <img src="{% static 'img/logo.svg' %}" alt="SpoonFeed" class="logo">
         </div>
-        <div class="my-10 md:my-0 space-y-4 max-w-md">
-            <h1 class="text-3xl lg:text-4xl font-serif font-normal leading-tight text-white">
+        
+        <!-- TEXT -->
+        <div class="my-10 md:my-0 flex flex-col gap-4 max-w-md">
+            <h1 class="font-['Times_New_Roman',serif] text-4xl leading-tight">
                 Healthy &amp; Sustainable Living, Made Easy.
             </h1>
-            <p class="text-gray-300 text-sm md:text-base leading-relaxed font-light">
+            <p class="type-body-md text-on-feature-muted">
                 Check what is in your food, compare two products, and plan meals that fit your diet.
             </p>
         </div>
         <div class="hidden md:block"></div>
     </div>
 
-    <div class="w-full md:w-7/12 bg-[#fbf9f4] p-6 md:p-12 flex flex-col justify-center relative">
-        <div class="w-full max-w-md mx-auto mb-8">
-            <div class="flex items-center justify-center space-x-4 relative">
-                <div class="absolute top-1/2 left-1/4 right-1/4 h-[2px] bg-gray-300 -translate-y-1/2 -z-0"></div>
-                <div id="circle-1" class="w-8 h-8 rounded-full bg-[#1e3a29] text-white font-semibold text-xs flex items-center justify-center z-10 transition-all duration-300">
-                    1
-                </div>
-                <div id="circle-2" class="w-8 h-8 rounded-full bg-gray-200 text-gray-600 font-semibold text-xs flex items-center justify-center z-10 transition-all duration-300">
-                    2
-                </div>
-                <div id="circle-3" class="w-8 h-8 rounded-full bg-gray-200 text-gray-600 font-semibold text-xs flex items-center justify-center z-10 transition-all duration-300">
-                    3
-                </div>
-            </div>
+    <!-- FORM SECTION -->
+    <div class="w-full md:w-7/12 bg-surface p-6 md:p-12 flex flex-col justify-center">
+        
+        <!-- PROGRESS INDICATOR -->
+        <div class="w-full max-w-md mx-auto mb-8 relative flex items-center justify-center gap-4">
+            <div class="absolute top-1/2 left-1/4 right-1/4 h-[2px] bg-muted -translate-y-1/2 z-0"></div>
+            <div id="circle-1" class="avatar avatar-sm bg-brand text-on-brand z-10 font-bold border-2 border-brand">1</div>
+            <div id="circle-2" class="avatar avatar-sm bg-subtle text-secondary z-10 font-bold">2</div>
+            <div id="circle-3" class="avatar avatar-sm bg-subtle text-secondary z-10 font-bold">3</div>
         </div>
 
-        <form method="POST" action="{% url 'register' %}" enctype="multipart/form-data" id="spoonfeedForm" class="w-full max-w-md mx-auto space-y-6">
+        <!-- FORM -->
+        <form method="POST" action="{% url 'register' %}" enctype="multipart/form-data" id="spoonfeedForm" class="w-full max-w-md mx-auto">
             {% csrf_token %}
-            <input type="hidden" name="dietary_preferences" id="dietary_preferences_input" value="">
-            <input type="hidden" name="allergies" id="allergies_input" value="">
+            <input type="hidden" name="diet" id="diet_input" value="{{ data.diet|default:'none' }}">
+            <input type="hidden" name="allergies" id="allergies_input" value="{{ data.allergies|default:'' }}">
 
-            {% if error %}
-            <div class="p-3 bg-red-100 border border-red-300 text-red-700 text-xs rounded-lg mb-4">
-                {{ error }}
+            <!-- GENERAL ALERT -->
+            {% if errors %}
+            <div class="alert alert-danger mb-6">
+                Please fix the errors below to continue.
             </div>
             {% endif %}
 
-            <div id="step-1" class="step-content space-y-4">
-                <div class="space-y-1">
-                    <h2 class="text-2xl md:text-3xl font-serif font-bold text-gray-900">Create an account</h2>
+            <!-- STEP 1 -->
+            <div id="step-1">
+                <div class="mb-6">
+                    <h2 class="type-h2">Create an account</h2>
                 </div>
-                <div class="space-y-3 pt-2">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">Username</label>
-                        <input type="text" name="username" id="input_username" required placeholder="JoeVeggieLover" class="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a29] focus:border-transparent transition-all">
+                <div class="form-stack">
+                    <div class="field">
+                        <label class="field-label">Username</label>
+                        <input type="text" name="username" id="input_username" value="{{ data.username|default:'' }}" placeholder="JoeVeggieLover" class="input {% if errors.username %}is-error{% endif %}">
+                        {% if errors.username %}<p class="field-error">{{ errors.username }}</p>{% endif %}
+                        <p class="field-error hidden js-error" id="err_input_username"></p>
                     </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">Email</label>
-                        <input type="email" name="email" id="input_email" required placeholder="joe.veggie.lover@example.com" class="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a29] focus:border-transparent transition-all">
+                    
+                    <div class="field">
+                        <label class="field-label">Email</label>
+                        <input type="email" name="email" id="input_email" value="{{ data.email|default:'' }}" placeholder="joe@example.com" class="input {% if errors.email %}is-error{% endif %}">
+                        {% if errors.email %}<p class="field-error">{{ errors.email }}</p>{% endif %}
+                        <p class="field-error hidden js-error" id="err_input_email"></p>
                     </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">Password</label>
-                        <input type="password" name="password" id="input_password" required placeholder="••••••••" class="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a29] focus:border-transparent transition-all">
+                    
+                    <div class="field">
+                        <label class="field-label">Password</label>
+                        <input type="password" name="password" id="input_password" placeholder="••••••••" class="input {% if errors.password %}is-error{% endif %}">
+                        {% if errors.password %}<p class="field-error">{{ errors.password }}</p>{% endif %}
+                        <p class="field-error hidden js-error" id="err_input_password"></p>
                     </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">Confirm password</label>
-                        <input type="password" name="confirm_password" id="input_confirm_password" required placeholder="••••••••" class="w-full px-3 py-2.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a29] focus:border-transparent transition-all">
+                    
+                    <div class="field">
+                        <label class="field-label">Confirm password</label>
+                        <input type="password" name="confirm_password" id="input_confirm_password" placeholder="••••••••" class="input {% if errors.confirm_password %}is-error{% endif %}">
+                        {% if errors.confirm_password %}<p class="field-error">{{ errors.confirm_password }}</p>{% endif %}
+                        <p class="field-error hidden js-error" id="err_input_confirm_password"></p>
                     </div>
-                </div>
-                <div class="pt-4 space-y-3">
-                    <button type="button" onclick="goToStep(2)" class="w-full py-3 bg-[#1e3a29] hover:bg-[#15291d] text-white font-medium text-sm rounded-lg shadow-sm transition-all text-center">
-                        Continue
-                    </button>
-                    <p class="text-xs text-center text-gray-600 pt-2">
-                        Already have an account? <a href="{% url 'login' %}" class="font-bold text-gray-900 underline hover:text-[#1e3a29]">Log in</a>
-                    </p>
-                </div>
-            </div>
-
-            <div id="step-2" class="step-content space-y-5 hidden">
-                <div class="space-y-1">
-                    <h2 class="text-2xl md:text-3xl font-serif font-bold text-gray-900">Make it yours</h2>
-                    <p class="text-xs text-gray-600">Tell us what works for you, so we can help you find food that fits.</p>
-                </div>
-                <div class="space-y-4 pt-1">
-                    <div>
-                        <label class="block text-xs text-gray-500 mb-2">Diet</label>
-                        <div class="flex flex-wrap gap-2">
-                            <button type="button" class="chip-diet px-3.5 py-1.5 rounded-full border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-[#1e3a29] transition-all" data-value="Halal">Halal</button>
-                            <button type="button" class="chip-diet px-3.5 py-1.5 rounded-full border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-[#1e3a29] transition-all" data-value="Vegetarian">Vegetarian</button>
-                            <button type="button" class="chip-diet px-3.5 py-1.5 rounded-full border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-[#1e3a29] transition-all" data-value="Vegan">Vegan</button>
-                            <button type="button" class="chip-diet px-3.5 py-1.5 rounded-full border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-[#1e3a29] transition-all" data-value="Pescatarian">Pescatarian</button>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs text-gray-500 mb-2">Allergies</label>
-                        <div class="flex flex-wrap gap-2">
-                            <button type="button" class="chip-allergy px-3.5 py-1.5 rounded-full border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-[#1e3a29] transition-all" data-value="Milk">Milk</button>
-                            <button type="button" class="chip-allergy px-3.5 py-1.5 rounded-full border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-[#1e3a29] transition-all" data-value="Peanuts">Peanuts</button>
-                            <button type="button" class="chip-allergy px-3.5 py-1.5 rounded-full border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-[#1e3a29] transition-all" data-value="Gluten">Gluten</button>
-                            <button type="button" class="chip-allergy px-3.5 py-1.5 rounded-full border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-[#1e3a29] transition-all" data-value="Soy">Soy</button>
-                            <button type="button" class="chip-allergy px-3.5 py-1.5 rounded-full border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-[#1e3a29] transition-all" data-value="Eggs">Eggs</button>
-                            <button type="button" class="chip-allergy px-3.5 py-1.5 rounded-full border border-gray-300 bg-white text-xs font-medium text-gray-700 hover:border-[#1e3a29] transition-all" data-value="Shellfish">Shellfish</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="pt-4 space-y-3">
-                    <button type="button" onclick="goToStep(3)" class="w-full py-3 bg-[#1e3a29] hover:bg-[#15291d] text-white font-medium text-sm rounded-lg shadow-sm transition-all text-center">
-                        Continue
-                    </button>
-                    <div class="flex justify-between items-center text-xs pt-1">
-                        <button type="button" onclick="goToStep(1)" class="text-gray-600 font-semibold hover:underline">Back</button>
-                        <button type="button" onclick="goToStep(3)" class="text-gray-500 hover:underline">Skip for now</button>
+                    
+                    <div class="pt-4 flex flex-col gap-4">
+                        <button type="button" onclick="goToStep(2)" class="btn btn-primary btn-block">Continue</button>
+                        <p class="type-body-sm text-center text-secondary">
+                            Already have an account? <a href="{% url 'login' %}" class="link">Log in</a>
+                        </p>
                     </div>
                 </div>
             </div>
 
-            <div id="step-3" class="step-content space-y-6 hidden">
-                <div class="space-y-1">
-                    <h2 class="text-2xl md:text-3xl font-serif font-bold text-gray-900">You're all set!</h2>
-                    <p class="text-xs text-gray-600">Your SpoonFeed experience is almost ready. Create your account to get started.</p>
+            <!-- STEP 2 -->
+            <div id="step-2" class="hidden">
+                <div class="mb-6">
+                    <h2 class="type-h2">Make it yours</h2>
+                    <p class="type-body-sm text-secondary">Tell us what works for you, so we can help you find food that fits.</p>
                 </div>
-                <div class="space-y-3">
-                    <label class="block text-xs font-semibold text-gray-700">Profile Picture (Optional)</label>
-                    <div class="w-full bg-[#1e3a29] rounded-xl p-8 flex flex-col items-center justify-center text-center text-white relative group overflow-hidden cursor-pointer shadow-md min-h-[160px]">
-                        <div id="imagePreviewContainer" class="flex flex-col items-center space-y-2">
-                            <span class="text-2xl font-bold font-serif">Spoon<span class="text-yellow-400">Feed</span></span>
-                            <p class="text-[11px] text-gray-300">Click to choose a picture</p>
+                <div class="form-stack">
+                    <div class="field">
+                        <label class="field-label">Diet</label>
+                        <div class="chip-row">
+                            <button type="button" class="chip chip-diet" data-value="halal">Halal</button>
+                            <button type="button" class="chip chip-diet" data-value="vegetarian">Vegetarian</button>
+                            <button type="button" class="chip chip-diet" data-value="vegan">Vegan</button>
+                            <button type="button" class="chip chip-diet" data-value="pescatarian">Pescatarian</button>
                         </div>
-                        <img id="uploadedImagePreview" src="" alt="Profile Preview" class="hidden absolute inset-0 w-full h-full object-cover">
-                        <input type="file" name="picture" id="pictureInput" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="previewProfilePicture(event)">
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Allergies</label>
+                        <div class="chip-row">
+                            <button type="button" class="chip chip-allergy" data-value="Milk">Milk</button>
+                            <button type="button" class="chip chip-allergy" data-value="Peanuts">Peanuts</button>
+                            <button type="button" class="chip chip-allergy" data-value="Gluten">Gluten</button>
+                            <button type="button" class="chip chip-allergy" data-value="Soy">Soy</button>
+                            <button type="button" class="chip chip-allergy" data-value="Eggs">Eggs</button>
+                            <button type="button" class="chip chip-allergy" data-value="Shellfish">Shellfish</button>
+                        </div>
+                    </div>
+                    <div class="pt-4 flex flex-col gap-4">
+                        <button type="button" onclick="goToStep(3)" class="btn btn-primary btn-block">Continue</button>
+                        <div class="flex justify-between w-full">
+                            <button type="button" onclick="goToStep(1)" class="link">Back</button>
+                            <button type="button" onclick="goToStep(3)" class="link text-secondary">Skip</button>
+                        </div>
                     </div>
                 </div>
-                <div class="pt-4 space-y-3">
-                    <button type="submit" class="w-full py-3 bg-[#1e3a29] hover:bg-[#15291d] text-white font-medium text-sm rounded-lg shadow-sm transition-all text-center">
-                        Create account
-                    </button>
-                    <div class="text-left text-xs">
-                        <button type="button" onclick="goToStep(2)" class="text-gray-600 font-semibold hover:underline">Back</button>
+            </div>
+
+            <!-- STEP 3 -->
+            <div id="step-3" class="hidden">
+                <div class="mb-6">
+                    <h2 class="type-h2">You're all set!</h2>
+                    <p class="type-body-sm text-secondary">Create your account to get started.</p>
+                </div>
+                <div class="form-stack">
+                    <div class="field items-center">
+                        <label class="field-label">Profile Picture (Optional)</label>
+                        <div class="photo-picker relative group">
+                            <!-- AVATAR INCLUSION -->
+                            <span id="imagePreviewContainer">
+                                {% include 'components/avatar.html' with name="Upload" size="xl" %}
+                            </span>
+                            <img id="uploadedImagePreview" src="" alt="Profile Preview" class="hidden avatar avatar-xl object-cover">
+                            
+                            <label class="btn btn-secondary btn-sm btn-block cursor-pointer mt-2" for="pictureInput">Add photo</label>
+                            <input type="file" name="picture" id="pictureInput" accept="image/*" class="hidden" onchange="previewProfilePicture(event)">
+                            <span class="photo-picker-hint">Optional</span>
+                        </div>
+                    </div>
+                    <div class="pt-4 flex flex-col gap-4">
+                        <button type="submit" class="btn btn-primary btn-block">Create account</button>
+                        <div class="flex justify-start">
+                            <button type="button" onclick="goToStep(2)" class="link">Back</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -162,28 +167,51 @@
 </div>
 {% endblock %}
 
+<!-- SCRIPTS -->
 {% block extra_js %}
 <script>
     let currentStep = 1;
-    const selectedDiets = new Set();
+    let selectedDiet = 'none';
     const selectedAllergies = new Set();
 
+    function validateStep1() {
+        let isValid = true;
+        const username = document.getElementById('input_username');
+        const email = document.getElementById('input_email');
+        const pass = document.getElementById('input_password');
+        const confirmPass = document.getElementById('input_confirm_password');
+
+        // Clear existing JS errors
+        document.querySelectorAll('.js-error').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.input').forEach(el => el.classList.remove('is-error'));
+
+        // Client-side checks
+        if (!username.value.trim()) { showError(username, "Username is required."); isValid = false; }
+        if (!email.value.trim()) { showError(email, "Email is required."); isValid = false; }
+        if (pass.value.length < 8) { showError(pass, "Password must be at least 8 characters."); isValid = false; }
+        if (pass.value !== confirmPass.value) { showError(confirmPass, "Passwords do not match."); isValid = false; }
+
+        return isValid;
+    }
+
+    function showError(inputElement, message) {
+        inputElement.classList.add('is-error');
+        const errorElement = document.getElementById(`err_${inputElement.id}`);
+        if (errorElement) {
+            errorElement.innerText = message;
+            errorElement.classList.remove('hidden');
+        }
+    }
+
     function goToStep(step) {
+        // Lock progression if moving forward from step 1
         if (currentStep === 1 && step > 1) {
-            const username = document.getElementById('input_username').value;
-            const email = document.getElementById('input_email').value;
-            const pass = document.getElementById('input_password').value;
-            const confirmPass = document.getElementById('input_confirm_password').value;
-            if (!username || !email || !pass || !confirmPass) {
-                alert("Please fill out all required fields before continuing.");
-                return;
-            }
-            if (pass !== confirmPass) {
-                alert("Passwords do not match. Please verify.");
-                return;
+            if (!validateStep1()) {
+                return; // Stop execution, don't change steps
             }
         }
-        document.querySelectorAll('.step-content').forEach(el => el.classList.add('hidden'));
+        
+        document.getElementById(`step-${currentStep}`).classList.add('hidden');
         document.getElementById(`step-${step}`).classList.remove('hidden');
         updateProgressIndicators(step);
         currentStep = step;
@@ -193,13 +221,13 @@
         for (let i = 1; i <= 3; i++) {
             const circle = document.getElementById(`circle-${i}`);
             if (i < step) {
-                circle.className = "w-8 h-8 rounded-full bg-[#1e3a29] text-white font-semibold text-xs flex items-center justify-center z-10 transition-all duration-300";
-                circle.innerHTML = `<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>`;
+                circle.className = "avatar avatar-sm bg-brand text-on-brand z-10 font-bold border-2 border-brand";
+                circle.innerHTML = `✓`;
             } else if (i === step) {
-                circle.className = "w-8 h-8 rounded-full bg-[#1e3a29] text-white font-semibold text-xs flex items-center justify-center z-10 transition-all duration-300 ring-2 ring-[#1e3a29] ring-offset-2";
+                circle.className = "avatar avatar-sm bg-brand text-on-brand z-10 font-bold border-2 border-brand";
                 circle.innerHTML = i;
             } else {
-                circle.className = "w-8 h-8 rounded-full bg-gray-200 text-gray-600 font-semibold text-xs flex items-center justify-center z-10 transition-all duration-300";
+                circle.className = "avatar avatar-sm bg-subtle text-secondary z-10 font-bold";
                 circle.innerHTML = i;
             }
         }
@@ -207,15 +235,15 @@
 
     document.querySelectorAll('.chip-diet').forEach(btn => {
         btn.addEventListener('click', () => {
+            document.querySelectorAll('.chip-diet').forEach(b => b.classList.remove('is-selected'));
             const val = btn.getAttribute('data-value');
-            if (selectedDiets.has(val)) {
-                selectedDiets.delete(val);
-                btn.classList.remove('chip-active');
+            if (selectedDiet === val) {
+                selectedDiet = 'none';
             } else {
-                selectedDiets.add(val);
-                btn.classList.add('chip-active');
+                selectedDiet = val;
+                btn.classList.add('is-selected');
             }
-            document.getElementById('dietary_preferences_input').value = Array.from(selectedDiets).join(', ');
+            document.getElementById('diet_input').value = selectedDiet;
         });
     });
 
@@ -224,12 +252,12 @@
             const val = btn.getAttribute('data-value');
             if (selectedAllergies.has(val)) {
                 selectedAllergies.delete(val);
-                btn.classList.remove('chip-active');
+                btn.classList.remove('is-selected');
             } else {
                 selectedAllergies.add(val);
-                btn.classList.add('chip-active');
+                btn.classList.add('is-selected');
             }
-            document.getElementById('allergies_input').value = Array.from(selectedAllergies).join(', ');
+            document.getElementById('allergies_input').value = Array.from(selectedAllergies).join(',');
         });
     });
 

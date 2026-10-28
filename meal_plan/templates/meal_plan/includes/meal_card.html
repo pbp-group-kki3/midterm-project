@@ -1,0 +1,23 @@
+<article class="media-card mealplan-meal{% if not recipe.available %} is-unavailable{% endif %}">
+    <div class="media-card-img mealplan-meal-photo">
+        {% if recipe.image_url %}
+            <img src="{{ recipe.image_url }}" alt="" loading="lazy">
+        {% else %}
+            <span>No photo</span>
+        {% endif %}
+    </div>
+    <div class="mealplan-meal-content">
+        <div class="mealplan-meal-body">
+            <p class="type-overline text-brand mealplan-meal-slot">{{ entry.get_slot_display }}</p>
+            <h3 class="media-card-title">{{ recipe.title }}</h3>
+            {% if recipe.meal_meta %}<p class="media-card-subtitle">{{ recipe.meal_meta }}</p>{% endif %}
+            {% if recipe.macros %}<p class="mealplan-meal-macros">{{ recipe.macros }}</p>{% endif %}
+        </div>
+        <div class="mealplan-meal-actions">
+            <a href="{% url 'meal_plan:meal_replace' plan.pk entry.pk %}" class="btn btn-secondary btn-sm" data-replace-url="{% url 'meal_plan:meal_replace' plan.pk entry.pk %}?partial=1" aria-label="Replace {{ entry.get_slot_display|lower }} on day {{ entry.day }}">Replace</a>
+            {% if recipe.source_url %}
+                <a href="{{ recipe.source_url }}" class="btn btn-ghost btn-sm" target="_blank" rel="noopener" aria-label="View {{ recipe.title }}{% if recipe.source_name %} on {{ recipe.source_name }}{% endif %} (opens in a new tab)">View</a>
+            {% endif %}
+        </div>
+    </div>
+</article>

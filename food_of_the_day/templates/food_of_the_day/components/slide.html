@@ -28,7 +28,7 @@
         </div>
       {% endif %}
 
-      <div class="pt-2 flex items-center gap-3">
+      <div class="pt-2">
         {% if user.is_authenticated %}
           <button 
             type="button" 
@@ -39,12 +39,6 @@
             <span id="recipe-toggle-text">See recipe</span>
             <span id="recipe-toggle-arrow">&darr;</span>
           </button>
-          <a 
-            href="{% url 'food_of_the_day:detail' meal.id %}" 
-            class="type-body-sm underline text-white opacity-80 hover:opacity-100 hidden sm:inline-block"
-          >
-            Direct link &rarr;
-          </a>
         {% else %}
           <a 
             href="/profiles/login/" 
