@@ -41,4 +41,4 @@ def blog_list(request):
         'topics': Article.TOPIC_CHOICES,
     }
 
-    return render(request, 'blog/blog_list.html', context)
+    return render(request, 'blog.html', context)
