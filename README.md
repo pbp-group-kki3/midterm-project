@@ -47,8 +47,8 @@ Due to a misunderstanding on my part, commit convention will be adhered to from 
 
 | Original Commit Hash & Message | Conventional Commit Counterpart |
 | :--- | :--- |
-| `298c3b0c9ab55f6b381823fff073836237c4f15d`<br>testing git quickly | `test(main): testing get` |
-| `b9b63eddb77b19937476a0d8288736e6bbadb1dd`<br>Initial Profile Setup | `chore/feat(profiles): initial setup and frameowrk` |
+| `298c3b0c9ab55f6b381823fff073836237c4f15d`<br>testing git quickly | `test(main): testing git` |
+| `b9b63eddb77b19937476a0d8288736e6bbadb1dd`<br>Initial Profile Setup | `chore/feat(profiles): initial setup and framework` |
 | `0b95267dc14d4d1a21b9db8b0ffb007f2663f486`<br>Append to prior commit | `chore(profiles): committing files that were left out` |
 | `f0cab38a052ab1d410f109ad6f4b6d3835e2c4d1`<br>Initial Profile Model | `feat(profiles): added profiles model` |
 | `29c2a3fca3fb1a272f88714691705335ae119c7d`<br>Profiles view | `feat(profiles): added profiles view` |
