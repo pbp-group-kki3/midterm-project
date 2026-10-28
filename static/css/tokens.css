@@ -178,6 +178,9 @@
 
     /* 10. Fixed sizes */
 
+    --icon-size-sm: 20px;   /* retained for existing icon callsites */
+    --icon-size-md: 20px;   /* all Figma icon variants */
+
     --btn-height-sm: 36px;   /* small button */
     --btn-height-md: 44px;   /* normal button and input */
     --btn-height-lg: 52px;   /* big button */

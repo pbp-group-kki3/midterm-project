@@ -35,7 +35,8 @@
        19. Page header
        20. Logo
        21. Navbar
-       22. Footer */
+       22. Footer
+       23. Icons */
 
 
 /* 1. Buttons
@@ -1005,7 +1006,7 @@ textarea.input {
            </div>
        </dialog>
 
-   B) Form dialog: add .dialog-form. Smaller sentence, fields, buttons on the left.
+   B) Form dialog: add .dialog-form. Smaller sentence, fields, buttons on the right.
       "Change password", "Save comparison"
 
        <dialog class="dialog dialog-form" id="password-dialog">
@@ -1128,7 +1129,7 @@ textarea.input {
     min-width: 184px;
 }
 
-/* Form dialog: darker border, smaller sentence, more space under the title, buttons on the left */
+/* Form dialog: darker border, smaller sentence, more space under the title, buttons on the right */
 .dialog-form {
     border-color: var(--color-border-default);
 }
@@ -1140,7 +1141,6 @@ textarea.input {
 }
 
 .dialog-form .dialog-actions {
-    justify-content: flex-start;
     margin-top: var(--space-lg);
 }
 
@@ -1709,4 +1709,125 @@ textarea.input {
     margin: 0 auto;
     padding: var(--space-3xl) var(--space-lg);
     font: 600 14px/20px var(--font-sans);
+}
+
+
+/* 23. Icons
+
+   Original SVG exports from DESIGN-SYSTEM, node 5:334. Available everywhere
+   base.html loads components.css; URLs resolve relative to this stylesheet.
+   Use a span so existing .btn svg / .icon-btn svg rules keep their behavior.
+   Native Figma size: 20 x 20 for every variant. Do not stretch them.
+
+       <button type="button" class="btn btn-primary">
+           Save comparison
+           <span class="icon icon-bookmark" aria-hidden="true"></span>
+       </button>
+       <span class="icon icon-history icon-secondary" aria-hidden="true"></span>
+       <button type="button" class="icon-btn icon-btn-plain" aria-label="Close">
+           <span class="icon icon-x" aria-hidden="true"></span>
+       </button>
+
+   bookmark has a plus (save action); saved is the plain bookmark outline.
+   Color inherits from the parent, including button hover/disabled states.
+   Standalone icons can use the semantic color modifiers below. Always hide
+   decorative icons with aria-hidden="true" and label icon-only controls. */
+
+.icon {
+    display: inline-block;
+    flex-shrink: 0;
+    width: var(--icon-size-md);
+    height: var(--icon-size-md);
+    vertical-align: middle;
+    background-color: currentColor;
+    -webkit-mask-image: var(--icon-image);
+    mask-image: var(--icon-image);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+}
+
+/* Each variant uses its original, unmodified local SVG. */
+.icon-trash {
+    --icon-image: url("../img/icons/trash.svg");
+}
+
+.icon-preferences {
+    --icon-image: url("../img/icons/preferences.svg");
+}
+
+.icon-saved {
+    --icon-image: url("../img/icons/saved.svg");
+}
+
+.icon-check {
+    --icon-image: url("../img/icons/check.svg");
+}
+
+.icon-plus {
+    --icon-image: url("../img/icons/plus.svg");
+}
+
+.icon-arrow-left {
+    --icon-image: url("../img/icons/arrow-left.svg");
+}
+
+.icon-chevron-right {
+    --icon-image: url("../img/icons/chevron-right.svg");
+}
+
+.icon-x {
+    --icon-image: url("../img/icons/x.svg");
+}
+
+.icon-star {
+    --icon-image: url("../img/icons/star.svg");
+}
+
+.icon-home {
+    --icon-image: url("../img/icons/home.svg");
+}
+
+.icon-chart {
+    --icon-image: url("../img/icons/chart.svg");
+}
+
+.icon-user {
+    --icon-image: url("../img/icons/user.svg");
+}
+
+.icon-bell {
+    --icon-image: url("../img/icons/bell.svg");
+}
+
+.icon-bookmark {
+    --icon-image: url("../img/icons/bookmark.svg");
+}
+
+.icon-edit {
+    --icon-image: url("../img/icons/edit.svg");
+}
+
+.icon-history {
+    --icon-image: url("../img/icons/history.svg");
+}
+
+/* Optional semantic colors for standalone icons. Omit to inherit text color. */
+.icon-default {
+    color: var(--color-icon-default);
+}
+
+.icon-primary {
+    color: var(--color-icon-primary);
+}
+
+.icon-secondary {
+    color: var(--color-icon-secondary);
+}
+
+.icon-on-brand {
+    color: var(--color-icon-on-brand);
 }

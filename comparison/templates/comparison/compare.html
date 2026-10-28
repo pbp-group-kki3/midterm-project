@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Compare | SpoonFeed{% endblock %}
+
+{% block extra_head %}
+    <link rel="preconnect" href="https://images.openfoodfacts.org">
+    <link
+        rel="stylesheet"
+        href="{% static 'comparison/css/comparison.css' %}"
+    >
+{% endblock %}
+
+{% block content %}
+    {% include "comparison/components/toasts.html" %}
+    <header class="page-header">
+        <div>
+            <a href="/" class="back-link mb-3">
+                ← Back to Discover
+            </a>
+
+            <h1 class="page-title page-title-lg">Compare</h1>
+
+            <p class="page-subtitle">
+                Green highlights better available values.
+                Equal or incomplete rows are not highlighted.
+            </p>
+        </div>
+    </header>
+
+    {% if unavailable_barcodes %}
+        <div class="alert alert-warning mb-6" role="status">
+            Some selected products could not be loaded.
+            Please try again later.
+        </div>
+    {% endif %}
+
+    {% if show_compare_panel %}
+        <div
+            class="card compare-panel"
+            role="region"
+            aria-label="Product comparison"
+            tabindex="0"
+        >
+            <table class="compare-table">
+                <caption class="sr-only">
+                    Scores, nutrition, labels and allergens
+                    for the selected products
+                </caption>
+
+                <colgroup>
+                    <col class="compare-label-column">
+
+                    {% for product in products %}
+                        <col>
+                    {% endfor %}
+
+                    {% if show_add_product %}
+                        <col>
+                    {% endif %}
+                </colgroup>
+
+                <thead>
+                    <tr>
+                        <th scope="col">
+                            <span class="sr-only">
+                                Comparison criteria
+                            </span>
+                        </th>
+
+                        {% for product in products %}
+                            <th scope="col" class="compare-product-heading">
+                                <div class="compare-product">
+                                    <div class="compare-product-photo">
+                                        {% if product.image_front_small_url %}
+                                            <img
+                                                src="{{ product.image_front_small_url }}"
+                                                alt="{{ product.product_name|default:'Product photo' }}"
+                                                loading="eager"
+                                                decoding="async"   
+                                            >
+                                        {% else %}
+                                            <span class="type-caption text-tertiary">
+                                                No image available
+                                            </span>
+                                        {% endif %}
+                                    </div>
+
+                                    <h2 class="type-card-title compare-product-name">
+                                        {{ product.product_name|default:"Unnamed product" }}
+                                    </h2>
+
+                                    <p class="type-caption compare-product-meta">
+                                        {{ product.brands|default:"Brand not available" }}
+                                    </p>
+
+                                    <p class="type-caption compare-product-meta">
+                                        {{ product.quantity|default:"Quantity not available" }}
+                                    </p>
+                                </div>
+                            </th>
+                        {% endfor %}
+
+                        {% if show_add_product %}
+                            <th scope="col" class="compare-product-heading">
+                                <a href="/" class="compare-add-product">
+                                    <span class="type-label-md">
+                                        + Add product
+                                    </span>
+
+                                    <span class="type-caption text-secondary">
+                                        Select a product from Discover
+                                    </span>
+                                </a>
+
+                                <p class="type-body-sm text-secondary text-center mt-3">
+                                    Compare up to 3 products
+                                </p>
+                            </th>
+                        {% endif %}
+                    </tr>
+
+                    <tr>
+                        <td></td>
+
+                        {% for product in products %}
+                            <td class="compare-score-heading">
+                                <div class="score-row">
+                                    <div class="score-tile{% if product.compare_grade != '?' %} grade-{{ product.compare_grade|lower }}{% endif %}">
+                                        <span class="score-tile-label">Grade</span>
+
+                                        <span class="score-tile-value">
+                                            {{ product.compare_grade|default:"?" }}
+                                        </span>
+
+                                        {% if product.compare_grade == "?" %}
+                                            <span class="sr-only">
+                                                Insufficient data to calculate SpoonFeed grade.
+                                            </span>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="score-tile">
+                                        <span class="score-tile-label">Nutri</span>
+                                        <span class="score-tile-value">
+                                            {{ product.compare_nutri|default:"?"|upper }}
+                                        </span>
+                                    </div>
+
+                                    <div class="score-tile">
+                                        <span class="score-tile-label">Green</span>
+                                        <span class="score-tile-value">
+                                            {{ product.compare_green|default:"?"|upper }}
+                                        </span>
+                                    </div>
+
+                                    <div class="score-tile">
+                                        <span class="score-tile-label">NOVA</span>
+                                        <span class="score-tile-value">
+                                            {{ product.compare_nova|default:"?" }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    class="btn btn-danger-subtle btn-sm btn-block mt-3 compare-remove-trigger"
+                                    data-remove-url="{% url 'comparison:remove_product' product.compare_barcode %}"
+                                    data-product-name="{{ product.product_name|default:'this product' }}"
+                                    aria-haspopup="dialog"
+                                    aria-controls="compare-remove-dialog"
+                                    aria-label="Remove {{ product.product_name|default:'product' }} from comparison"
+                                >
+                                    Remove
+                                </button>
+                            </td>
+                        {% endfor %}
+
+                        {% if show_add_product %}
+                            <td class="compare-score-heading"></td>
+                        {% endif %}
+                    </tr>
+                </thead>
+
+                {% for section in comparison_sections %}
+                    <tbody>
+                        <tr>
+                            <th
+                                colspan="{{ table_column_count }}"
+                                class="compare-section-title type-overline text-brand"
+                            >
+                                {{ section.title }}
+                            </th>
+                        </tr>
+
+                        {% for row in section.rows %}
+                            <tr>
+                                <th scope="row" class="compare-criterion">
+                                    {{ row.label }}
+                                </th>
+
+                                {% for cell in row.cells %}
+                                    <td class="compare-value">
+                                        <div class="data-table-cell{% if cell.is_better %} is-better{% endif %}">
+                                            <span class="compare-value-content">
+                                                {{ cell.display }}
+                                            </span>
+
+                                            {% if cell.is_better %}
+                                                <span class="better-tag">
+                                                    ✓ Better
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                {% endfor %}
+
+                                {% if show_add_product %}
+                                    <td class="compare-value">
+                                        <div class="data-table-cell">
+                                            <span aria-hidden="true">—</span>
+                                            <span class="sr-only">
+                                                No product selected
+                                            </span>
+                                        </div>
+                                    </td>
+                                {% endif %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                {% endfor %}
+            </table>
+        </div>
+    {% else %}
+        <section class="empty-state" aria-labelledby="compare-empty-title">
+            <h2 class="empty-state-title" id="compare-empty-title">
+                No comparison available yet
+            </h2>
+
+            <p class="empty-state-text">
+                Select two or three products from Discover to compare them.
+            </p>
+
+            <a href="/" class="btn btn-primary">
+                Browse products
+            </a>
+        </section>
+    {% endif %}
+
+    <dialog
+        id="compare-remove-dialog"
+        class="dialog"
+        aria-labelledby="compare-remove-title"
+        aria-describedby="compare-remove-description"
+    >
+        <div class="dialog-header">
+            <h2 id="compare-remove-title" class="dialog-title">
+                Remove product?
+            </h2>
+        </div>
+
+        <p id="compare-remove-description" class="dialog-text">
+            Remove
+            <strong id="compare-remove-product-name"></strong>
+            from this comparison? You can add it again from Discover.
+        </p>
+
+        <form id="compare-remove-form" method="post">
+            {% csrf_token %}
+
+            <div class="dialog-actions">
+                <button
+                    type="button"
+                    id="compare-remove-cancel"
+                    class="btn btn-secondary"
+                    autofocus
+                >
+                    Cancel
+                </button>
+
+                <button type="submit" class="btn btn-danger">
+                    Remove
+                </button>
+            </div>
+        </form>
+    </dialog>
+{% endblock %}
+{% block extra_js %}
+    <script
+        src="{% static 'comparison/js/comparison.js' %}"
+        defer
+    ></script>
+
+    <script
+        src="{% static 'comparison/js/toast.js' %}"
+        defer
+    ></script>
+{% endblock %}
