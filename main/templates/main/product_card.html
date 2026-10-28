@@ -1,0 +1,59 @@
+<!-- card html for the product cards -->
+
+<article class="media-card discover-card">
+    <!-- photo : taken from API -->
+    <div class="media-card-img">
+        {% if product.image_front_small_url %}
+            <img src="{{ product.image_front_small_url}}" alt="{{ product.product_name}}">
+        {% else %}
+            No photo available <!-- if API doesn't have picture, show this -->
+        {% endif %}
+    </div>
+
+    <!-- if user is logged in : they can HEART/SAVE the product-->
+    {% if user.is_authenticated %}
+        <div class="media-card-corner">
+            <!-- TODO: make it a favorite, in history stored also == WAIT UNTIL FavoriteProduct model exists -->
+            <button type="button" class="icon-btn discover-fav" aria-label="Save to favorites">♡</button>
+        </div>
+    {% endif %}
+
+    <!-- card's body-->
+    <div class="media-card-body">
+        <!-- card name (title + subtitle)-->
+        <div class="discover-card-name">
+            <h3 class="media-card-title">{{ product.product_name|default:"Unnamed product" }}</h3>
+            <p class="media-card-subtitle">{% firstof.product.quantity product.brands %}</p>
+        </div>
+        <!-- card's score -->
+         <div class="score-row">
+            <div class="score-tile" {% if product.spoonfeed.grade != '?' %}grade-{{ product.spoonfeed.grade|lower }}{% endif %}>
+                <span class="score-tile-label">Grade</span>
+                <span class="score-tile-value">{{ product.spoonfeed.grade }}</span>
+            </div>
+            <div class="score-tile">
+                <span class="score-tile-label">Nutri</span>
+                <span class="score-tile-value">{{ product.tiles.nutri }}</span>
+            </div>
+            <div class="score-tile">
+                <span class="score-tile-label">Green</span>
+                <span class="score-tile-value">{{ product.tiles.green }}</span>
+            </div>
+            <div class="score-tile">
+                <span class="score-tile-label">NOVA</span>
+                <span class="score-tile-value">{{ product.tiles.nova }}</span>
+            </div>
+         </div>
+
+         <!-- TODO : tags == halal, no preservatives -->
+
+         <!-- TODO : "fits ur preferences" label, seen when logged in -->
+    </div>
+
+    <div class="media-card-footer">
+        <!-- TODO : + Compare to add products to tray-->
+        <a href="#" class="btn btn-outline">+ Compare</a>
+        <!-- TODO : link to product detail page -->
+         <a href="#" class="btn btn-primary">Details</a>
+    </div>
+</article>
