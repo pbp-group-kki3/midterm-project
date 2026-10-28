@@ -39,7 +39,8 @@
 <body class="min-h-screen flex flex-col">
     {% include 'header.html' %}
 
-    <main class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    {# change: same width and side spacing as the navbar now (16px sides, 1152px max), so every page lines up with it like in the Figma #}
+    <main class="flex-1 w-full max-w-[calc(var(--container-max)_+_var(--space-lg)_*_2)] mx-auto px-[var(--space-lg)] py-8">
         {% block content %}{% endblock %}
     </main>
 
