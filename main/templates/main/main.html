@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load food_of_the_day_tags %}
+{# Aryan's tag library (food_of_the_day app): gives us the Meal of the Day slide #}
 {# Discover page (Product Discovery module). Figma: v2 / Home - Desktop #}
 
 {% block title %}Discover | SpoonFeed{% endblock %}
@@ -9,7 +11,10 @@
 {% endblock %}
 
 {% block content %}
-    {# TODO (Aryan): Meal of the Day hero goes here once his branch is merged #}
+    {# Meal of the Day hero (Aryan's module). Renders nothing when no meal is set for today #}
+    <div class="discover-hero">
+        {% meal_of_the_day_slide %}
+    </div>
 
     <header class="page-header">
         <div>

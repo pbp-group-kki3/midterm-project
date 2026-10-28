@@ -230,3 +230,13 @@
     background: var(--color-bg-warning-subtle);
     color: var(--color-text-warning);
 }
+
+/* Meal of the Day hero above Discover: space under it (Figma ~72px, nearest token 64px) */
+.discover-hero {
+    margin-bottom: var(--space-4xl);
+}
+
+/* No meal today: the slide renders nothing, so drop the empty space too */
+.discover-hero:not(:has(*)) {
+    display: none;
+}
