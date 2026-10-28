@@ -6,6 +6,21 @@
 {% block title %}SpoonFeed — Create an Account{% endblock %}
 
 {% block content %}
+
+<!-- TOAST NOTIFICATIONS (For Django Messages) -->
+{% if messages %}
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 w-full max-w-sm pointer-events-none">
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} shadow-lg pointer-events-auto flex justify-between items-center toast-message transition-opacity duration-300" role="alert">
+                <span class="type-body-sm font-medium">{{ message }}</span>
+                <button type="button" class="icon-btn icon-btn-plain ml-3 text-current" onclick="this.closest('.alert').remove()" aria-label="Close">
+                    <span class="icon icon-x" aria-hidden="true"></span>
+                </button>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
 <!-- LAYOUT -->
 <div class="flex flex-col md:flex-row w-full max-w-6xl mx-auto rounded-xl shadow-lg overflow-hidden min-h-[620px] border border-default">
     
@@ -19,7 +34,8 @@
         
         <!-- TEXT -->
         <div class="my-10 md:my-0 flex flex-col gap-4 max-w-md">
-            <h1 class="font-['Times_New_Roman',serif] text-4xl leading-tight">
+            <!-- FIXED: Using styleguide typography class -->
+            <h1 class="type-serif text-on-feature text-3xl">
                 Healthy &amp; Sustainable Living, Made Easy.
             </h1>
             <p class="type-body-md text-on-feature-muted">
@@ -48,63 +64,63 @@
 
             <!-- GENERAL ALERT -->
             {% if errors %}
-            <div class="alert alert-danger mb-6">
-                Please fix the errors below to continue.
+            <div class="alert alert-danger mb-6 shadow-sm">
+                <span class="type-body-sm font-medium">Please fix the errors below to continue.</span>
             </div>
             {% endif %}
 
             <!-- STEP 1 -->
             <div id="step-1">
                 <div class="mb-6">
-                    <h2 class="type-h2">Create an account</h2>
+                    <h2 class="type-heading-m text-primary">Create an account</h2>
                 </div>
                 <div class="form-stack">
                     <div class="field">
-                        <label class="field-label">Username</label>
+                        <label class="field-label type-label-md">Username</label>
                         <input type="text" name="username" id="input_username" value="{{ data.username|default:'' }}" placeholder="JoeVeggieLover" class="input {% if errors.username %}is-error{% endif %}">
-                        {% if errors.username %}<p class="field-error">{{ errors.username }}</p>{% endif %}
-                        <p class="field-error hidden js-error" id="err_input_username"></p>
+                        {% if errors.username %}<p class="field-error type-body-sm text-danger">{{ errors.username }}</p>{% endif %}
+                        <p class="field-error type-body-sm text-danger hidden js-error" id="err_input_username"></p>
                     </div>
                     
                     <div class="field">
-                        <label class="field-label">Email</label>
+                        <label class="field-label type-label-md">Email</label>
                         <input type="email" name="email" id="input_email" value="{{ data.email|default:'' }}" placeholder="joe@example.com" class="input {% if errors.email %}is-error{% endif %}">
-                        {% if errors.email %}<p class="field-error">{{ errors.email }}</p>{% endif %}
-                        <p class="field-error hidden js-error" id="err_input_email"></p>
+                        {% if errors.email %}<p class="field-error type-body-sm text-danger">{{ errors.email }}</p>{% endif %}
+                        <p class="field-error type-body-sm text-danger hidden js-error" id="err_input_email"></p>
                     </div>
                     
                     <div class="field">
-                        <label class="field-label">Password</label>
+                        <label class="field-label type-label-md">Password</label>
                         <input type="password" name="password" id="input_password" placeholder="••••••••" class="input {% if errors.password %}is-error{% endif %}">
-                        {% if errors.password %}<p class="field-error">{{ errors.password }}</p>{% endif %}
-                        <p class="field-error hidden js-error" id="err_input_password"></p>
+                        {% if errors.password %}<p class="field-error type-body-sm text-danger">{{ errors.password }}</p>{% endif %}
+                        <p class="field-error type-body-sm text-danger hidden js-error" id="err_input_password"></p>
                     </div>
                     
                     <div class="field">
-                        <label class="field-label">Confirm password</label>
+                        <label class="field-label type-label-md">Confirm password</label>
                         <input type="password" name="confirm_password" id="input_confirm_password" placeholder="••••••••" class="input {% if errors.confirm_password %}is-error{% endif %}">
-                        {% if errors.confirm_password %}<p class="field-error">{{ errors.confirm_password }}</p>{% endif %}
-                        <p class="field-error hidden js-error" id="err_input_confirm_password"></p>
+                        {% if errors.confirm_password %}<p class="field-error type-body-sm text-danger">{{ errors.confirm_password }}</p>{% endif %}
+                        <p class="field-error type-body-sm text-danger hidden js-error" id="err_input_confirm_password"></p>
                     </div>
                     
                     <div class="pt-4 flex flex-col gap-4">
                         <button type="button" onclick="goToStep(2)" class="btn btn-primary btn-block">Continue</button>
                         <p class="type-body-sm text-center text-secondary">
-                            Already have an account? <a href="{% url 'login' %}" class="link">Log in</a>
+                            Already have an account? <a href="{% url 'login' %}" class="link font-semibold">Log in</a>
                         </p>
                     </div>
                 </div>
             </div>
 
-            <!-- STEP 2 -->
+<!-- STEP 2 -->
             <div id="step-2" class="hidden">
                 <div class="mb-6">
-                    <h2 class="type-h2">Make it yours</h2>
+                    <h2 class="type-heading-m text-primary">Make it yours</h2>
                     <p class="type-body-sm text-secondary">Tell us what works for you, so we can help you find food that fits.</p>
                 </div>
                 <div class="form-stack">
                     <div class="field">
-                        <label class="field-label">Diet</label>
+                        <label class="field-label type-label-md">Dietary Preferences (Select multiple)</label>
                         <div class="chip-row">
                             <button type="button" class="chip chip-diet" data-value="halal">Halal</button>
                             <button type="button" class="chip chip-diet" data-value="vegetarian">Vegetarian</button>
@@ -113,7 +129,7 @@
                         </div>
                     </div>
                     <div class="field">
-                        <label class="field-label">Allergies</label>
+                        <label class="field-label type-label-md">Allergies</label>
                         <div class="chip-row">
                             <button type="button" class="chip chip-allergy" data-value="Milk">Milk</button>
                             <button type="button" class="chip chip-allergy" data-value="Peanuts">Peanuts</button>
@@ -136,12 +152,12 @@
             <!-- STEP 3 -->
             <div id="step-3" class="hidden">
                 <div class="mb-6">
-                    <h2 class="type-h2">You're all set!</h2>
+                    <h2 class="type-heading-m text-primary">You're all set!</h2>
                     <p class="type-body-sm text-secondary">Create your account to get started.</p>
                 </div>
                 <div class="form-stack">
                     <div class="field items-center">
-                        <label class="field-label">Profile Picture (Optional)</label>
+                        <label class="field-label type-label-md">Profile Picture (Optional)</label>
                         <div class="photo-picker relative group">
                             <!-- AVATAR INCLUSION -->
                             <span id="imagePreviewContainer">
@@ -171,7 +187,7 @@
 {% block extra_js %}
 <script>
     let currentStep = 1;
-    let selectedDiet = 'none';
+    const selectedDiets = new Set();
     const selectedAllergies = new Set();
 
     function validateStep1() {
@@ -181,15 +197,67 @@
         const pass = document.getElementById('input_password');
         const confirmPass = document.getElementById('input_confirm_password');
 
+        // Simple email regex pattern
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
         // Clear existing JS errors
         document.querySelectorAll('.js-error').forEach(el => el.classList.add('hidden'));
         document.querySelectorAll('.input').forEach(el => el.classList.remove('is-error'));
 
+        // Multi-select for Diets
+        document.querySelectorAll('.chip-diet').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const val = btn.getAttribute('data-value');
+                if (selectedDiets.has(val)) {
+                    selectedDiets.delete(val);
+                    btn.classList.remove('is-selected');
+                } else {
+                    selectedDiets.add(val);
+                    btn.classList.add('is-selected');
+                }
+                // Joins multiple selected diets with commas for backend processing
+                document.getElementById('diet_input').value = Array.from(selectedDiets).join(',');
+            });
+        });
+
+        // Multi-select for Allergies
+        document.querySelectorAll('.chip-allergy').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const val = btn.getAttribute('data-value');
+                if (selectedAllergies.has(val)) {
+                    selectedAllergies.delete(val);
+                    btn.classList.remove('is-selected');
+                } else {
+                    selectedAllergies.add(val);
+                    btn.classList.add('is-selected');
+                }
+                document.getElementById('allergies_input').value = Array.from(selectedAllergies).join(',');
+            });
+        });
+
         // Client-side checks
-        if (!username.value.trim()) { showError(username, "Username is required."); isValid = false; }
-        if (!email.value.trim()) { showError(email, "Email is required."); isValid = false; }
-        if (pass.value.length < 8) { showError(pass, "Password must be at least 8 characters."); isValid = false; }
-        if (pass.value !== confirmPass.value) { showError(confirmPass, "Passwords do not match."); isValid = false; }
+        if (!username.value.trim()) { 
+            showError(username, "Username is required."); 
+            isValid = false; 
+        }
+        
+        // Check if email is empty OR invalid format
+        if (!email.value.trim()) { 
+            showError(email, "Email is required."); 
+            isValid = false; 
+        } else if (!emailPattern.test(email.value.trim())) {
+            showError(email, "Please enter a valid email address."); 
+            isValid = false; 
+        }
+
+        if (pass.value.length < 8) { 
+            showError(pass, "Password must be at least 8 characters."); 
+            isValid = false; 
+        }
+        if (pass.value !== confirmPass.value) { 
+            showError(confirmPass, "Passwords do not match."); 
+            isValid = false; 
+        }
 
         return isValid;
     }
@@ -274,5 +342,16 @@
             reader.readAsDataURL(file);
         }
     }
+
+    // Toast auto-dismiss logic
+    document.addEventListener("DOMContentLoaded", () => {
+        const toasts = document.querySelectorAll(".toast-message");
+        toasts.forEach(toast => {
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        });
+    });
 </script>
 {% endblock %}

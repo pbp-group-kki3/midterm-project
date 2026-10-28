@@ -43,3 +43,555 @@
     color: var(--color-text-secondary);
     font-size: 18px;
 }
+
+/* Detail page photo: grey box, the whole pack shown, never cropped */
+.discover-detail-img {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 320px;
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-subtle);
+    color: var(--color-text-tertiary);
+}
+
+.discover-detail-img img {
+    max-height: 100%;
+    object-fit: contain;
+}
+
+/* "Why it's a C" bar: grey track */
+.discover-bar {
+    height: var(--space-sm);
+    margin-top: var(--space-xs);
+    border-radius: var(--radius-full);
+    background: var(--color-bg-subtle);
+}
+
+/* The filled part. Its width comes from the points, set in the template */
+.discover-bar-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    background: var(--color-bg-brand);
+}
+
+/* Search row: the field + Search button form takes the free space, Filters and Sort sit after it */
+.discover-search-form {
+    display: flex;
+    flex: 1 1 320px;
+    gap: var(--space-md);
+}
+
+.discover-search-form .input {
+    flex: 1;
+}
+
+/* Filter panel: one bordered box, a thin line between groups (Figma) */
+.discover-filter-panel {
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-lg);
+}
+
+.discover-filter-group {
+    padding: var(--space-lg);
+    border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.discover-filter-group:last-child {
+    border-bottom: none;
+}
+
+/* Group name above its chips: "Grade", "Labels and diet" */
+.discover-filter-title {
+    margin: 0 0 var(--space-md);
+    color: var(--color-text-secondary);
+    font: 500 14px/20px var(--font-sans);
+}
+
+/* Chips in the panel are <label>s, so show the hand cursor like a button */
+.discover-filter-chip {
+    cursor: pointer;
+}
+
+
+/* + Compare on a card is a small form: let it take its half of the footer like the shared buttons */
+.discover-card-action {
+    display: flex;
+    flex: 1;
+}
+
+/* Quick filter chips are hidden until "Filters" is clicked (see main.js) */
+.discover-quick-filters.is-hidden {
+    display: none;
+}
+
+/* Preference chip on cards (Figma: SF / Preference chip): one line, 12px text, 8px corners */
+.discover-pref {
+    display: inline-flex;
+    align-self: flex-start;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-sm);
+    font: 500 12px/16px var(--font-sans);
+}
+
+/* Confirmed by the product's data */
+.discover-pref-fits {
+    background: var(--color-bg-success-subtle);
+    color: var(--color-text-success);
+}
+
+/* Data missing, so we can't say */
+.discover-pref-unknown {
+    background: var(--color-bg-subtle);
+    color: var(--color-text-secondary);
+}
+
+/* Goes against the user's diet or allergies */
+.discover-pref-conflict {
+    background: var(--color-bg-warning-subtle);
+    color: var(--color-text-warning);
+}
+
+/* Meal of the Day hero above Discover: space under it (Figma ~72px, nearest token 64px) */
+.discover-hero {
+    margin-bottom: var(--space-4xl);
+}
+
+/* change: the hero carousel (Figma: Hero carousel / Slide 1 + 2, 1216 x 480, radius 24) */
+/* --stage-h = height of the big card on the current slide. main.js sets it, so the arrows */
+/* and dots stay on the card even when Aryan's recipe panel opens underneath it */
+.discover-carousel {
+    --stage-h: 480px;
+    position: relative;
+    overflow-x: clip;                      /* hides the slide while it slides in from the side */
+}
+
+/* change: the slides now sit side by side on a "track", like photos on a film strip.
+   main.js moves the whole track left (--slide-index x 100%), so the old slide gets pushed out
+   while the new one comes in, both at the same time. That's what makes it feel natural */
+.discover-carousel-track {
+    display: flex;
+    align-items: flex-start;
+    transform: translateX(calc(var(--slide-index, 0) * -100%));
+    /* starts fast and slows down gently at the end, like something sliding to a stop */
+    transition: transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* change: while it's moving, the rounded frame stays still and only the pictures slide inside it.
+   The carousel cuts everything to one rounded box, and the slides lose their own corners for a moment
+   (otherwise you'd see two rounded cards with a notch between them sliding past each other).
+   When it stops, the slides get their corners back, so it looks exactly the same at rest */
+.discover-carousel.is-moving {
+    clip-path: inset(0 round var(--radius-xl));
+}
+
+.discover-carousel.is-moving .discover-welcome,
+.discover-carousel.is-moving .feature-card {
+    border-radius: 0;
+}
+
+/* while you drag with your finger, the track follows you with no delay */
+.discover-carousel-track.is-dragging {
+    transition: none;
+}
+
+.discover-slide {
+    flex: 0 0 100%;                        /* each slide is exactly one carousel wide */
+    min-width: 0;
+}
+
+/* the slide you're not looking at stays card-height, so the open recipe panel on slide 2
+   doesn't leave a big empty gap under slide 1 */
+.discover-slide:not(.is-active) {
+    max-height: var(--stage-h);
+    overflow: hidden;
+}
+
+/* change: people who turned off animations in their settings get no sliding */
+@media (prefers-reduced-motion: reduce) {
+    .discover-carousel-track {
+        transition: none;
+    }
+}
+
+/* change: slide 1 (Figma: SF / Hero slide), photo with a dark shade at the bottom */
+.discover-welcome {
+    position: relative;
+    height: 480px;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    background: var(--color-bg-feature);   /* shows while the photo loads */
+}
+
+.discover-welcome-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Figma "Shade": clear at the top, 15% black at 45%, 72% black at the bottom */
+.discover-welcome-shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.15) 45%, rgba(0, 0, 0, 0.72) 100%);
+}
+
+/* Figma: 48px from the left, 56px from the bottom, 680px wide, 16px gap */
+.discover-welcome-content {
+    position: absolute;
+    left: calc(var(--space-xl) * 2);
+    bottom: calc(var(--space-2xl) + var(--space-xl));
+    width: min(680px, calc(100% - var(--space-xl) * 4));
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-lg);
+}
+
+.discover-welcome-title {
+    margin: 0;
+    color: var(--neutral-0);
+}
+
+/* change: slide 2 is as tall as slide 1 on desktop (Figma: both 480px) */
+@media (min-width: 768px) {
+    .discover-slide-meal .feature-card {
+        min-height: 480px;
+    }
+}
+
+/* change: arrows, 16px in from the sides, centred on the card (Figma: top 222 = 480/2 - 18) */
+.discover-carousel-arrow {
+    position: absolute;
+    top: calc(var(--stage-h) / 2 - 18px);
+    z-index: 1;
+}
+
+.discover-carousel-prev {
+    left: var(--space-lg);
+}
+
+.discover-carousel-next {
+    right: var(--space-lg);
+}
+
+/* flips the shared chevron-right so it points left */
+.discover-icon-flip {
+    transform: scaleX(-1);
+}
+
+/* change: dots, 9px circles 8px apart, 15px above the bottom of the card (Figma: Dots, y 456) */
+.discover-carousel-dots {
+    position: absolute;
+    top: calc(var(--stage-h) - 24px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1;
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.discover-carousel-dot {
+    width: 9px;
+    height: 9px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: var(--neutral-0);
+    opacity: 0.5;
+    cursor: pointer;
+}
+
+.discover-carousel-dot.is-active {
+    opacity: 1;
+}
+
+/* change: only one slide (no meal today) = no arrows or dots */
+.discover-carousel.is-single .discover-carousel-arrow,
+.discover-carousel.is-single .discover-carousel-dots {
+    display: none;
+}
+
+/* change: phones, shorter welcome slide */
+@media (max-width: 767px) {
+    .discover-welcome {
+        height: 360px;
+    }
+
+    .discover-welcome-content {
+        left: var(--space-xl);
+        bottom: var(--space-2xl);
+        width: calc(100% - var(--space-xl) * 2);
+    }
+}
+
+/* change: when we scroll to "Discover products", leave a little space above the title */
+.discover-anchor {
+    scroll-margin-top: var(--space-xl);
+}
+
+/* Detail page panels (Figma: Panel / ...): title, then rows 12px apart */
+.discover-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+/* "Grade C | 56 out of 100" */
+.discover-total {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+/* The thin line between "Grade C" and "56 out of 100" */
+.discover-divider {
+    width: 1px;
+    height: var(--space-md);
+    background: var(--color-border-default);
+}
+
+/* Bar colors (Figma: 75 green, 40 amber, 37 red), tokens from tokens.css */
+.discover-bar-success {
+    background: var(--color-bg-success);
+}
+
+.discover-bar-warning {
+    background: var(--color-bg-warning);
+}
+
+.discover-bar-danger {
+    background: var(--color-bg-danger);
+}
+
+/* A label / value row in the Nutrition and Environment panels */
+.discover-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font: 400 14px/20px var(--font-sans);
+}
+
+.discover-row-label {
+    flex: 1;
+    color: var(--color-text-secondary);
+}
+
+.discover-row-value {
+    color: var(--color-text-primary);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Green dot: Open Food Facts says the amount is "low" (good) */
+.discover-dot {
+    flex-shrink: 0;
+    width: var(--space-sm);
+    height: var(--space-sm);
+    border-radius: var(--radius-full);
+    background: var(--color-bg-success);
+}
+
+/* Long ingredient lists: cut to 4 lines until "Show all ingredients" is clicked (main.js) */
+.discover-clamp {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+}
+
+.discover-clamp.is-open {
+    display: block;
+    overflow: visible;
+}
+
+/* The toggle link sits under the text, left aligned */
+.discover-clamp-toggle {
+    align-self: flex-start;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+.discover-clamp-toggle.is-hidden {
+    display: none;
+}
+
+/* Details row: the two columns end at the same line */
+.discover-details > .card {
+    height: 100%;
+}
+
+/* Right column: Ingredients and Environment grow to fill the column's height together */
+.discover-details-stack > .card {
+    flex: 1;
+}
+
+/* Legend line sits at the bottom of the Nutrition card when the card is stretched */
+.discover-panel-foot {
+    margin-top: auto;
+}
+
+/* "Show all ingredients": same size as the panel's labels (14px semibold), no box after a mouse click */
+.discover-clamp-toggle {
+    font: 600 14px/20px var(--font-sans);
+}
+
+.discover-clamp-toggle:focus {
+    outline: none;
+}
+
+/* Keyboard users still see where they are, same ring as the shared .btn */
+.discover-clamp-toggle:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+}
+
+/* change: "✓ Added" on a card (Figma): light green with a green border, like a selected chip */
+.discover-added {
+    background: var(--color-bg-brand-subtle);
+    color: var(--color-text-brand);
+    border-color: var(--color-border-brand);
+}
+
+.discover-added:hover {
+    background: var(--color-bg-brand-subtle);
+}
+
+/* change: the whole compare tray, rewritten in one place to match Figma (SF / Compare tray).
+   Numbers come straight from the Figma frames "2 product in compare" and "Return with 3 Products" */
+
+/* Green bar: 12px top/bottom, 16px left/right, 16px corners, one single row, 32px under the cards */
+.discover-tray {
+    position: sticky;
+    bottom: var(--space-xl);
+    z-index: 10;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: var(--space-md);
+    margin-top: var(--space-2xl);
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-brand);
+    box-shadow: var(--shadow-lg);
+}
+
+/* A chosen product: white, 48px tall, 300px wide (280px when the tray is full), 12px corners */
+.discover-tray-slot {
+    display: flex;
+    flex: 0 1 300px;
+    align-items: center;
+    gap: var(--space-md);
+    min-width: 0;
+    height: 48px;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+}
+
+.discover-tray.is-full .discover-tray-slot {
+    flex-basis: 280px;
+}
+
+/* Small grade square, 28px. The colour comes from the shared .grade-a ... .grade-e */
+.discover-tray-grade {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    font: 700 14px/20px var(--font-sans);
+}
+
+/* Grey only when the grade is "?" */
+.discover-tray-grade-unknown {
+    background: var(--color-bg-subtle);
+    color: var(--color-text-primary);
+}
+
+/* Product name: one line, "..." when it's too long */
+.discover-tray-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--color-text-primary);
+    font: 600 14px/20px var(--font-sans);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The x: in Figma it's just a grey "x" character (16px), not a round button */
+.discover-tray-remove {
+    flex-shrink: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--color-text-secondary);
+    font: 600 16px/24px var(--font-sans);
+    cursor: pointer;
+}
+
+.discover-tray-remove:hover {
+    color: var(--color-text-primary);
+}
+
+/* A free place: dashed box, 230 x 48px, small white text */
+.discover-tray-empty {
+    display: flex;
+    flex: 0 1 230px;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    padding: var(--space-sm) var(--space-md);
+    border: 1px dashed currentColor;
+    border-radius: var(--radius-md);
+    color: var(--color-text-on-brand);
+    font: 500 12px/16px var(--font-sans);
+    white-space: nowrap;
+    opacity: 0.85;
+}
+
+/* "2 of 3 selected", pushed to the right (Figma has a spacer here) */
+.discover-tray-count {
+    margin-left: auto;
+    color: var(--color-text-on-brand);
+    font: 600 14px/20px var(--font-sans);
+    white-space: nowrap;
+}
+
+/* "Compare now": white, green text, no border, exactly 180 x 48px */
+.discover-tray-go {
+    flex: 0 0 180px;
+    min-height: 48px;
+    border-color: transparent;
+    background: var(--color-bg-surface);
+    color: var(--color-text-brand);
+}
+
+/* Less than 2 products: Figma just fades it */
+.discover-tray-go.is-disabled {
+    background: var(--color-bg-surface);
+    color: var(--color-text-brand);
+    opacity: 0.5;
+}
+
+/* Phones: there isn't room for one row, so let it wrap */
+@media (max-width: 767px) {
+    .discover-tray {
+        flex-wrap: wrap;
+    }
+}
+
+
+/* change: the tray holder is only there for JavaScript. display: contents makes it "invisible" for the layout,
+   so the tray can still stick to the bottom of the page like before */
+.discover-tray-holder {
+    display: contents;
+}
