@@ -31,8 +31,13 @@
 
 /* Fixed layout keeps product headers aligned with every value below. */
 .compare-table {
+    --compare-label-width: 240px;
+
     width: 100%;
-    min-width: 760px;
+    min-width: calc(
+        var(--compare-label-width) +
+        var(--compare-product-count, 2) * 280px
+    );
     table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
@@ -41,7 +46,7 @@
 
 /* Matches the desktop criterion column in the approved design. */
 .compare-label-column {
-    width: 240px;
+    width: var(--compare-label-width);
 }
 
 /* Equal spacing between product columns. */
@@ -286,14 +291,50 @@
     border-color: var(--color-border-danger);
 }
 
+#compare-save-feedback[hidden],
+#compare-save-location[hidden] {
+    display: none;
+}
+
+.compare-saved-link {
+    color: var(--color-text-brand);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* Keep indicators inside their product column. */
+.compare-score-heading .score-row {
+    width: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.compare-score-heading .score-tile {
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+/* Match the total width of the indicator row. */
+.compare-score-heading .btn-group {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+}
+
+.compare-score-heading .btn-group > .btn {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
 /* Keep the panel comfortable on narrower screens. */
 @media (max-width: 767px) {
     .compare-panel {
         padding: var(--space-lg);
     }
 
-    .compare-label-column {
-        width: 160px;
+    .compare-table {
+        --compare-label-width: 160px;
     }
 
     .compare-product-heading,

@@ -60,7 +60,10 @@
             aria-label="Product comparison"
             tabindex="0"
         >
-            <table class="compare-table">
+            <table
+                class="compare-table"
+                style="--compare-product-count: {{ table_column_count|add:'-1' }};"
+            >
                 <caption class="sr-only">
                     Scores, nutrition, labels and allergens
                     for the selected products
