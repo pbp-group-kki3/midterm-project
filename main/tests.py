@@ -341,3 +341,110 @@ class FavoriteDisplayTests(TestCase):
         from main.services.details import clean_ingredients
         self.assertEqual(clean_ingredients({"ingredients_text": "Wholegrain _Oat_ Flakes"}), "Wholegrain Oat Flakes")
 
+
+# change: the card button states from the Figma frames "2 product in compare" and "Return with 3 Products"
+class CompareButtonStateTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(username="tester", password="test-pass-123")
+        self.client.force_login(self.user)
+
+    def add(self, code, grade="C"):
+        self.client.post(reverse("main:add_to_compare", args=[code]),
+                         {"product_name": f"Milk {code}", "grade": grade, "next": "/"})
+
+    @patch("main.views.search_products")
+    def test_added_and_compare(self, fake_search):
+        fake_search.return_value = [dict(ULTRA_MILK, code="1"), dict(ULTRA_MILK, code="2")]
+        self.add("1")
+        page = self.client.get(reverse("main:show_main"), {"q": "susu"}).content.decode()
+        self.assertIn("✓ Added", page)          # product 1 is in the tray
+        self.assertIn("+ Compare", page)        # product 2 isn't
+
+    @patch("main.views.search_products")
+    def test_full_tray_shows_limit_reached(self, fake_search):
+        fake_search.return_value = [dict(ULTRA_MILK, code=c) for c in ["1", "2", "3", "4"]]
+        for code in ["1", "2", "3"]:
+            self.add(code)
+        page = self.client.get(reverse("main:show_main"), {"q": "susu"}).content.decode()
+        self.assertIn("Limit reached", page)    # product 4 can't be added
+        self.assertNotIn("✓ Added", page)       # full tray: the added ones just say "Added", greyed out
+        self.assertNotIn("+ Compare", page)
+
+    def test_added_button_takes_it_out_again(self):
+        self.add("1")
+        self.client.post(reverse("main:remove_from_compare", args=["1"]), {"next": "/"})
+        self.assertEqual(self.client.session["compare"], [])
+
+    @patch("main.views.browse_products", return_value=[])
+    def test_tray_tile_uses_grade_colour(self, fake_browse):
+        self.add("1", grade="B")
+        self.add("2", grade="?")
+        page = self.client.get(reverse("main:show_main")).content.decode()
+        self.assertIn("discover-tray-grade grade-b", page)               # shared green for B
+        self.assertIn("discover-tray-grade discover-tray-grade-unknown", page)   # grey only for "?"
+
+
+# change: compare without reloading. JavaScript gets back the new tray and the new buttons as HTML
+class CompareNoReloadTests(TestCase):
+    AJAX = {"HTTP_X_REQUESTED_WITH": "XMLHttpRequest"}
+
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(username="tester", password="test-pass-123")
+        self.client.force_login(self.user)
+
+    def post(self, view, code, slots):
+        import json
+        return self.client.post(reverse(view, args=[code]), {
+            "product_name": f"Milk {code}", "grade": "C", "next": "/",
+            "slots": json.dumps(slots),
+        }, **self.AJAX)
+
+    def test_add_returns_tray_and_buttons(self):
+        slots = [{"code": "1", "name": "Milk 1", "grade": "C", "style": "btn-outline"},
+                 {"code": "2", "name": "Milk 2", "grade": "B", "style": "btn-outline"}]
+        data = self.post("main:add_to_compare", "1", slots).json()
+        self.assertIn("1 of 3 selected", data["tray"])           # new tray HTML
+        self.assertIn("✓ Added", data["buttons"]["1"])           # the clicked card
+        self.assertIn("+ Compare", data["buttons"]["2"])         # the other card
+        self.assertEqual(self.client.session["compare"], ["1"])
+
+    def test_third_product_turns_others_into_limit_reached(self):
+        slots = [{"code": c, "name": c, "grade": "C", "style": "btn-outline"} for c in ["1", "2", "3", "4"]]
+        for code in ["1", "2"]:
+            self.post("main:add_to_compare", code, slots)
+        data = self.post("main:add_to_compare", "3", slots).json()
+        self.assertIn("Limit reached", data["buttons"]["4"])
+        self.assertIn("is-full", data["tray"])
+
+    def test_remove_returns_json_too(self):
+        self.post("main:add_to_compare", "1", [])
+        data = self.post("main:remove_from_compare", "1", []).json()
+        self.assertEqual(data["tray"].strip(), "")                # empty tray: nothing to show
+        self.assertEqual(self.client.session["compare"], [])
+
+    def test_bad_slots_dont_crash(self):
+        response = self.client.post(reverse("main:add_to_compare", args=["1"]),
+                                    {"slots": "not json"}, **self.AJAX)
+        self.assertEqual(response.json()["buttons"], {})
+
+
+# change: "Load more products" without reloading: JavaScript gets only the next cards
+class LoadMoreNoReloadTests(TestCase):
+    @patch("main.views.search_products")
+    def test_next_cards_as_json(self, fake_search):
+        fake_search.return_value = [dict(ULTRA_MILK, code=str(i), product_name=f"Milk {i}") for i in range(10)]
+        data = self.client.get(reverse("main:show_main"), {"q": "susu", "show": 12},
+                               HTTP_X_REQUESTED_WITH="XMLHttpRequest").json()
+        self.assertIn("Milk 6", data["cards"])           # card 7 (index 6) is new
+        self.assertIn("Milk 9", data["cards"])
+        self.assertNotIn("Milk 5", data["cards"])        # the first 6 are already on the page
+        self.assertFalse(data["has_more"])               # 10 products, 12 asked: nothing left
+
+    @patch("main.views.search_products")
+    def test_more_url_for_next_click(self, fake_search):
+        fake_search.return_value = [dict(ULTRA_MILK, code=str(i)) for i in range(20)]
+        data = self.client.get(reverse("main:show_main"), {"q": "susu", "show": 12},
+                               HTTP_X_REQUESTED_WITH="XMLHttpRequest").json()
+        self.assertTrue(data["has_more"])
+        self.assertIn("show=18", data["more_url"])
+

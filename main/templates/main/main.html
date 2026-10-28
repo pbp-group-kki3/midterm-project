@@ -72,7 +72,8 @@
                 {% if q %}{{ total }} result{{ total|pluralize }} for "{{ q }}"{% else %}{{ total }} product{{ total|pluralize }}{% endif %}
                 {% if filter_count %}<a href="{{ clear_url }}" class="link ml-4">Clear filters</a>{% endif %}
             </p>
-            <div class="card-grid">
+            {# change: id so main.js can add the next cards to the end of the grid #}
+            <div class="card-grid" id="discover-grid">
                 {% for p in products %}
                     {% include 'main/product_card.html' with product=p %}
                 {% endfor %}
@@ -80,14 +81,16 @@
 
             {% if has_more %}
                 {# Load more: the same search with 6 more cards (no extra API call, the results are cached) #}
-                <div class="mt-6">
-                    <a href="{{ more_url }}" class="btn btn-load-more btn-block">Load more products</a>
+                {# change: js-load-more = main.js fetches the next 6 cards in the background instead of reloading #}
+                <div class="mt-6" id="load-more-holder">
+                    <a href="{{ more_url }}" class="btn btn-load-more btn-block js-load-more">Load more products</a>
                 </div>
             {% endif %}
         {% endif %}
     </section>
 
-    {% include 'main/compare_tray.html' %}
+    {# change: holder for the tray, main.js puts the new tray in here after a compare click #}
+    <div id="compare-tray-holder" class="discover-tray-holder">{% include 'main/compare_tray.html' %}</div>
 
     {# Filter panel (Figma: SF / Filter panel). Opened by the Filters button, see main.js #}
     <dialog class="dialog dialog-sm" id="filter-dialog">
