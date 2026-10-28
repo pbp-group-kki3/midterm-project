@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
 from django.urls import reverse
 from main.services.openfoodfacts import get_product
+from django.http import JsonResponse
 
 from comparison.services import (
     build_comparison_sections,
@@ -56,20 +57,11 @@ def compare_products(request):
             barcodes=barcodes,
         ).exists()
 
-    pending_save = request.session.pop("comparison_save_errors", None)
-
-    if pending_save:
-        save_form = SavedComparisonForm(pending_save["data"])
-        save_form.is_valid()
-
-        for error in pending_save["non_field_errors"]:
-            save_form.add_error(None, error)
-    else:
-        save_form = SavedComparisonForm(
-            initial={
-                "selection": ",".join(barcodes),
-            }
-        )
+    save_form = SavedComparisonForm(
+        initial={
+            "selection": ",".join(barcodes),
+        }
+    )
 
     context = {
         "products": products,
@@ -81,7 +73,7 @@ def compare_products(request):
         "table_column_count": display_column_count + 1,
         "save_form": save_form,
         "can_save": can_save,
-        "open_save_dialog": save_form.is_bound,
+        "open_save_dialog": False,
         "save_login_url": redirect_to_login(reverse("comparison:compare_products")).url,
         "is_saved": is_saved,
     }
@@ -110,27 +102,33 @@ def remove_product(request, barcode):
 @require_POST
 def save_comparison(request):
     if not request.user.is_authenticated:
-        return redirect_to_login(
-            reverse("comparison:compare_products")
+        return JsonResponse(
+            {
+                "ok": False,
+                "message": "Please log in before saving this comparison.",
+                "login_url": redirect_to_login(reverse("comparison:compare_products")).url,
+            },
+            status=401,
         )
 
     selected_barcodes = request.session.get("compare", [])
-    barcodes = list(dict.fromkeys(selected_barcodes))[:3]
-
-    save_form = SavedComparisonForm(request.POST)
-    form_is_valid = save_form.is_valid()
 
     valid_selection = (
-        2 <= len(barcodes) <= 3
+        isinstance(selected_barcodes, list)
         and all(
             isinstance(barcode, str)
             and barcode.isascii()
             and barcode.isdigit()
-            for barcode in barcodes
+            for barcode in selected_barcodes
         )
     )
 
-    if not valid_selection:
+    barcodes = list(dict.fromkeys(selected_barcodes) if valid_selection else [])
+
+    save_form = SavedComparisonForm(request.POST)
+    form_is_valid = save_form.is_valid()
+
+    if not 2 <= len(barcodes) <= 3:
         save_form.add_error(
             None,
             "Select two or three products before saving.",
@@ -142,55 +140,65 @@ def save_comparison(request):
         save_form.add_error(
             None,
             "Your product selection has changed. "
-            "Close this form and reload the page before saving.",
+            "Reload the page before saving.",
         )
-    elif form_is_valid:
-        products_available = all(
-            get_product(barcode)
-            for barcode in barcodes
-        )
-
-        if not products_available:
-            save_form.add_error(
-                None,
-                "Some selected products could not be loaded. "
-                "Please try again later.",
-            )
 
     if save_form.errors:
-        request.session["comparison_save_errors"] = {
-            "data": {
-                "name": request.POST.get("name", ""),
-                "notes": request.POST.get("notes", ""),
-                "selection": request.POST.get("selection", ""),
+        return JsonResponse(
+            {
+                "ok": False,
+                "errors": save_form.errors.get_json_data(),
             },
-            "non_field_errors": list(save_form.non_field_errors()),
-        }
-
-        return redirect("comparison:compare_products")
+            status=400,
+        )
 
     already_saved = SavedComparison.objects.filter(user=request.user, barcodes=barcodes).exists()
 
     if already_saved:
-        request.session.pop("comparison_save_errors", None)
-
-        messages.info(
-            request,
-            "This product lineup is already saved.",
+        return JsonResponse(
+            {
+                "ok": True,
+                "already_saved": True,
+                "message": "This comparison is already saved to your profile.",
+            }
         )
 
-        return redirect("comparison:compare_products")
+    products_available = True
 
+    for barcode in barcodes:
+        product = get_product(barcode)
+
+        if not isinstance(product, dict) or not product:
+            products_available = False
+            break
+
+    if not products_available:
+        save_form.add_error(
+            None,
+            "Some selected products could not be loaded."
+            "Please try again later.",
+        )
+
+        return JsonResponse(
+            {
+                "ok": False,
+                "errors": save_form.errors.get_json_data(),
+            },
+            status=400,
+        )
+    
     saved_comparison = save_form.save(commit=False)
     saved_comparison.user = request.user
-    saved_comparison.barcodes = list(barcodes)
+    saved_comparison.barcodes = barcodes
     saved_comparison.save()
 
     request.session.pop("comparison_save_errors", None)
 
-    messages.success(
-        request,
-        "Comparison saved successfully.",
+    return JsonResponse(
+        {
+            "ok": True,
+            "already_saved": False,
+            "message": "Comparison saved to your profile.",
+        },
+        status=201,
     )
-
-    return redirect("comparison:compare_products")
