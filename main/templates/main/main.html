@@ -1,0 +1,12 @@
+<!-- main / product discovery html -->
+
+{% extends 'base.html' %}
+{% load static %}
+{# load static lets this file use the {% static %} tag below #}
+
+{% block title %}Discover | SpoonFeed{% endblock %}
+
+{% block extra_head %}
+    {# base.html has an empty "extra_head" block for each module's own CSS #}
+    <link rel="stylesheet" href="{% static 'main/main.css' %}">
+{% endblock %}

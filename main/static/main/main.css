@@ -1,0 +1,45 @@
+/* Discover product card: the few spots where the Figma v2 card differs from the shared .media-card */
+
+/* Photo: fixed 176px tall like Figma, instead of the shared 3:2 ratio */
+.discover-card .media-card-img {
+    aspect-ratio: auto;
+    height: 176px;
+}
+
+/* Show the whole pack, never cropped (Figma note on the product photo) */
+.discover-card .media-card-img img {
+    object-fit: contain;
+}
+
+/* 12px between name, scores and tags (shared is 8px) */
+.discover-card .media-card-body {
+    gap: var(--space-md);
+}
+
+/* Name and size sit 4px apart. min-width: 0 lets the long name shrink so "..." works */
+.discover-card-name {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    min-width: 0;
+}
+
+/* Long names stay on one line and end with "..." */
+.discover-card .media-card-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 16px under the buttons (shared is 12px) */
+.discover-card .media-card-footer {
+    padding-bottom: var(--space-lg);
+}
+
+/* Heart: white circle with a soft shadow and no border, like Figma */
+.discover-fav {
+    border: none;
+    box-shadow: var(--shadow-card);
+    color: var(--color-text-secondary);
+    font-size: 18px;
+}
