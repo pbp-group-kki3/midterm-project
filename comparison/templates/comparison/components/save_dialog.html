@@ -1,0 +1,106 @@
+<dialog
+    id="compare-save-dialog"
+    class="dialog dialog-form compare-save-dialog"
+    aria-labelledby="compare-save-title"
+    aria-describedby="compare-save-description"
+    data-open-on-load="{{ open_save_dialog|yesno:'true,false' }}"
+>
+    <div class="dialog-header">
+        <h2 id="compare-save-title" class="dialog-title">
+            Save comparison
+        </h2>
+
+        <form method="dialog">
+            <button
+                type="submit"
+                class="dialog-close"
+                aria-label="Close dialog"
+            >
+                <span class="icon icon-x" aria-hidden="true"></span>
+            </button>
+        </form>
+    </div>
+
+    <p id="compare-save-description" class="dialog-text">
+        Give this comparison a name so you can find it later.
+    </p>
+
+    <form
+        id="compare-save-form"
+        method="post"
+        action="{% url 'comparison:save_comparison' %}"
+        novalidate
+    >
+        {% csrf_token %}
+        {{ save_form.selection }}
+
+        <div class="dialog-body">
+            {% if save_form.non_field_errors %}
+                <div class="alert alert-danger" role="alert">
+                    {% for error in save_form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% if save_form.selection.errors %}
+                <p class="field-error" role="alert">
+                    Your selection could not be verified.
+                    Close this form and reload the page.
+                </p>
+            {% endif %}
+
+            <div class="field">
+                <label
+                    for="{{ save_form.name.id_for_label }}"
+                    class="field-label"
+                >
+                    Comparison name *
+                </label>
+
+                {{ save_form.name }}
+
+                {% for error in save_form.name.errors %}
+                    <p class="field-error" role="alert">
+                        {{ error }}
+                    </p>
+                {% endfor %}
+            </div>
+
+            <div class="field">
+                <label
+                    for="{{ save_form.notes.id_for_label }}"
+                    class="field-label"
+                >
+                    Notes (optional)
+                </label>
+
+                {{ save_form.notes }}
+
+                {% for error in save_form.notes.errors %}
+                    <p class="field-error" role="alert">
+                        {{ error }}
+                    </p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="dialog-actions">
+            <button
+                type="button"
+                id="compare-save-cancel"
+                class="btn btn-secondary"
+            >
+                Cancel
+            </button>
+
+            <button
+                type="submit"
+                id="compare-save-submit"
+                class="btn btn-primary"
+            >
+                Save comparison
+            </button>
+        </div>
+    </form>
+</dialog>

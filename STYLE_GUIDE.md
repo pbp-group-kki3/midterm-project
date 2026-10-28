@@ -183,6 +183,16 @@ Full code for each is on `/styleguide/`, and every one has a comment with exampl
 | Feature card | `.feature-card` | Home (Meal / Food of the Day) |
 | Page header | `.page-header` > `.page-title`, `.page-subtitle`, `.page-actions`. Profile: `.page-header-user`, `.page-title-lg` | Top of every module page |
 
+### Icons
+
+Use `.icon` plus a variant class; all icons are 20 × 20 and inherit text color. `.icon-bookmark` has a plus for saving, `.icon-saved` is the plain outline, and `.icon-bookmark-filled` is the solid saved-state icon. All variants are shown on `/styleguide/#icons`.
+
+```html
+<span class="icon icon-bookmark-filled" aria-hidden="true"></span>
+```
+
+Hide decorative icons with `aria-hidden="true"`. Give icon-only buttons an `aria-label`.
+
 ### Profile picture
 
 Use the template, it picks the photo or the first letter for you:

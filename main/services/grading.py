@@ -13,9 +13,8 @@ def spoonfeed_grade(product):
     parts={} # each parameter grade we have, stored here
 
     nutri = (product.get("nutriscore_grade") or "").lower()
-    if nutri not in NUTRI_POINTS:
-        return {"score":None, "grade":"?", "parts": {}}
-    parts["nutrition"] = NUTRI_POINTS[nutri] # assigns the value of key nutri as the value of key nutrition
+    if nutri in NUTRI_POINTS:
+        parts["nutrition"] = NUTRI_POINTS[nutri]
 
     eco_score = product.get("ecoscore_score")
     eco_grade = (product.get("ecoscore_grade") or "").lower()
@@ -28,6 +27,10 @@ def spoonfeed_grade(product):
     if nova in NOVA_POINTS:
         parts["processing"] = NOVA_POINTS[nova]
 
+    # return unknown only when all three parameters are missing
+    if not parts:
+        return {"score":None, "grade":"?", "parts": {}}
+    
     # total weighted average - also anticipating for missing values
     total_weight = sum(WEIGHTS[k] for k in parts)             # e.g. 0.50 + 0.35 + 0.15 = 1.0, or 0.85 if NOVA is missing
     score = sum(parts[k] * WEIGHTS[k] for k in parts) / total_weight   # keeps the result on the 0–100 scale

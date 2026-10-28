@@ -34,9 +34,9 @@ urlpatterns = [
 
     path('meal-plan/', include('meal_plan.urls')),
 
-    path('compare/', coming_soon, {'slug': 'compare'}),
-
-    path('food-of-the-day/', include('food_of_the_day.urls')),
+    path("compare/", include("comparison.urls")),
+    
+    path("food-of-the-day/", include("food_of_the_day.urls")),
 
     path('blog/', coming_soon, {'slug': 'blog'}),
 
