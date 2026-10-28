@@ -166,35 +166,51 @@
     overflow-x: clip;                      /* hides the slide while it slides in from the side */
 }
 
-/* change: only the current slide shows */
+/* change: the slides now sit side by side on a "track", like photos on a film strip.
+   main.js moves the whole track left (--slide-index x 100%), so the old slide gets pushed out
+   while the new one comes in, both at the same time. That's what makes it feel natural */
+.discover-carousel-track {
+    display: flex;
+    align-items: flex-start;
+    transform: translateX(calc(var(--slide-index, 0) * -100%));
+    /* starts fast and slows down gently at the end, like something sliding to a stop */
+    transition: transform 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* change: while it's moving, the rounded frame stays still and only the pictures slide inside it.
+   The carousel cuts everything to one rounded box, and the slides lose their own corners for a moment
+   (otherwise you'd see two rounded cards with a notch between them sliding past each other).
+   When it stops, the slides get their corners back, so it looks exactly the same at rest */
+.discover-carousel.is-moving {
+    clip-path: inset(0 round var(--radius-xl));
+}
+
+.discover-carousel.is-moving .discover-welcome,
+.discover-carousel.is-moving .feature-card {
+    border-radius: 0;
+}
+
+/* while you drag with your finger, the track follows you with no delay */
+.discover-carousel-track.is-dragging {
+    transition: none;
+}
+
 .discover-slide {
-    display: none;
+    flex: 0 0 100%;                        /* each slide is exactly one carousel wide */
+    min-width: 0;
 }
 
-.discover-slide.is-active {
-    display: block;
-    animation: discover-slide-in-right 0.5s ease;
-}
-
-/* change: going back (left arrow) slides in from the left instead */
-.discover-slide.is-active.is-from-left {
-    animation-name: discover-slide-in-left;
-}
-
-@keyframes discover-slide-in-right {
-    from { transform: translateX(100%); }
-    to { transform: translateX(0); }
-}
-
-@keyframes discover-slide-in-left {
-    from { transform: translateX(-100%); }
-    to { transform: translateX(0); }
+/* the slide you're not looking at stays card-height, so the open recipe panel on slide 2
+   doesn't leave a big empty gap under slide 1 */
+.discover-slide:not(.is-active) {
+    max-height: var(--stage-h);
+    overflow: hidden;
 }
 
 /* change: people who turned off animations in their settings get no sliding */
 @media (prefers-reduced-motion: reduce) {
-    .discover-slide.is-active {
-        animation: none;
+    .discover-carousel-track {
+        transition: none;
     }
 }
 
