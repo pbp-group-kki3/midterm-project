@@ -11,12 +11,47 @@
 {% endblock %}
 
 {% block content %}
-    {# Meal of the Day hero (Aryan's module). Renders nothing when no meal is set for today #}
-    <div class="discover-hero">
-        {% meal_of_the_day_slide %}
-    </div>
+    {# change: the hero is a carousel now (Figma: Hero carousel / Slide 1 + Slide 2) #}
+    {# slide 1 = welcome photo, slide 2 = Aryan's Meal of the Day. main.js slides it every few seconds #}
+    <section class="discover-hero discover-carousel js-carousel" aria-roledescription="carousel" aria-label="Highlights">
 
-    <header class="page-header">
+        {# change: slide 1, the welcome slide #}
+        <div class="discover-slide is-active" data-slide aria-roledescription="slide" aria-label="Welcome">
+            <div class="discover-welcome" data-slide-stage>
+                {# photo exported from the Figma (SF / Hero slide) #}
+                {# change: onerror hides the broken-image icon if the photo file is missing (the dark green shows instead) #}
+                <img src="{% static 'main/img/hero-welcome.jpg' %}" alt="" class="discover-welcome-img" onerror="this.hidden = true">
+                <div class="discover-welcome-shade"></div>
+                <div class="discover-welcome-content">
+                    {# change: &nbsp; glues "Made" and "Easy." together, so they always wrap onto the next line as a pair #}
+                    <h2 class="type-serif discover-welcome-title">Healthy &amp; Sustainable Living, Made&nbsp;Easy.</h2>
+                    {# change: scrolls down to "Discover products" (main.js makes it smooth) #}
+                    <a href="#discover" class="btn btn-primary js-scroll-discover">Discover More</a>
+                </div>
+            </div>
+        </div>
+
+        {# change: slide 2, Aryan's Meal of the Day. If there's no meal today it renders nothing and main.js drops this slide #}
+        <div class="discover-slide discover-slide-meal" data-slide aria-roledescription="slide" aria-label="Meal of the Day">{% meal_of_the_day_slide %}</div>
+
+        {# change: arrows use the shared dark icon button (made for carousel arrows) #}
+        {# there's no shared chevron-left icon, so the left one is the shared chevron-right flipped #}
+        <button type="button" class="icon-btn icon-btn-dark discover-carousel-arrow discover-carousel-prev js-carousel-prev" aria-label="Previous slide">
+            <span class="icon icon-chevron-right discover-icon-flip" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="icon-btn icon-btn-dark discover-carousel-arrow discover-carousel-next js-carousel-next" aria-label="Next slide">
+            <span class="icon icon-chevron-right" aria-hidden="true"></span>
+        </button>
+
+        {# change: the two dots at the bottom, click one to jump to that slide #}
+        <div class="discover-carousel-dots">
+            <button type="button" class="discover-carousel-dot is-active js-carousel-dot" aria-label="Go to slide 1" aria-current="true"></button>
+            <button type="button" class="discover-carousel-dot js-carousel-dot" aria-label="Go to slide 2"></button>
+        </div>
+    </section>
+
+    {# change: id="discover" so the Discover link and the Discover More button can scroll here #}
+    <header class="page-header discover-anchor" id="discover">
         <div>
             <h1 class="page-title">Discover products</h1>
             <p class="page-subtitle">Search a product name to see its grade, scores and better alternatives.</p>

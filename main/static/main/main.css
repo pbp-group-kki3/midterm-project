@@ -157,9 +157,163 @@
     margin-bottom: var(--space-4xl);
 }
 
-/* No meal today: the slide renders nothing, so drop the empty space too */
-.discover-hero:not(:has(*)) {
+/* change: the hero carousel (Figma: Hero carousel / Slide 1 + 2, 1216 x 480, radius 24) */
+/* --stage-h = height of the big card on the current slide. main.js sets it, so the arrows */
+/* and dots stay on the card even when Aryan's recipe panel opens underneath it */
+.discover-carousel {
+    --stage-h: 480px;
+    position: relative;
+    overflow-x: clip;                      /* hides the slide while it slides in from the side */
+}
+
+/* change: only the current slide shows */
+.discover-slide {
     display: none;
+}
+
+.discover-slide.is-active {
+    display: block;
+    animation: discover-slide-in-right 0.5s ease;
+}
+
+/* change: going back (left arrow) slides in from the left instead */
+.discover-slide.is-active.is-from-left {
+    animation-name: discover-slide-in-left;
+}
+
+@keyframes discover-slide-in-right {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}
+
+@keyframes discover-slide-in-left {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+}
+
+/* change: people who turned off animations in their settings get no sliding */
+@media (prefers-reduced-motion: reduce) {
+    .discover-slide.is-active {
+        animation: none;
+    }
+}
+
+/* change: slide 1 (Figma: SF / Hero slide), photo with a dark shade at the bottom */
+.discover-welcome {
+    position: relative;
+    height: 480px;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    background: var(--color-bg-feature);   /* shows while the photo loads */
+}
+
+.discover-welcome-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Figma "Shade": clear at the top, 15% black at 45%, 72% black at the bottom */
+.discover-welcome-shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.15) 45%, rgba(0, 0, 0, 0.72) 100%);
+}
+
+/* Figma: 48px from the left, 56px from the bottom, 680px wide, 16px gap */
+.discover-welcome-content {
+    position: absolute;
+    left: calc(var(--space-xl) * 2);
+    bottom: calc(var(--space-2xl) + var(--space-xl));
+    width: min(680px, calc(100% - var(--space-xl) * 4));
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-lg);
+}
+
+.discover-welcome-title {
+    margin: 0;
+    color: var(--neutral-0);
+}
+
+/* change: slide 2 is as tall as slide 1 on desktop (Figma: both 480px) */
+@media (min-width: 768px) {
+    .discover-slide-meal .feature-card {
+        min-height: 480px;
+    }
+}
+
+/* change: arrows, 16px in from the sides, centred on the card (Figma: top 222 = 480/2 - 18) */
+.discover-carousel-arrow {
+    position: absolute;
+    top: calc(var(--stage-h) / 2 - 18px);
+    z-index: 1;
+}
+
+.discover-carousel-prev {
+    left: var(--space-lg);
+}
+
+.discover-carousel-next {
+    right: var(--space-lg);
+}
+
+/* flips the shared chevron-right so it points left */
+.discover-icon-flip {
+    transform: scaleX(-1);
+}
+
+/* change: dots, 9px circles 8px apart, 15px above the bottom of the card (Figma: Dots, y 456) */
+.discover-carousel-dots {
+    position: absolute;
+    top: calc(var(--stage-h) - 24px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1;
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.discover-carousel-dot {
+    width: 9px;
+    height: 9px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-full);
+    background: var(--neutral-0);
+    opacity: 0.5;
+    cursor: pointer;
+}
+
+.discover-carousel-dot.is-active {
+    opacity: 1;
+}
+
+/* change: only one slide (no meal today) = no arrows or dots */
+.discover-carousel.is-single .discover-carousel-arrow,
+.discover-carousel.is-single .discover-carousel-dots {
+    display: none;
+}
+
+/* change: phones, shorter welcome slide */
+@media (max-width: 767px) {
+    .discover-welcome {
+        height: 360px;
+    }
+
+    .discover-welcome-content {
+        left: var(--space-xl);
+        bottom: var(--space-2xl);
+        width: calc(100% - var(--space-xl) * 2);
+    }
+}
+
+/* change: when we scroll to "Discover products", leave a little space above the title */
+.discover-anchor {
+    scroll-margin-top: var(--space-xl);
 }
 
 /* Detail page panels (Figma: Panel / ...): title, then rows 12px apart */
