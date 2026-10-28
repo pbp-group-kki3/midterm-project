@@ -1,0 +1,242 @@
+<div class="card card-elevated" style="margin-top: var(--space-xl);">
+
+  <!-- Header with Title & Action Buttons matching Figma -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4">
+    <h2 class="type-serif text-primary" style="margin: 0; font-size: clamp(24px, 4vw, 32px); line-height: 1.2;">
+      {{ recipe.title }}
+    </h2>
+    <div class="flex items-center gap-2.5 shrink-0">
+      <button 
+        type="button" 
+        class="btn btn-outline btn-pill btn-sm"
+        aria-label="Save recipe"
+      >
+        <span>♡</span>
+        <span>Save</span>
+      </button>
+      <button 
+        type="button" 
+        class="btn btn-primary btn-pill btn-sm"
+      >
+        <span>Add to my meal plan</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Did you know? Callout Banner (Moved above metrics per new Figma wireframe) -->
+  {% if did_you_know %}
+    <div class="p-4 rounded-xl border border-brand-subtle my-2" style="background: var(--color-bg-brand-subtle);">
+      <h4 class="font-bold text-brand" style="margin: 0 0 4px 0; font-size: 13px; letter-spacing: 0.02em;">
+        Did you know?
+      </h4>
+      <p class="type-body-sm text-secondary" style="margin: 0; line-height: 1.4;">
+        {% for fact in did_you_know %}
+          <span>{{ fact }}</span>{% if not forloop.last %} &bull; {% endif %}
+        {% endfor %}
+      </p>
+    </div>
+  {% endif %}
+
+  <!-- 4 Key Metric Tiles matching new Figma wireframe -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 my-4">
+    <div class="p-3.5 sm:p-4 rounded-xl bg-subtle border border-default text-left">
+      <span class="type-caption uppercase tracking-wider text-tertiary block mb-1">Ready in</span>
+      <span class="type-heading-m font-bold text-primary block" style="font-size: 20px; line-height: 26px;">
+        {% if ready_in_minutes %}{{ ready_in_minutes }} min{% else %}30 min{% endif %}
+      </span>
+    </div>
+    <div class="p-3.5 sm:p-4 rounded-xl bg-subtle border border-default text-left">
+      <span class="type-caption uppercase tracking-wider text-tertiary block mb-1">Serves</span>
+      <span class="type-heading-m font-bold text-primary block" style="font-size: 20px; line-height: 26px;">
+        {% if servings %}{{ servings }}{% else %}2{% endif %}
+      </span>
+    </div>
+    <div class="p-3.5 sm:p-4 rounded-xl bg-subtle border border-default text-left">
+      <span class="type-caption uppercase tracking-wider text-tertiary block mb-1">Calories</span>
+      <span class="type-heading-m font-bold text-primary block" style="font-size: 20px; line-height: 26px;">
+        {% if calories %}{{ calories }} kcal{% else %}N/A{% endif %}
+      </span>
+    </div>
+    <div class="p-3.5 sm:p-4 rounded-xl bg-subtle border border-default text-left">
+      <span class="type-caption uppercase tracking-wider text-tertiary block mb-1">Health score</span>
+      <span class="type-heading-m font-bold text-primary block" style="font-size: 20px; line-height: 26px;">
+        {% if health_score %}{{ health_score }} / 100{% else %}19 / 100{% endif %}
+      </span>
+    </div>
+  </div>
+
+  <!-- Tags Row matching new Figma wireframe (Dish types + Preference check) -->
+  <div class="badge-row my-4">
+    {% if dish_types %}
+      {% for dt in dish_types %}
+        <span class="badge capitalize">{{ dt }}</span>
+      {% endfor %}
+    {% else %}
+      <span class="badge capitalize">Lunch</span>
+      <span class="badge capitalize">Main course</span>
+    {% endif %}
+    {% if user.is_authenticated %}
+      <span class="badge badge-success">✓ Fits your preferences</span>
+    {% else %}
+      <span class="badge">[Allergen check available on login]</span>
+    {% endif %}
+  </div>
+
+  <!-- Main Grid: Ingredients (Left) vs Nutrition per Serving (Right) -->
+  <div class="grid grid-cols-1 md:grid-cols-12 gap-5 pt-2">
+    
+    <!-- Left Column: Ingredients Card -->
+    <div class="md:col-span-8 p-5 sm:p-6 rounded-2xl bg-subtle border border-default space-y-4">
+      <h3 class="type-h4 font-bold text-primary" style="margin: 0;">
+        Ingredients (serves {% if servings %}{{ servings }}{% else %}2{% endif %})
+      </h3>
+      {% if ingredients %}
+        <ul class="space-y-2 type-body-sm text-secondary">
+          {% for item in ingredients %}
+            <li class="flex items-start gap-2.5 leading-relaxed">
+              <span class="text-tertiary font-bold text-sm shrink-0">&bull;</span>
+              <span>{{ item }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="type-body-sm text-tertiary italic">Ingredient details unavailable.</p>
+      {% endif %}
+    </div>
+
+    <!-- Right Column: Nutrition Card -->
+    <div class="md:col-span-4 p-5 sm:p-6 rounded-2xl bg-subtle border border-default flex flex-col justify-between">
+      <div>
+        <h3 class="type-h4 font-bold text-primary mb-4" style="margin-top: 0;">
+          Nutrition per serving
+        </h3>
+        <div class="space-y-2.5">
+          {% if key_nutrients %}
+            {% for n in key_nutrients %}
+              <div class="flex items-center justify-between type-body-sm py-1 border-b border-default last:border-0">
+                <span class="text-secondary">{{ n.name }}</span>
+                <span class="font-bold text-primary">{{ n.display }}</span>
+              </div>
+            {% endfor %}
+          {% elif calories %}
+            <div class="flex items-center justify-between type-body-sm py-1 border-b border-default">
+              <span class="text-secondary">Calories</span>
+              <span class="font-bold text-primary">{{ calories }} kcal</span>
+            </div>
+            <div class="flex items-center justify-between type-body-sm py-1 border-b border-default">
+              <span class="text-secondary">Protein</span>
+              <span class="font-bold text-primary">19 g</span>
+            </div>
+            <div class="flex items-center justify-between type-body-sm py-1 border-b border-default last:border-0">
+              <span class="text-secondary">Fat</span>
+              <span class="font-bold text-primary">20 g</span>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Helper note matching Figma wireframe -->
+      <p class="type-caption text-tertiary mt-5 italic" style="font-size: 11px; line-height: 15px;">
+        Carbs, fibre, sugar and vitamins appear here when requested with includeNutrition=true.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- Steps Section Card matching new Figma wireframe (spans full width) -->
+  <div class="p-5 sm:p-6 rounded-2xl bg-subtle border border-default mt-5 space-y-3">
+    <h3 class="type-h4 font-bold text-primary" style="margin: 0;">
+      Steps
+    </h3>
+    {% if instructions %}
+      <ol class="space-y-3 type-body-sm text-primary">
+        {% for step in instructions %}
+          <li class="flex items-start gap-3 leading-relaxed">
+            <span class="font-bold text-tertiary shrink-0">{{ forloop.counter }}.</span>
+            <span>{{ step }}</span>
+          </li>
+        {% endfor %}
+      </ol>
+    {% else %}
+      <p class="type-body-sm text-secondary" style="margin: 0;">
+        This recipe has no step-by-step instructions on Spoonacular.
+      </p>
+    {% endif %}
+
+    <div>
+      <a 
+        href="{{ source_url }}" 
+        target="_blank" 
+        rel="noopener noreferrer" 
+        class="type-body-sm text-brand font-medium hover:underline inline-flex items-center gap-1.5"
+      >
+        <span>Read the steps on the original recipe</span>
+        <span>&rarr;</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Attribution Link matching new Figma wireframe -->
+  <div class="pt-1">
+    <a 
+      href="{{ source_url }}" 
+      target="_blank" 
+      rel="noopener noreferrer" 
+      class="type-caption text-tertiary hover:text-secondary inline-flex items-center gap-1"
+    >
+      <span>Original recipe: {{ source_name }}</span>
+      <span>&rarr;</span>
+    </a>
+  </div>
+
+  <!-- Comments Section matching new Figma Wireframe -->
+  <div class="pt-6 border-t border-default space-y-4" id="comments">
+    <h3 class="type-h4 font-bold text-primary" style="margin: 0;">
+      Comments ({{ comments|length }})
+    </h3>
+
+    <!-- Comment Form with inline input & Post button -->
+    <form action="{% url 'food_of_the_day:add_comment' meal.id %}" method="POST" class="flex items-center gap-2.5">
+      {% csrf_token %}
+      <input 
+        type="text"
+        name="text" 
+        placeholder="Share your thoughts..."
+        class="input flex-1"
+        maxlength="1000"
+        required
+      />
+      <button 
+        type="submit" 
+        class="btn btn-primary"
+      >
+        Post
+      </button>
+    </form>
+
+    <!-- Comments List -->
+    <div class="space-y-3 pt-2">
+      {% if comments %}
+        {% for c in comments %}
+          <div class="p-3.5 bg-subtle rounded-xl space-y-1.5">
+            <div class="flex items-center gap-2.5">
+              <div class="w-6 h-6 rounded-full bg-muted text-secondary font-bold text-[11px] flex items-center justify-center uppercase shrink-0">
+                {{ c.user.username|slice:":1" }}
+              </div>
+              <span class="font-semibold type-body-sm text-primary">@{{ c.user.username }}</span>
+              <span class="type-caption text-tertiary">({{ c.created_at|timesince }} ago)</span>
+            </div>
+            <p class="type-body-sm text-secondary leading-relaxed pl-8" style="margin: 0;">
+              {{ c.text }}
+            </p>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="type-body-sm text-tertiary italic py-2">
+          No comments yet. Share the first thought!
+        </p>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
