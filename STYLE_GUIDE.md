@@ -218,7 +218,7 @@ Need it as an image file? `{% static 'img/logo.svg' %}`.
 Two kinds, both on `/styleguide/`:
 
 - **Confirm dialog** (`.dialog`): question + sentence + buttons on the right. "Delete your account?", "Clear your viewing history?"
-- **Form dialog** (`.dialog .dialog-form`): title + sentence + fields + buttons on the left. "Change password", "Save comparison"
+- **Form dialog** (`.dialog .dialog-form`): title + sentence + fields + buttons on the right. "Change password", "Save comparison"
 
 Use `{% include 'components/dialog_close.html' %}` for the × button. Open a dialog with:
 
