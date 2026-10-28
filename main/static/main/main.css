@@ -120,85 +120,6 @@
     flex: 1;
 }
 
-/* Compare tray (Figma: SF / Compare tray): green bar stuck to the bottom of the screen */
-.discover-tray {
-    position: sticky;
-    bottom: var(--space-xl);
-    z-index: 10;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-md);
-    margin-top: var(--space-3xl);
-    padding: var(--space-md) var(--space-lg);
-    border-radius: var(--radius-lg);
-    background: var(--color-bg-brand);
-    box-shadow: var(--shadow-lg);
-}
-
-/* A chosen product: white box with its grade, name and the x */
-.discover-tray-slot {
-    display: flex;
-    flex: 0 1 300px;
-    align-items: center;
-    gap: var(--space-md);
-    min-width: 0;
-    padding: var(--space-sm) var(--space-md);
-    border-radius: var(--radius-md);
-    background: var(--color-bg-surface);
-}
-
-/* Small grade square. Its color comes from the shared .grade-a ... .grade-e classes, gray when "?" */
-.discover-tray-grade {
-    display: inline-flex;
-    flex-shrink: 0;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: var(--radius-sm);
-    background: var(--color-bg-subtle);
-    font: 700 14px/20px var(--font-sans);
-}
-
-/* Product name: one line, "..." if too long */
-.discover-tray-name {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    color: var(--color-text-primary);
-    font: 600 14px/20px var(--font-sans);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-/* A free place: dashed box with a hint */
-.discover-tray-empty {
-    display: flex;
-    flex: 0 1 230px;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-md);
-    border: 1px dashed currentColor;
-    border-radius: var(--radius-md);
-    color: var(--color-text-on-brand);
-    font: 500 12px/16px var(--font-sans);
-    opacity: 0.85;
-}
-
-/* "1 of 3 selected", pushed to the right */
-.discover-tray-count {
-    margin-left: auto;
-    color: var(--color-text-on-brand);
-    font: 600 14px/20px var(--font-sans);
-}
-
-/* "Compare now": the shared white button, green text and wider (Figma 180px) */
-.discover-tray-go {
-    min-width: 180px;
-    color: var(--color-text-brand);
-}
-
 /* Quick filter chips are hidden until "Filters" is clicked (see main.js) */
 .discover-quick-filters.is-hidden {
     display: none;
@@ -358,4 +279,149 @@
 .discover-clamp-toggle:focus-visible {
     outline: 2px solid var(--color-border-focus);
     outline-offset: 2px;
+}
+
+/* change: "✓ Added" on a card (Figma): light green with a green border, like a selected chip */
+.discover-added {
+    background: var(--color-bg-brand-subtle);
+    color: var(--color-text-brand);
+    border-color: var(--color-border-brand);
+}
+
+.discover-added:hover {
+    background: var(--color-bg-brand-subtle);
+}
+
+/* change: the whole compare tray, rewritten in one place to match Figma (SF / Compare tray).
+   Numbers come straight from the Figma frames "2 product in compare" and "Return with 3 Products" */
+
+/* Green bar: 12px top/bottom, 16px left/right, 16px corners, one single row, 32px under the cards */
+.discover-tray {
+    position: sticky;
+    bottom: var(--space-xl);
+    z-index: 10;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: var(--space-md);
+    margin-top: var(--space-2xl);
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-brand);
+    box-shadow: var(--shadow-lg);
+}
+
+/* A chosen product: white, 48px tall, 300px wide (280px when the tray is full), 12px corners */
+.discover-tray-slot {
+    display: flex;
+    flex: 0 1 300px;
+    align-items: center;
+    gap: var(--space-md);
+    min-width: 0;
+    height: 48px;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+}
+
+.discover-tray.is-full .discover-tray-slot {
+    flex-basis: 280px;
+}
+
+/* Small grade square, 28px. The colour comes from the shared .grade-a ... .grade-e */
+.discover-tray-grade {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    font: 700 14px/20px var(--font-sans);
+}
+
+/* Grey only when the grade is "?" */
+.discover-tray-grade-unknown {
+    background: var(--color-bg-subtle);
+    color: var(--color-text-primary);
+}
+
+/* Product name: one line, "..." when it's too long */
+.discover-tray-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--color-text-primary);
+    font: 600 14px/20px var(--font-sans);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The x: in Figma it's just a grey "x" character (16px), not a round button */
+.discover-tray-remove {
+    flex-shrink: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--color-text-secondary);
+    font: 600 16px/24px var(--font-sans);
+    cursor: pointer;
+}
+
+.discover-tray-remove:hover {
+    color: var(--color-text-primary);
+}
+
+/* A free place: dashed box, 230 x 48px, small white text */
+.discover-tray-empty {
+    display: flex;
+    flex: 0 1 230px;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    padding: var(--space-sm) var(--space-md);
+    border: 1px dashed currentColor;
+    border-radius: var(--radius-md);
+    color: var(--color-text-on-brand);
+    font: 500 12px/16px var(--font-sans);
+    white-space: nowrap;
+    opacity: 0.85;
+}
+
+/* "2 of 3 selected", pushed to the right (Figma has a spacer here) */
+.discover-tray-count {
+    margin-left: auto;
+    color: var(--color-text-on-brand);
+    font: 600 14px/20px var(--font-sans);
+    white-space: nowrap;
+}
+
+/* "Compare now": white, green text, no border, exactly 180 x 48px */
+.discover-tray-go {
+    flex: 0 0 180px;
+    min-height: 48px;
+    border-color: transparent;
+    background: var(--color-bg-surface);
+    color: var(--color-text-brand);
+}
+
+/* Less than 2 products: Figma just fades it */
+.discover-tray-go.is-disabled {
+    background: var(--color-bg-surface);
+    color: var(--color-text-brand);
+    opacity: 0.5;
+}
+
+/* Phones: there isn't room for one row, so let it wrap */
+@media (max-width: 767px) {
+    .discover-tray {
+        flex-wrap: wrap;
+    }
+}
+
+
+/* change: the tray holder is only there for JavaScript. display: contents makes it "invisible" for the layout,
+   so the tray can still stick to the bottom of the page like before */
+.discover-tray-holder {
+    display: contents;
 }

@@ -81,17 +81,10 @@
                                     data-favorite-style="button" aria-pressed="{% if is_favorite %}true{% else %}false{% endif %}">{% if is_favorite %}♥ Saved{% else %}♡ Save{% endif %}</button>
                         </form>
                     {% endif %}
-                    {% if user.is_authenticated %}
-                        <form method="post" action="{% url 'main:add_to_compare' barcode %}" class="flex-1">
-                            {% csrf_token %}
-                            <input type="hidden" name="product_name" value="{{ product.product_name }}">
-                            <input type="hidden" name="grade" value="{{ product.spoonfeed.grade }}">
-                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                            <button type="submit" class="btn btn-primary btn-block">+ Compare</button>
-                        </form>
-                    {% else %}
-                        <a href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}" class="btn btn-primary flex-1">+ Compare</a>
-                    {% endif %}
+                    {# change: same compare button as the cards (Added / Limit reached) #}
+                    <div class="flex-1 flex js-compare-slot" data-code="{{ barcode }}" data-name="{{ product.product_name }}" data-grade="{{ product.spoonfeed.grade }}" data-style="btn-primary">
+                        {% include 'main/compare_button.html' with code=barcode name=product.product_name grade=product.spoonfeed.grade style="btn-primary" %}
+                    </div>
                 </div>
             </div>
         </section>
@@ -181,7 +174,8 @@
         {# Credit the data (team rule) #}
         <p class="type-caption text-tertiary mt-10">Source: Open Food Facts, product {{ barcode }}, values per 100 g or ml as sold.</p>
     {% endif %}
-    {% include 'main/compare_tray.html' %}
+    {# change: holder for the tray, main.js puts the new tray in here after a compare click #}
+    <div id="compare-tray-holder" class="discover-tray-holder">{% include 'main/compare_tray.html' %}</div>
 {% endblock %}
 
 {% block extra_js %}

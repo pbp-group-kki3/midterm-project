@@ -1,5 +1,7 @@
 from django.shortcuts import render, redirect
 from django.http import JsonResponse # the heart answers with JSON when clicked (no page reload)
+from django.template.loader import render_to_string # change: builds the new tray + buttons as HTML for the no-reload compare
+import json # change: reads the list of cards that JavaScript sends
 from django.contrib import messages # one-time notes like "Remove one to add another"
 from django.http import HttpResponse
 from main.services.openfoodfacts import search_products, browse_products, get_product, get_alternatives # import search function + to call API
@@ -102,6 +104,7 @@ def compare_tray(request):
         "compare_empty_slots": range(COMPARE_MAX - len(items)),   # the dashed "+ Add a product" boxes
         "compare_max": COMPARE_MAX,
         "can_compare": len(items) >= 2,                     # Figma: "Compare now" is faded until 2 are picked
+        "compare_full": len(items) >= COMPARE_MAX,          # change: when it's full, the cards show "Added" / "Limit reached" (Figma)
         "compare_barcodes": barcodes,
     }
 
@@ -170,6 +173,21 @@ def show_main(request):
         "processing": processing,
     }
     context.update(compare_tray(request))                  # the compare tray at the bottom
+
+    # change: "Load more products" clicked with JavaScript -> send only the NEXT cards as HTML, no reload.
+    # Same product_card.html as a normal load, so the cards look exactly the same
+    if is_ajax(request):
+        new_cards = products[show - PAGE_STEP:show]          # e.g. show=12 -> cards 7 to 12
+        cards_html = "".join(
+            render_to_string("main/product_card.html", dict(context, product=p), request=request)
+            for p in new_cards
+        )
+        return JsonResponse({
+            "cards": cards_html,
+            "has_more": context["has_more"],                 # hide the button when everything is shown
+            "more_url": context["more_url"],                 # the link for the next click
+        })
+
     return render(request, "main/main.html", context)
 
 def product_detail(request, barcode):
@@ -240,6 +258,34 @@ def toggle_favorite(request, barcode):
     return redirect("main:product_detail", barcode=barcode)
 
 
+# change: helper for the no-reload compare. JavaScript sends the list of cards on the page ("slots"),
+# and we send back the new tray HTML plus the new compare button for each of those cards.
+# It uses the same two templates as a normal page load, so the HTML is only written in one place
+def is_ajax(request):
+    return request.headers.get("x-requested-with") == "XMLHttpRequest"
+
+
+def compare_json(request):
+    context = compare_tray(request)
+    tray_html = render_to_string("main/compare_tray.html", context, request=request)
+    try:
+        slots = json.loads(request.POST.get("slots") or "[]")
+    except ValueError:                       # someone sent rubbish: just skip the buttons
+        slots = []
+    buttons = {}
+    for slot in slots[:60]:                  # 60 = more than any page shows, stops silly requests
+        code = str(slot.get("code", ""))
+        button_context = dict(
+            context,
+            code=code,
+            name=str(slot.get("name", ""))[:255],
+            grade=str(slot.get("grade", "?"))[:1],
+            style="btn-primary" if slot.get("style") == "btn-primary" else "btn-outline",
+        )
+        buttons[code] = render_to_string("main/compare_button.html", button_context, request=request)
+    return JsonResponse({"tray": tray_html, "buttons": buttons})
+
+
 # helper : go back to the page the button was on, but only if it's on OUR site (blocks open redirects)
 def back_to(request, fallback="main:show_main"):
     next_url = request.POST.get("next", "")
@@ -254,9 +300,11 @@ def back_to(request, fallback="main:show_main"):
 def add_to_compare(request, barcode):
     barcodes = request.session.get("compare", [])
     if barcode in barcodes:
-        messages.info(request, "This product is already in your comparison.")
+        if not is_ajax(request):            # change: the no-reload version shows the state on the buttons instead
+            messages.info(request, "This product is already in your comparison.")
     elif len(barcodes) >= COMPARE_MAX:
-        messages.warning(request, "Remove one to add another.")   # wording from the team doc
+        if not is_ajax(request):
+            messages.warning(request, "Remove one to add another.")   # wording from the team doc
     else:
         barcodes.append(barcode)
         request.session["compare"] = barcodes               # assigning again tells Django the session changed
@@ -266,6 +314,8 @@ def add_to_compare(request, barcode):
             "grade": request.POST.get("grade", "?")[:1],    # one letter, A-E or ?
         }
         request.session["compare_info"] = info
+    if is_ajax(request):                    # change: clicked with JavaScript -> send the new tray + buttons, no reload
+        return compare_json(request)
     return back_to(request)
 
 
@@ -277,5 +327,7 @@ def remove_from_compare(request, barcode):
     info = request.session.get("compare_info", {})
     info.pop(barcode, None)
     request.session["compare_info"] = info
+    if is_ajax(request):                    # change: same as add, no reload
+        return compare_json(request)
     return back_to(request)
 

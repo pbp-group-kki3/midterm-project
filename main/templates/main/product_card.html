@@ -64,19 +64,11 @@
     </div>
 
     <div class="media-card-footer">
-        {% if user.is_authenticated %}
-            {# + Compare puts this product in the compare tray (session). POST because it changes data #}
-            <form method="post" action="{% url 'main:add_to_compare' product.code %}" class="discover-card-action">
-                {% csrf_token %}
-                <input type="hidden" name="product_name" value="{{ product.product_name }}">
-                <input type="hidden" name="grade" value="{{ product.spoonfeed.grade }}">
-                <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                <button type="submit" class="btn btn-outline btn-block">+ Compare</button>
-            </form>
-        {% else %}
-            {# Logged out: + Compare goes to the login page (team doc + Figma) #}
-            <a href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}" class="btn btn-outline">+ Compare</a>
-        {% endif %}
+        {# change: the compare button now shows Added / Limit reached like the Figma #}
+        {# change: js-compare-slot tells main.js where this card's button lives, so it can swap in the new one #}
+        <div class="discover-card-action js-compare-slot" data-code="{{ product.code }}" data-name="{{ product.product_name }}" data-grade="{{ product.spoonfeed.grade }}" data-style="btn-outline">
+            {% include 'main/compare_button.html' with code=product.code name=product.product_name grade=product.spoonfeed.grade style="btn-outline" %}
+        </div>
         <a href="{% url 'main:product_detail' product.code %}" class="btn btn-primary">Details</a>
     </div>
 </article>
