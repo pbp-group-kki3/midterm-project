@@ -3,6 +3,7 @@
 import os # used to read .env variables
 import requests # library used to make HTTP calls to the API
 from django.core.cache import cache # implement cache by using django's short term memory - to not repeat API calls
+from main.services.grading import spoonfeed_grade # import spoonfeed grade
 
 # root address of open food facts API (indonesia focused)
 BASE_URL = "https://id.openfoodfacts.org"
@@ -12,6 +13,10 @@ HEADERS = {"User-Agent": os.environ.get("OFF_USER_AGENT", "SpoonFed/1.0")}
 
 # product fields SpoonFeed needs the data for
 FIELDS = "code,product_name,brands,quantity,image_front_small_url,nutriscore_grade,ecoscore_grade,ecoscore_score,nova_group,labels_tags,allergens_tags,categories_tags,ingredients_analysis_tags"
+
+# helper function
+def get_score(product):
+    return product["spoonfeed"]["score"]
 
 # return one product as a dict, or none if it's missing/API fails
 # function : get product and it's detail from the API
@@ -65,3 +70,48 @@ def search_products(text):
         return None
     cache.set(key, products, 60 * 60)
     return products
+
+# function : give alternative option based on the current clicked product, recommends another product (up to 3)
+# if no alternative, returns []
+def get_alternatives(product, limit=3):
+    categories = product.get("categories_tags") or []
+    if not categories:
+        return []
+    category = categories[-1]
+
+    current_grade = spoonfeed_grade(product)["grade"] # gives the grade (A, B, ...)
+    if current_grade == "?":
+        return []
+
+    key = f"off:category:{category}" # one cache entry per category
+    candidates = cache.get(key) # look for candidates inside cache first
+    if candidates is None:
+        try:
+            response = requests.get(
+                f"{BASE_URL}/api/v2/search",
+                params={
+                    "categories_tags" : category,
+                    "fields" : FIELDS,
+                    "page_size" : 24
+                },
+                headers=HEADERS,
+                timeout=10,
+            )
+            response.raise_for_status()
+            candidates = response.json().get("products",[])
+        
+        except requests.RequestException:
+            return[]
+        cache.set(key, candidates, 60 * 60)
+
+    alternatives = []
+    for p in candidates:
+        if p.get("code") == product.get("code"): # if p is the current product
+            continue
+        result = spoonfeed_grade(p)
+        if result["grade"] != "?" and result["grade"] < current_grade:
+            p["spoonfeed"] = result
+            alternatives.append(p)
+
+    alternatives.sort(key=get_score, reverse=True)
+    return alternatives[:limit]
