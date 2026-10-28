@@ -7,11 +7,12 @@
     <link rel="preconnect" href="https://images.openfoodfacts.org">
     <link
         rel="stylesheet"
-        href="{% static 'comparison/comparison.css' %}?v=3"
+        href="{% static 'comparison/css/comparison.css' %}"
     >
 {% endblock %}
 
 {% block content %}
+    {% include "comparison/components/toasts.html" %}
     <header class="page-header">
         <div>
             <a href="/" class="back-link mb-3">
@@ -286,7 +287,12 @@
 {% endblock %}
 {% block extra_js %}
     <script
-        src="{% static 'comparison/comparison.js' %}"
+        src="{% static 'comparison/js/comparison.js' %}"
+        defer
+    ></script>
+
+    <script
+        src="{% static 'comparison/js/toast.js' %}"
         defer
     ></script>
 {% endblock %}
