@@ -123,13 +123,113 @@ EXAMPLES = [
 <button class="btn btn-load-more">Load more products ⌄</button>''',
     },
     {
+        'id': 'icons',
+        'title': 'Icons',
+        'note': 'All 16 original Figma variants. Use .icon plus .icon-name. Every icon is 20 × 20. bookmark includes a plus for saving; saved is the plain bookmark outline. Hide decorative icons with aria-hidden="true".',
+        'html': '''<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
+    <div class="flex items-center gap-3">
+        <span class="icon icon-trash icon-default" aria-hidden="true"></span>
+        <code>icon-trash</code>
+    </div>
+    <div class="flex items-center gap-3">
+        <span class="icon icon-preferences icon-default" aria-hidden="true"></span>
+        <code>icon-preferences</code>
+    </div>
+    <div class="flex items-center gap-3">
+        <span class="icon icon-saved icon-default" aria-hidden="true"></span>
+        <code>icon-saved</code>
+    </div>
+    <div class="flex items-center gap-3">
+        <span class="icon icon-check icon-default" aria-hidden="true"></span>
+        <code>icon-check</code>
+    </div>
+    <div class="flex items-center gap-3">
+        <span class="icon icon-plus icon-default" aria-hidden="true"></span>
+        <code>icon-plus</code>
+    </div>
+    <div class="flex items-center gap-3">
+        <span class="icon icon-arrow-left icon-default" aria-hidden="true"></span>
+        <code>icon-arrow-left</code>
+    </div>
+    <div class="flex items-center gap-3">
+        <span class="icon icon-chevron-right icon-default" aria-hidden="true"></span>
+        <code>icon-chevron-right</code>
+    </div>
+    <div class="flex items-center gap-3">
+        <span class="icon icon-x icon-default" aria-hidden="true"></span>
+        <code>icon-x</code>
+    </div>
+    <div class="flex items-center gap-3">
+        <span class="icon icon-star icon-default" aria-hidden="true"></span>
+        <code>icon-star</code>
+    </div>
+    <div class="flex items-center gap-3">
+        <span class="icon icon-home icon-default" aria-hidden="true"></span>
+        <code>icon-home</code>
+    </div>
+    <div class="flex items-center gap-3">
+        <span class="icon icon-chart icon-default" aria-hidden="true"></span>
+        <code>icon-chart</code>
+    </div>
+    <div class="flex items-center gap-3">
+        <span class="icon icon-user icon-default" aria-hidden="true"></span>
+        <code>icon-user</code>
+    </div>
+    <div class="flex items-center gap-3">
+        <span class="icon icon-bell icon-default" aria-hidden="true"></span>
+        <code>icon-bell</code>
+    </div>
+    <div class="flex items-center gap-3">
+        <span class="icon icon-bookmark icon-default" aria-hidden="true"></span>
+        <code>icon-bookmark</code>
+    </div>
+    <div class="flex items-center gap-3">
+        <span class="icon icon-edit icon-default" aria-hidden="true"></span>
+        <code>icon-edit</code>
+    </div>
+    <div class="flex items-center gap-3">
+        <span class="icon icon-history icon-default" aria-hidden="true"></span>
+        <code>icon-history</code>
+    </div>
+</div>''',
+    },
+    {
+        'id': 'icons-in-actions',
+        'title': 'Icons in actions',
+        'note': 'Icons inherit text color, including white on primary buttons and the disabled color. For standalone colors, use .icon-default, .icon-primary, .icon-secondary or .icon-on-brand.',
+        'html': '''<button type="button" class="btn btn-primary">
+    Save comparison
+    <span class="icon icon-bookmark" aria-hidden="true"></span>
+</button>
+<button type="button" class="btn btn-danger-subtle">
+    <span class="icon icon-trash" aria-hidden="true"></span>
+    Remove
+</button>
+<a href="#icons" class="back-link">
+    <span class="icon icon-arrow-left" aria-hidden="true"></span>
+    Back to Discover
+</a>
+<button type="button" class="btn btn-primary" disabled>
+    Saved
+    <span class="icon icon-saved" aria-hidden="true"></span>
+</button>''',
+    },
+    {
         'id': 'icon-buttons',
         'title': 'Icon buttons',
-        'note': 'Round buttons with only an icon. Always add aria-label. .is-active makes the heart red.',
-        'html': '''<button class="icon-btn" aria-label="Save">♡</button>
-<button class="icon-btn is-active" aria-label="Saved">♥</button>
-<button class="icon-btn icon-btn-dark" aria-label="Previous">‹</button>
-<button class="icon-btn icon-btn-plain" aria-label="Close">×</button>''',
+        'note': 'Round buttons with only an icon. Always add an accessible label and hide the decorative icon. .is-active changes the icon color.',
+        'html': '''<button type="button" class="icon-btn" aria-label="Save comparison">
+    <span class="icon icon-bookmark" aria-hidden="true"></span>
+</button>
+<button type="button" class="icon-btn is-active" aria-label="Saved comparison">
+    <span class="icon icon-saved" aria-hidden="true"></span>
+</button>
+<button type="button" class="icon-btn icon-btn-dark" aria-label="Previous">
+    <span class="icon icon-arrow-left" aria-hidden="true"></span>
+</button>
+<button type="button" class="icon-btn icon-btn-plain" aria-label="Close">
+    <span class="icon icon-x" aria-hidden="true"></span>
+</button>''',
     },
     {
         'id': 'links',
@@ -435,7 +535,7 @@ EXAMPLES = [
     {
         'id': 'dialog-form',
         'title': 'Form dialog (popup)',
-        'note': 'Add .dialog-form: smaller sentence, fields, buttons on the left.',
+        'note': 'Add .dialog-form: smaller sentence, fields, buttons on the right.',
         'html': '''<dialog class="dialog dialog-form" id="password-dialog" open>
     <h2 class="dialog-title">Change password</h2>
     <p class="dialog-text">Enter your current password and choose a new one.</p>
