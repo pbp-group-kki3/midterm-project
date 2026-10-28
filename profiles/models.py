@@ -1,16 +1,32 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 class Profile(models.Model):
+    DIET_CHOICES = [
+        ('none', 'None'),
+        ('halal', 'Halal'),
+        ('vegetarian', 'Vegetarian'),
+        ('vegan', 'Vegan'),
+        ('pescatarian', 'Pescatarian'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    
     profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
-    
-    dietary_preferences = models.TextField(blank=True, help_text="e.g., Vegan, Vegetarian, Keto")
-    allergies = models.TextField(blank=True, help_text="e.g., Peanuts, Gluten, Dairy")
-    nutritional_goals = models.TextField(blank=True, help_text="e.g., Weight loss, Muscle gain")
+    diet = models.CharField(max_length=20, choices=DIET_CHOICES, default='none')
+    allergies = models.JSONField(default=list, blank=True)
+    calorie_target = models.IntegerField(null=True, blank=True)
+    meals_per_day = models.IntegerField(default=3)
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
 
-3
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()

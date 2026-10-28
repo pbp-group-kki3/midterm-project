@@ -21,7 +21,9 @@ from django.conf import settings
 from django.conf.urls.static import static
 from midterm_project.placeholders import coming_soon, modules
 from midterm_project.styleguide import styleguide
-from profiles.views import register_view, login_view, logout_view, profile_view, profile_edit, profile_delete, profile_picture_delete
+from django.contrib.auth.views import LoginView, LogoutView
+from profiles.views import register_view, profile_view, profile_edit, profile_delete, profile_picture_delete
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('main.urls')),
@@ -39,12 +41,13 @@ urlpatterns = [
     path('blog/', coming_soon, {'slug': 'blog'}),
 
     path('register/', register_view, name='register'),
-    path('login/', login_view, name='login'),
-    path('logout/', logout_view, name='logout'),
-    path('', profile_view, name='profile'),
-    path('edit/', profile_edit, name='profile_edit'),
-    path('delete/', profile_delete, name='profile_delete'),
-    path('picture/delete/', profile_picture_delete, name='profile_picture_delete'),
+    path('login/', LoginView.as_view(template_name='profiles/login.html'), name='login'),
+    path('logout/', LogoutView.as_view(next_page='login'), name='logout'),
+    
+    path('profile/', profile_view, name='profile'),
+    path('profile/edit/', profile_edit, name='profile_edit'),
+    path('profile/delete/', profile_delete, name='profile_delete'),
+    path('profile/picture/delete/', profile_picture_delete, name='profile_picture_delete'),
 ]
 
 if settings.DEBUG:
