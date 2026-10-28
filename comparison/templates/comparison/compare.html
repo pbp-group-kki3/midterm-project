@@ -180,17 +180,27 @@
                                     </div>
                                 </div>
 
-                                <button
-                                    type="button"
-                                    class="btn btn-danger-subtle btn-sm btn-block mt-3 compare-remove-trigger"
-                                    data-remove-url="{% url 'comparison:remove_product' product.compare_barcode %}"
-                                    data-product-name="{{ product.product_name|default:'this product' }}"
-                                    aria-haspopup="dialog"
-                                    aria-controls="compare-remove-dialog"
-                                    aria-label="Remove {{ product.product_name|default:'product' }} from comparison"
-                                >
-                                    Remove
-                                </button>
+                                <div class="btn-group mt-3">
+                                    <button
+                                        type="button"
+                                        class="btn btn-danger-subtle btn-sm flex-1 min-w-0 compare-remove-trigger"
+                                        data-remove-url="{% url 'comparison:remove_product' product.compare_barcode %}"
+                                        data-product-name="{{ product.product_name|default:'this product' }}"
+                                        aria-haspopup="dialog"
+                                        aria-controls="compare-remove-dialog"
+                                        aria-label="Remove {{ product.product_name|default:'product' }} from comparison"
+                                    >
+                                        Remove
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="btn btn-primary btn-sm flex-1 min-w-0"
+                                        disabled
+                                    >
+                                        Details
+                                    </button>
+                                </div>
                             </td>
                         {% endfor %}
 
