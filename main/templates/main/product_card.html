@@ -1,33 +1,34 @@
-<!-- card html for the product cards -->
-
+{# One product card (Figma: SF / Product Card v2). Logged out: no heart #}
 <article class="media-card discover-card">
-    <!-- photo : taken from API -->
+
     <div class="media-card-img">
         {% if product.image_front_small_url %}
-            <img src="{{ product.image_front_small_url}}" alt="{{ product.product_name}}">
+            <img src="{{ product.image_front_small_url }}" alt="{{ product.product_name }}">
         {% else %}
-            No photo available <!-- if API doesn't have picture, show this -->
+            No photo available
         {% endif %}
     </div>
 
-    <!-- if user is logged in : they can HEART/SAVE the product-->
     {% if user.is_authenticated %}
         <div class="media-card-corner">
-            <!-- TODO: make it a favorite, in history stored also == WAIT UNTIL FavoriteProduct model exists -->
-            <button type="button" class="icon-btn discover-fav" aria-label="Save to favorites">♡</button>
+            {# Heart = favorite toggle. POST + csrf_token because it changes data #}
+            <form method="post" action="{% url 'main:toggle_favorite' product.code %}">
+                {% csrf_token %}
+                <input type="hidden" name="product_name" value="{{ product.product_name }}">
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="icon-btn discover-fav" aria-label="Save to favorites">♡</button>
+            </form>
         </div>
     {% endif %}
 
-    <!-- card's body-->
     <div class="media-card-body">
-        <!-- card name (title + subtitle)-->
         <div class="discover-card-name">
             <h3 class="media-card-title">{{ product.product_name|default:"Unnamed product" }}</h3>
-            <p class="media-card-subtitle">{% firstof.product.quantity product.brands %}</p>
+            <p class="media-card-subtitle">{% firstof product.quantity product.brands %}</p>
         </div>
-        <!-- card's score -->
-         <div class="score-row">
-            <div class="score-tile" {% if product.spoonfeed.grade != '?' %}grade-{{ product.spoonfeed.grade|lower }}{% endif %}>
+
+        <div class="score-row">
+            <div class="score-tile {% if product.spoonfeed.grade != '?' %}grade-{{ product.spoonfeed.grade|lower }}{% endif %}">
                 <span class="score-tile-label">Grade</span>
                 <span class="score-tile-value">{{ product.spoonfeed.grade }}</span>
             </div>
@@ -43,17 +44,36 @@
                 <span class="score-tile-label">NOVA</span>
                 <span class="score-tile-value">{{ product.tiles.nova }}</span>
             </div>
-         </div>
+        </div>
 
-         <!-- TODO : tags == halal, no preservatives -->
-
-         <!-- TODO : "fits ur preferences" label, seen when logged in -->
+        {# Tags from labels_tags, up to 2 (prepare_card in views.py). Hidden when there are none #}
+        {% if product.tags %}
+            <div class="badge-row">
+                {% for tag in product.tags %}
+                    <span class="badge {{ tag.style }}">{{ tag.text }}</span>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {# "Fits your preferences" (Figma: SF / Preference chip). Logged in + preferences set only #}
+        {% if product.fit %}
+            <span class="discover-pref discover-pref-{{ product.fit.status }}">{{ product.fit.text }}</span>
+        {% endif %}
     </div>
 
     <div class="media-card-footer">
-        <!-- TODO : + Compare to add products to tray-->
-        <a href="#" class="btn btn-outline">+ Compare</a>
-        <!-- TODO : link to product detail page -->
-         <a href="#" class="btn btn-primary">Details</a>
+        {% if user.is_authenticated %}
+            {# + Compare puts this product in the compare tray (session). POST because it changes data #}
+            <form method="post" action="{% url 'main:add_to_compare' product.code %}" class="discover-card-action">
+                {% csrf_token %}
+                <input type="hidden" name="product_name" value="{{ product.product_name }}">
+                <input type="hidden" name="grade" value="{{ product.spoonfeed.grade }}">
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="btn btn-outline btn-block">+ Compare</button>
+            </form>
+        {% else %}
+            {# Logged out: + Compare goes to the login page (team doc + Figma) #}
+            <a href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}" class="btn btn-outline">+ Compare</a>
+        {% endif %}
+        <a href="{% url 'main:product_detail' product.code %}" class="btn btn-primary">Details</a>
     </div>
 </article>

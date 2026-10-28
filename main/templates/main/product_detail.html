@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ product.product_name|default:"Product" }} | SpoonFeed{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'main/main.css' %}">
+{% endblock %}
+
+{% block content %}
+    {# Back link with the shared arrow icon #}
+    <a href="{% url 'main:show_main' %}" class="back-link">
+        <span class="icon icon-arrow-left" aria-hidden="true"></span>
+        Discover
+    </a>
+
+    {# One-time notes, e.g. "Remove one to add another" (shared .alert, Django messages) #}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} mt-6">{{ message }}</div>
+    {% endfor %}
+
+    {% if not product %}
+        <div class="alert alert-warning mt-6">Product data is not available right now. Please try again in a moment.</div>
+    {% else %}
+
+        {# Photo left, name + scores + buttons right #}
+        <section class="grid md:grid-cols-2 gap-8 mt-6">
+            <div class="discover-detail-img">
+                {% if product.image_front_small_url %}
+                    <img src="{{ product.image_front_small_url }}" alt="{{ product.product_name }}">
+                {% else %}
+                    No photo available
+                {% endif %}
+            </div>
+
+            <div class="flex flex-col justify-center gap-4">
+                <div>
+                    <h1 class="page-title">{{ product.product_name|default:"Unnamed product" }}</h1>
+                    <p class="page-subtitle">{{ product.brands|default:"Unknown brand" }} | Barcode {{ barcode }}</p>
+                </div>
+
+                {# Tags + preference chip, same as on the card #}
+                {% if product.tags or product.fit %}
+                    <div class="badge-row">
+                        {% for tag in product.tags %}
+                            <span class="badge {{ tag.style }}">{{ tag.text }}</span>
+                        {% endfor %}
+                    </div>
+                    {% if product.fit %}
+                        <span class="discover-pref discover-pref-{{ product.fit.status }} self-start">{{ product.fit.text }}</span>
+                    {% endif %}
+                {% endif %}
+
+                <div class="score-row">
+                    <div class="score-tile {% if product.spoonfeed.grade != '?' %}grade-{{ product.spoonfeed.grade|lower }}{% endif %}">
+                        <span class="score-tile-label">Grade</span>
+                        <span class="score-tile-value">{{ product.spoonfeed.grade }}</span>
+                    </div>
+                    <div class="score-tile">
+                        <span class="score-tile-label">Nutri</span>
+                        <span class="score-tile-value">{{ product.tiles.nutri }}</span>
+                    </div>
+                    <div class="score-tile">
+                        <span class="score-tile-label">Green</span>
+                        <span class="score-tile-value">{{ product.tiles.green }}</span>
+                    </div>
+                    <div class="score-tile">
+                        <span class="score-tile-label">NOVA</span>
+                        <span class="score-tile-value">{{ product.tiles.nova }}</span>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    {% if user.is_authenticated %}
+                        <form method="post" action="{% url 'main:toggle_favorite' barcode %}" class="flex-1">
+                            {% csrf_token %}
+                            <input type="hidden" name="product_name" value="{{ product.product_name }}">
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <button type="submit" class="btn btn-outline btn-block">
+                                {% if is_favorite %}♥ Saved{% else %}♡ Save{% endif %}
+                            </button>
+                        </form>
+                    {% endif %}
+                    {% if user.is_authenticated %}
+                        <form method="post" action="{% url 'main:add_to_compare' barcode %}" class="flex-1">
+                            {% csrf_token %}
+                            <input type="hidden" name="product_name" value="{{ product.product_name }}">
+                            <input type="hidden" name="grade" value="{{ product.spoonfeed.grade }}">
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <button type="submit" class="btn btn-primary btn-block">+ Compare</button>
+                        </form>
+                    {% else %}
+                        <a href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}" class="btn btn-primary flex-1">+ Compare</a>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        {# "Why it's a C": one bar per factor, from spoonfeed_grade's parts #}
+        <section class="card mt-8">
+            {% if product.spoonfeed.grade == '?' %}
+                <h2 class="type-h3">No SpoonFeed grade yet</h2>
+                <p class="type-body-sm text-secondary mt-2">This product has no Nutri-Score, so it can't be graded.</p>
+            {% else %}
+                <h2 class="type-h3">Why it's {% if product.spoonfeed.grade == 'A' or product.spoonfeed.grade == 'E' %}an{% else %}a{% endif %} {{ product.spoonfeed.grade }}
+                    <span class="type-body-sm text-secondary">{{ product.spoonfeed.score }} out of 100</span>
+                </h2>
+                {% for row in why %}
+                    <div class="mt-4">
+                        <div class="flex justify-between type-body-sm">
+                            <span class="type-label-md">{{ row.label }}</span>
+                            <span>{% if row.points is not None %}{{ row.points }} / 100{% else %}?{% endif %}</span>
+                        </div>
+                        <div class="discover-bar">
+                            {% if row.points is not None %}
+                                <div class="discover-bar-fill" style="width: {{ row.points }}%"></div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </section>
+
+        {# Nutrition per 100 g or ml. Missing values show "?" (team doc) #}
+        <section class="card mt-8">
+            <h2 class="type-h3">Nutrition</h2>
+            <p class="type-caption text-tertiary mt-1">Per 100 g or ml</p>
+            <div class="grid md:grid-cols-2 gap-x-8 mt-4">
+                {% for row in nutrition %}
+                    <div class="flex justify-between py-2 border-b border-subtle type-body-sm">
+                        <span class="text-secondary">{{ row.label }}</span>
+                        <span class="type-label-md">{% if row.value is not None %}{{ row.value }} {{ row.unit }}{% else %}?{% endif %}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        {% if alternatives %}
+            <section class="mt-10">
+                <h2 class="type-heading-m">Try these instead</h2>
+                <p class="page-subtitle mb-6">Products in the same category with a better SpoonFeed grade</p>
+                <div class="card-grid">
+                    {% for p in alternatives %}
+                        {% include 'main/product_card.html' with product=p %}
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+
+        {# Credit the data (team rule) #}
+        <p class="type-caption text-tertiary mt-10">Source: Open Food Facts, product {{ barcode }}, values per 100 g or ml as sold.</p>
+    {% endif %}
+    {% include 'main/compare_tray.html' %}
+{% endblock %}

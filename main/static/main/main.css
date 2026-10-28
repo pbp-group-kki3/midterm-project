@@ -43,3 +43,190 @@
     color: var(--color-text-secondary);
     font-size: 18px;
 }
+
+/* Detail page photo: grey box, the whole pack shown, never cropped */
+.discover-detail-img {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 320px;
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-subtle);
+    color: var(--color-text-tertiary);
+}
+
+.discover-detail-img img {
+    max-height: 100%;
+    object-fit: contain;
+}
+
+/* "Why it's a C" bar: grey track */
+.discover-bar {
+    height: var(--space-sm);
+    margin-top: var(--space-xs);
+    border-radius: var(--radius-full);
+    background: var(--color-bg-subtle);
+}
+
+/* The filled part. Its width comes from the points, set in the template */
+.discover-bar-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    background: var(--color-bg-brand);
+}
+
+/* Search row: the field + Search button form takes the free space, Filters and Sort sit after it */
+.discover-search-form {
+    display: flex;
+    flex: 1 1 320px;
+    gap: var(--space-md);
+}
+
+.discover-search-form .input {
+    flex: 1;
+}
+
+/* Filter panel: one bordered box, a thin line between groups (Figma) */
+.discover-filter-panel {
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-lg);
+}
+
+.discover-filter-group {
+    padding: var(--space-lg);
+    border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.discover-filter-group:last-child {
+    border-bottom: none;
+}
+
+/* Group name above its chips: "Grade", "Labels and diet" */
+.discover-filter-title {
+    margin: 0 0 var(--space-md);
+    color: var(--color-text-secondary);
+    font: 500 14px/20px var(--font-sans);
+}
+
+/* Chips in the panel are <label>s, so show the hand cursor like a button */
+.discover-filter-chip {
+    cursor: pointer;
+}
+
+
+/* + Compare on a card is a small form: let it take its half of the footer like the shared buttons */
+.discover-card-action {
+    display: flex;
+    flex: 1;
+}
+
+/* Compare tray (Figma: SF / Compare tray): green bar stuck to the bottom of the screen */
+.discover-tray {
+    position: sticky;
+    bottom: var(--space-xl);
+    z-index: 10;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-md);
+    margin-top: var(--space-3xl);
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-brand);
+    box-shadow: var(--shadow-lg);
+}
+
+/* A chosen product: white box with its grade, name and the x */
+.discover-tray-slot {
+    display: flex;
+    flex: 0 1 300px;
+    align-items: center;
+    gap: var(--space-md);
+    min-width: 0;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+}
+
+/* Small grade square. Its color comes from the shared .grade-a ... .grade-e classes, gray when "?" */
+.discover-tray-grade {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-subtle);
+    font: 700 14px/20px var(--font-sans);
+}
+
+/* Product name: one line, "..." if too long */
+.discover-tray-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--color-text-primary);
+    font: 600 14px/20px var(--font-sans);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* A free place: dashed box with a hint */
+.discover-tray-empty {
+    display: flex;
+    flex: 0 1 230px;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-md);
+    border: 1px dashed currentColor;
+    border-radius: var(--radius-md);
+    color: var(--color-text-on-brand);
+    font: 500 12px/16px var(--font-sans);
+    opacity: 0.85;
+}
+
+/* "1 of 3 selected", pushed to the right */
+.discover-tray-count {
+    margin-left: auto;
+    color: var(--color-text-on-brand);
+    font: 600 14px/20px var(--font-sans);
+}
+
+/* "Compare now": the shared white button, green text and wider (Figma 180px) */
+.discover-tray-go {
+    min-width: 180px;
+    color: var(--color-text-brand);
+}
+
+/* Quick filter chips are hidden until "Filters" is clicked (see main.js) */
+.discover-quick-filters.is-hidden {
+    display: none;
+}
+
+/* Preference chip on cards (Figma: SF / Preference chip): one line, 12px text, 8px corners */
+.discover-pref {
+    display: inline-flex;
+    align-self: flex-start;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-sm);
+    font: 500 12px/16px var(--font-sans);
+}
+
+/* Confirmed by the product's data */
+.discover-pref-fits {
+    background: var(--color-bg-success-subtle);
+    color: var(--color-text-success);
+}
+
+/* Data missing, so we can't say */
+.discover-pref-unknown {
+    background: var(--color-bg-subtle);
+    color: var(--color-text-secondary);
+}
+
+/* Goes against the user's diet or allergies */
+.discover-pref-conflict {
+    background: var(--color-bg-warning-subtle);
+    color: var(--color-text-warning);
+}

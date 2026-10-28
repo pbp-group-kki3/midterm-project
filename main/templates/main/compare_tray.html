@@ -1,0 +1,34 @@
+{# Compare tray (Figma: SF / Compare tray). Sticks to the bottom of the screen while scrolling. #}
+{# Reads request.session["compare"] through compare_tray() in views.py. "Compare now" opens Alyssa's page #}
+{% if user.is_authenticated and compare_count %}
+    <div class="discover-tray">
+        {% for item in compare_items %}
+            <div class="discover-tray-slot">
+                <span class="discover-tray-grade {% if item.grade != '?' %}grade-{{ item.grade|lower }}{% endif %}">{{ item.grade }}</span>
+                <span class="discover-tray-name">{{ item.name }}</span>
+                <form method="post" action="{% url 'main:remove_from_compare' item.barcode %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button type="submit" class="icon-btn icon-btn-plain" aria-label="Remove {{ item.name }} from comparison">
+                        <span class="icon icon-x" aria-hidden="true"></span>
+                    </button>
+                </form>
+            </div>
+        {% endfor %}
+
+        {# Dashed boxes for the free places #}
+        {% for slot in compare_empty_slots %}
+            <div class="discover-tray-empty">+ Add a product to compare</div>
+        {% endfor %}
+
+        <span class="discover-tray-count">{{ compare_count }} of {{ compare_max }} selected</span>
+
+        {% if can_compare %}
+            {# Alyssa's page lives at /compare/. Plain URL because her urls aren't merged into main yet #}
+            <a href="/compare/" class="btn btn-white discover-tray-go">Compare now</a>
+        {% else %}
+            {# Less than 2 products: nothing to compare yet (shared disabled style) #}
+            <span class="btn btn-white discover-tray-go is-disabled" aria-disabled="true">Compare now</span>
+        {% endif %}
+    </div>
+{% endif %}
