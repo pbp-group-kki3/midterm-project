@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Replace {{ entry.get_slot_display|lower }} | SpoonFeed{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'meal_plan/meal_plan.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="mealplan-page">
+        <header class="mealplan-heading">
+            <a href="{{ back_url }}" class="back-link">← {{ plan.name }}</a>
+        </header>
+
+        {% include 'meal_plan/includes/messages.html' %}
+
+        <div class="card mealplan-replace-card">
+            {% include 'meal_plan/includes/replace_panel.html' %}
+        </div>
+
+        {% include 'meal_plan/includes/credit.html' %}
+    </div>
+{% endblock %}
