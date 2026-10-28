@@ -38,7 +38,14 @@ def register_view(request):
             user = User.objects.create_user(username=username, email=email, password=password)
             profile = user.profile
             
-            profile.diet = request.POST.get('diet', 'none')
+            # PARSE MULTI-SELECT DIET
+            diet_str = request.POST.get('diet', '')
+            if diet_str and diet_str != 'none':
+                profile.diet = [d.strip() for d in diet_str.split(',') if d.strip()]
+            else:
+                profile.diet = []
+
+            # PARSE ALLERGIES
             allergies_str = request.POST.get('allergies', '')
             if allergies_str:
                 profile.allergies = [a.strip() for a in allergies_str.split(',') if a.strip()]
@@ -82,7 +89,12 @@ def profile_edit(request):
 
         # 2. SAVE PREFERENCES ONLY
         elif action == 'update_preferences':
-            profile.diet = request.POST.get('diet', 'none')
+            # PARSE MULTI-SELECT DIET
+            diet_str = request.POST.get('diet', '')
+            if diet_str and diet_str != 'none':
+                profile.diet = [d.strip() for d in diet_str.split(',') if d.strip()]
+            else:
+                profile.diet = []
             
             calorie_target = request.POST.get('calorie_target')
             profile.calorie_target = int(calorie_target) if calorie_target else None
