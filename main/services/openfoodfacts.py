@@ -14,6 +14,32 @@ HEADERS = {"User-Agent": os.environ.get("OFF_USER_AGENT", "SpoonFed/1.0")}
 # product fields SpoonFeed needs the data for
 FIELDS = "code,product_name,brands,quantity,image_front_small_url,nutriscore_grade,ecoscore_grade,ecoscore_score,nova_group,labels_tags,allergens_tags,categories_tags,ingredients_analysis_tags"
 
+
+# Backup search service (Open Food Facts "search-a-licious").
+# Used only when the normal search fails, e.g. the 503 "too busy" error. It answers with "hits" instead of "products"
+BACKUP_SEARCH_URL = "https://search.openfoodfacts.org/search"
+
+# helper : ask the backup search service. Returns a list of products, or None if it fails too
+def backup_search(query, sort_by=None):
+    params = {
+        "q": f'{query} countries_tags:"en:indonesia"'.strip(),  # same Indonesia-only rule as BASE_URL
+        "page_size": 24,
+        "fields": FIELDS,
+    }
+    if sort_by:
+        params["sort_by"] = sort_by                             # e.g. "-unique_scans_n" = most scanned first
+    try:
+        response = requests.get(
+            BACKUP_SEARCH_URL,
+            params=params,
+            headers=HEADERS,
+            timeout=10,
+        )
+        response.raise_for_status()
+        return response.json().get("hits", [])
+    except requests.RequestException:
+        return None
+
 # helper function
 def get_score(product):
     return product["spoonfeed"]["score"]
@@ -29,7 +55,7 @@ def get_product(barcode):
     try: 
         response = requests.get( # sends a GET request and the result stored in variable response
             f"{BASE_URL}/api/v2/product/{barcode}", # address of the product
-            params={"fields": FIELDS + ",nutriments,ingredients_text,ecoscore_data"}, # details needed for the product, FIELDS - from API
+            params={"fields": FIELDS + ",nutriments,nutrient_levels,ingredients_text,ecoscore_data"}, # details needed for the product, FIELDS - from API
             headers=HEADERS, # send User-Agent
             timeout=10, # after 10 sec, give up (page doesn't hang)
         )
@@ -67,7 +93,39 @@ def search_products(text):
         response.raise_for_status()
         products = response.json().get("products", [])
     except requests.RequestException:
-        return None
+        products = backup_search(text) # normal search failed (e.g. 503): try the backup service
+        if products is None:
+            return None # both failed: the page shows the "not available" message
+    cache.set(key, products, 60 * 60)
+    return products
+
+# returns popular Indonesian products (most scanned first), [] if none, or None if the API fails
+# function : what the Discover page shows before anything is searched
+def browse_products():
+    key = "off:browse"                     # one cache entry: the same list for everyone
+    products = cache.get(key)
+    if products is not None:
+        return products
+
+    try:
+        response = requests.get(
+            f"{BASE_URL}/cgi/search.pl",
+            params={
+                "action": "process",
+                "json": 1,
+                "page_size": 24,
+                "sort_by": "unique_scans_n",   # most scanned = most popular
+                "fields": FIELDS,
+            },                                 # no search_terms: all products sold in Indonesia
+            headers=HEADERS,
+            timeout=10,
+        )
+        response.raise_for_status()
+        products = response.json().get("products", [])
+    except requests.RequestException:
+        products = backup_search("", sort_by="-unique_scans_n")   # normal search failed: try the backup
+        if products is None:
+            return None
     cache.set(key, products, 60 * 60)
     return products
 
@@ -99,9 +157,10 @@ def get_alternatives(product, limit=3):
             )
             response.raise_for_status()
             candidates = response.json().get("products",[])
-        
         except requests.RequestException:
-            return[]
+            candidates = backup_search(f'categories_tags:"{category}"') # normal search failed: try the backup
+            if candidates is None:
+                return []
         cache.set(key, candidates, 60 * 60)
 
     alternatives = []

@@ -1,4 +1,56 @@
 import math
+from main.services.openfoodfacts import get_product
+from main.services.grading import spoonfeed_grade
+
+# === PRODUCTS RETRIEVAL FOR COMPARISON ===
+def load_comparison_products(barcodes):
+    products = []
+    unavailable_barcodes = []
+
+    for barcode in barcodes:
+        product = get_product(barcode)
+
+        if not product:
+            unavailable_barcodes.append(barcode)
+            continue
+
+        product = product.copy()
+        product["compare_barcode"] = barcode
+
+        grading = spoonfeed_grade(product)
+        product["compare_grade"] = grading["grade"]
+        product["compare_score"] = grading["score"]
+
+        product["compare_nutri"] = normalize_grade(
+            product.get("nutriscore_grade")
+        )
+        product["compare_green"] = normalize_grade(
+            product.get("ecoscore_grade")
+        )
+        product["compare_nova"] = normalize_nova(
+            product.get("nova_group")
+        )
+
+        products.append(product)
+
+    return products, unavailable_barcodes
+
+# === SECTION BUILDER ===
+def build_comparison_sections(products, nutrition_rows):
+    return [
+        {
+            "title": "Scores",
+            "rows": build_score_rows(products),
+        },
+        {
+            "title": "Nutrition per 100 g/ml",
+            "rows": nutrition_rows,
+        },
+        {
+            "title": "Labels and allergens",
+            "rows": build_label_rows(products),
+        },
+    ]
 
 # === SCORES ===
 def normalize_grade(value):

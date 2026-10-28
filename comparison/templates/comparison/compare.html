@@ -13,19 +13,37 @@
 
 {% block content %}
     {% include "comparison/components/toasts.html" %}
-    <header class="page-header">
-        <div>
-            <a href="/" class="back-link mb-3">
-                ← Back to Discover
-            </a>
+    <header class="page-header compare-header">
+        <a href="/" class="back-link mb-3">
+            <span class="icon icon-arrow-left" aria-hidden="true"></span>
+            Back to Discover
+        </a>
 
+        <div class="compare-header-row">
             <h1 class="page-title page-title-lg">Compare</h1>
 
-            <p class="page-subtitle">
-                Green highlights better available values.
-                Equal or incomplete rows are not highlighted.
-            </p>
+            {% if user.is_authenticated %}
+                <button
+                    type="button"
+                    id="compare-save-open"
+                    class="btn btn-primary compare-save-action"
+                    {% if is_saved or not can_save %}disabled{% endif %}
+                >
+                    {% if is_saved %}
+                        Saved
+                        <span class="icon icon-check" aria-hidden="true"></span>
+                    {% else %}
+                        Save comparison
+                        <span class="icon icon-bookmark" aria-hidden="true"></span>
+                    {% endif %}
+                </button>
+            {% endif %}
         </div>
+
+        <p class="page-subtitle">
+            Green highlights better available values.
+            Equal or incomplete rows are not highlighted.
+        </p>
     </header>
 
     {% if unavailable_barcodes %}
@@ -162,17 +180,27 @@
                                     </div>
                                 </div>
 
-                                <button
-                                    type="button"
-                                    class="btn btn-danger-subtle btn-sm btn-block mt-3 compare-remove-trigger"
-                                    data-remove-url="{% url 'comparison:remove_product' product.compare_barcode %}"
-                                    data-product-name="{{ product.product_name|default:'this product' }}"
-                                    aria-haspopup="dialog"
-                                    aria-controls="compare-remove-dialog"
-                                    aria-label="Remove {{ product.product_name|default:'product' }} from comparison"
-                                >
-                                    Remove
-                                </button>
+                                <div class="btn-group mt-3">
+                                    <button
+                                        type="button"
+                                        class="btn btn-danger-subtle btn-sm flex-1 min-w-0 compare-remove-trigger"
+                                        data-remove-url="{% url 'comparison:remove_product' product.compare_barcode %}"
+                                        data-product-name="{{ product.product_name|default:'this product' }}"
+                                        aria-haspopup="dialog"
+                                        aria-controls="compare-remove-dialog"
+                                        aria-label="Remove {{ product.product_name|default:'product' }} from comparison"
+                                    >
+                                        Remove
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="btn btn-primary btn-sm flex-1 min-w-0"
+                                        disabled
+                                    >
+                                        Details
+                                    </button>
+                                </div>
                             </td>
                         {% endfor %}
 
@@ -247,44 +275,12 @@
         </section>
     {% endif %}
 
-    <dialog
-        id="compare-remove-dialog"
-        class="dialog"
-        aria-labelledby="compare-remove-title"
-        aria-describedby="compare-remove-description"
-    >
-        <div class="dialog-header">
-            <h2 id="compare-remove-title" class="dialog-title">
-                Remove product?
-            </h2>
-        </div>
-
-        <p id="compare-remove-description" class="dialog-text">
-            Remove
-            <strong id="compare-remove-product-name"></strong>
-            from this comparison? You can add it again from Discover.
-        </p>
-
-        <form id="compare-remove-form" method="post">
-            {% csrf_token %}
-
-            <div class="dialog-actions">
-                <button
-                    type="button"
-                    id="compare-remove-cancel"
-                    class="btn btn-secondary"
-                    autofocus
-                >
-                    Cancel
-                </button>
-
-                <button type="submit" class="btn btn-danger">
-                    Remove
-                </button>
-            </div>
-        </form>
-    </dialog>
+    <!---Dialog overlays-->
+    {% include "comparison/components/save_dialog.html" %}
+    {% include "comparison/components/remove_dialog.html" %}
+    
 {% endblock %}
+
 {% block extra_js %}
     <script
         src="{% static 'comparison/js/comparison.js' %}"
