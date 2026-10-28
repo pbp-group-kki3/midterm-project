@@ -22,7 +22,7 @@ from django.conf.urls.static import static
 from midterm_project.placeholders import coming_soon, modules
 from midterm_project.styleguide import styleguide
 from django.contrib.auth.views import LoginView, LogoutView
-from profiles.views import register_view, profile_view, profile_edit, profile_delete, profile_picture_delete
+from profiles.views import register_view, profile_view, profile_edit, profile_delete, profile_picture_delete, change_password_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -48,6 +48,7 @@ urlpatterns = [
     path('profiles/edit/', profile_edit, name='profile_edit'),
     path('profiles/delete/', profile_delete, name='profile_delete'),
     path('profiles/picture/delete/', profile_picture_delete, name='profile_picture_delete'),
+    path('password/', change_password_view, name='change_password'),
 ]
 
 if settings.DEBUG:
