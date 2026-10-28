@@ -34,7 +34,7 @@
             <div class="alert alert-warning" role="status">{{ error_message }} Your plan is saved, so you can come back to it later.</div>
         {% endif %}
 
-        {% if plan.diet == 'halal' %}
+        {% if halal_note %}
             <p class="mealplan-note">{{ halal_badge }}: these recipes skip pork and alcohol, but Spoonacular can't confirm that a recipe is halal.</p>
         {% endif %}
 
