@@ -55,7 +55,7 @@ def get_product(barcode):
     try: 
         response = requests.get( # sends a GET request and the result stored in variable response
             f"{BASE_URL}/api/v2/product/{barcode}", # address of the product
-            params={"fields": FIELDS + ",nutriments,ingredients_text,ecoscore_data"}, # details needed for the product, FIELDS - from API
+            params={"fields": FIELDS + ",nutriments,nutrient_levels,ingredients_text,ecoscore_data"}, # details needed for the product, FIELDS - from API
             headers=HEADERS, # send User-Agent
             timeout=10, # after 10 sec, give up (page doesn't hang)
         )
