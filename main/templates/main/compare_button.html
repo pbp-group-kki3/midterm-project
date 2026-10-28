@@ -1,0 +1,30 @@
+{# change: one place for the compare button, so the card and the detail page always look the same #}
+{# The 4 states come from the Figma frames "2 product in compare" and "Return with 3 Products": #}
+{#   in the tray + room left -> "✓ Added" (click again to take it out) #}
+{#   in the tray + tray full -> "Added", greyed out #}
+{#   not in the tray + full  -> "Limit reached", greyed out #}
+{#   otherwise               -> "+ Compare" #}
+{# style = "btn-outline" on cards, "btn-primary" on the detail page #}
+{# change: js-compare-form = main.js sends it in the background, so the page doesn't reload #}
+{% if not user.is_authenticated %}
+    {# logged out: goes to login (team doc + Figma) #}
+    <a href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}" class="btn {{ style }} btn-block">+ Compare</a>
+{% elif code in compare_barcodes and not compare_full %}
+    <form method="post" action="{% url 'main:remove_from_compare' code %}" class="discover-card-action js-compare-form">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button type="submit" class="btn btn-block discover-added" aria-label="Added to compare. Click to remove">✓ Added</button>
+    </form>
+{% elif code in compare_barcodes %}
+    <button type="button" class="btn btn-outline btn-block" disabled>Added</button>
+{% elif compare_full %}
+    <button type="button" class="btn btn-outline btn-block" disabled>Limit reached</button>
+{% else %}
+    <form method="post" action="{% url 'main:add_to_compare' code %}" class="discover-card-action js-compare-form">
+        {% csrf_token %}
+        <input type="hidden" name="product_name" value="{{ name }}">
+        <input type="hidden" name="grade" value="{{ grade }}">
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button type="submit" class="btn {{ style }} btn-block">+ Compare</button>
+    </form>
+{% endif %}

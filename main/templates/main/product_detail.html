@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ product.product_name|default:"Product" }} | SpoonFeed{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'main/main.css' %}">
+{% endblock %}
+
+{% block content %}
+    {# Back link with the shared arrow icon #}
+    <a href="{% url 'main:show_main' %}" class="back-link">
+        <span class="icon icon-arrow-left" aria-hidden="true"></span>
+        Discover
+    </a>
+
+    {# One-time notes, e.g. "Remove one to add another" (shared .alert, Django messages) #}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} mt-6">{{ message }}</div>
+    {% endfor %}
+
+    {% if not product %}
+        <div class="alert alert-warning mt-6">Product data is not available right now. Please try again in a moment.</div>
+    {% else %}
+
+        {# Photo left, name + scores + buttons right #}
+        <section class="grid md:grid-cols-2 gap-8 mt-6">
+            <div class="discover-detail-img">
+                {% if product.image_front_small_url %}
+                    <img src="{{ product.image_front_small_url }}" alt="{{ product.product_name }}">
+                {% else %}
+                    No photo available
+                {% endif %}
+            </div>
+
+            <div class="flex flex-col justify-center gap-4">
+                <div>
+                    <h1 class="page-title">{{ product.product_name|default:"Unnamed product" }}</h1>
+                    <p class="page-subtitle">{{ product.brands|default:"Unknown brand" }} | Barcode {{ barcode }}</p>
+                </div>
+
+                {# Tags + preference chip, same as on the card #}
+                {% if product.tags or product.fit %}
+                    <div class="badge-row">
+                        {% for tag in product.tags %}
+                            <span class="badge {{ tag.style }}">{{ tag.text }}</span>
+                        {% endfor %}
+                    </div>
+                    {% if product.fit %}
+                        <span class="discover-pref discover-pref-{{ product.fit.status }} self-start">{{ product.fit.text }}</span>
+                    {% endif %}
+                {% endif %}
+
+                <div class="score-row">
+                    <div class="score-tile {% if product.spoonfeed.grade != '?' %}grade-{{ product.spoonfeed.grade|lower }}{% endif %}">
+                        <span class="score-tile-label">Grade</span>
+                        <span class="score-tile-value">{{ product.spoonfeed.grade }}</span>
+                    </div>
+                    <div class="score-tile">
+                        <span class="score-tile-label">Nutri</span>
+                        <span class="score-tile-value">{{ product.tiles.nutri }}</span>
+                    </div>
+                    <div class="score-tile">
+                        <span class="score-tile-label">Green</span>
+                        <span class="score-tile-value">{{ product.tiles.green }}</span>
+                    </div>
+                    <div class="score-tile">
+                        <span class="score-tile-label">NOVA</span>
+                        <span class="score-tile-value">{{ product.tiles.nova }}</span>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    {% if user.is_authenticated %}
+                        <form method="post" action="{% url 'main:toggle_favorite' barcode %}" class="flex-1 js-favorite-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="product_name" value="{{ product.product_name }}">
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            {# Saved = shared light-red .btn-danger-subtle; not saved = .btn-outline. main.js swaps them #}
+                            <button type="submit" class="btn btn-block {% if is_favorite %}btn-danger-subtle{% else %}btn-outline{% endif %}"
+                                    data-favorite-style="button" aria-pressed="{% if is_favorite %}true{% else %}false{% endif %}">{% if is_favorite %}♥ Saved{% else %}♡ Save{% endif %}</button>
+                        </form>
+                    {% endif %}
+                    {# change: same compare button as the cards (Added / Limit reached) #}
+                    <div class="flex-1 flex js-compare-slot" data-code="{{ barcode }}" data-name="{{ product.product_name }}" data-grade="{{ product.spoonfeed.grade }}" data-style="btn-primary">
+                        {% include 'main/compare_button.html' with code=barcode name=product.product_name grade=product.spoonfeed.grade style="btn-primary" %}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {# How the grade is built (Figma: Panel / How the grade is built). One bar per factor #}
+        <section class="card mt-8 discover-panel">
+            <h2 class="type-h3">How the grade is built</h2>
+            {% if product.spoonfeed.grade == '?' %}
+                <p class="type-body-sm text-secondary">This product has no Nutri-Score, so it can't be graded.</p>
+            {% else %}
+                <div class="discover-total">
+                    <span class="type-label-md">Grade {{ product.spoonfeed.grade }}</span>
+                    <span class="discover-divider" aria-hidden="true"></span>
+                    <span class="type-body-sm text-secondary">{{ score_whole }} out of 100</span>
+                </div>
+                {% for row in grade_rows %}
+                    <div>
+                        <div class="flex justify-between items-start">
+                            <span class="type-caption text-secondary">{{ row.label }}</span>
+                            <span class="type-label-md">{% if row.points is not None %}{{ row.points }} / 100{% else %}?{% endif %}</span>
+                        </div>
+                        <div class="discover-bar">
+                            {% if row.points is not None %}
+                                {# color by points: green 60+, amber 40-59, red under 40 (details.py bar_tone) #}
+                                <div class="discover-bar-fill discover-bar-{{ row.tone }}" style="width: {{ row.points }}%"></div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </section>
+
+        {# Details: Nutrition on the left; Ingredients and Environment stacked on the right (Figma) #}
+        {# Both columns are the same height: the left card stretches, the right cards share the space #}
+        <section class="grid md:grid-cols-2 gap-6 mt-8 discover-details">
+            <div class="card discover-panel">
+                <h2 class="type-h3">Nutrition per {{ nutrition_unit }}</h2>
+                {% for row in nutrition %}
+                    <div class="discover-row">
+                        {% if row.good %}<span class="discover-dot" aria-hidden="true"></span>{% endif %}
+                        <span class="discover-row-label">{{ row.label }}</span>
+                        <span class="discover-row-value">{{ row.value }}</span>
+                    </div>
+                {% endfor %}
+                <p class="type-caption text-tertiary discover-panel-foot">*Green dot: considered a good amount by health standards</p>
+            </div>
+
+            <div class="flex flex-col gap-6 discover-details-stack">
+                <div class="card discover-panel">
+                    <h2 class="type-h3">Ingredients and allergens</h2>
+                    {# Long lists are cut to 4 lines with "Show all" (main.js), so the cards stay neat #}
+                    <p class="type-body-sm discover-clamp" id="ingredients-text">{{ ingredients|default:"Not indicated" }}</p>
+                    <button type="button" class="link discover-clamp-toggle is-hidden" data-clamp-target="ingredients-text">Show all ingredients</button>
+                    {% if ingredient_badges %}
+                        <div class="badge-row">
+                            {% for badge in ingredient_badges %}
+                                <span class="badge {{ badge.style }}">{{ badge.text }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="card discover-panel">
+                    <h2 class="type-h3">Environment</h2>
+                    {% for row in environment %}
+                        <div class="discover-row">
+                            <span class="discover-row-label">{{ row.label }}</span>
+                            <span class="discover-row-value">{{ row.value }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+        {# Recommendations: better products in the same category. Hidden when there are none #}
+        {% if alternatives %}
+            <section class="mt-8">
+                <h2 class="type-heading-m mb-4">Recommendations</h2>
+                <div class="card-grid">
+                    {% for p in alternatives %}
+                        {% include 'main/product_card.html' with product=p %}
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+
+        {# Credit the data (team rule) #}
+        <p class="type-caption text-tertiary mt-10">Source: Open Food Facts, product {{ barcode }}, values per 100 g or ml as sold.</p>
+    {% endif %}
+    {# change: holder for the tray, main.js puts the new tray in here after a compare click #}
+    <div id="compare-tray-holder" class="discover-tray-holder">{% include 'main/compare_tray.html' %}</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'main/main.js' %}" defer></script>
+{% endblock %}
+
