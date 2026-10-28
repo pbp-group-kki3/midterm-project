@@ -1,0 +1,255 @@
+/* One panel containing product headers and comparison values. */
+.compare-panel {
+    padding: var(--space-xl);
+    overflow-x: auto;
+}
+
+/* Fixed layout keeps product headers aligned with every value below. */
+.compare-table {
+    width: 100%;
+    min-width: 760px;
+    table-layout: fixed;
+    border-collapse: separate;
+    border-spacing: 0;
+    font: 400 14px/20px var(--font-sans);
+}
+
+/* Matches the desktop criterion column in the approved design. */
+.compare-label-column {
+    width: 240px;
+}
+
+/* Equal spacing between product columns. */
+.compare-product-heading,
+.compare-value {
+    padding-left: var(--space-xl);
+    vertical-align: top;
+    text-align: left;
+}
+
+/* Product information sits directly inside the shared panel. */
+.compare-product-heading {
+    padding-bottom: var(--space-md);
+    font-weight: 400;
+}
+
+.compare-product {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+/* Consistent photo height prevents large API images stretching the panel. */
+.compare-product-photo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 256px;
+    padding: var(--space-md);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+}
+
+.compare-product-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.compare-product-name {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.compare-product-meta {
+    margin: 0;
+    color: var(--color-text-secondary);
+    overflow-wrap: anywhere;
+}
+
+/* Section titles span the whole table. */
+.compare-section-title {
+    padding-top: var(--space-xl);
+    padding-bottom: var(--space-xs);
+    text-align: left;
+}
+
+/* Every criterion and value shares the same horizontal row separator. */
+.compare-criterion,
+.compare-value {
+    border-top: 1px solid var(--color-border-subtle);
+    padding-top: var(--space-xs);
+    padding-bottom: var(--space-xs);
+}
+
+.compare-criterion {
+    text-align: left;
+    vertical-align: middle;
+    color: var(--color-text-secondary);
+    font-weight: 400;
+}
+
+.compare-value-content {
+    overflow-wrap: anywhere;
+}
+
+/* Separate table row keeps all product indicators aligned. */
+.compare-score-heading {
+    padding-left: var(--space-xl);
+    padding-bottom: var(--space-xl);
+    vertical-align: top;
+}
+
+/* One available slot after a product has been removed. */
+.compare-add-product {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    height: 256px;
+    padding: var(--space-xl);
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-brand-subtle);
+    color: var(--color-text-brand);
+    text-align: center;
+    text-decoration: none;
+}
+
+.compare-add-product:hover {
+    border-color: var(--color-border-brand);
+}
+
+.compare-add-product:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+}
+
+/* Floating notifications use the shared SpoonFeed alert colors. */
+.compare-toast-stack {
+    position: fixed;
+    top: var(--space-xl);
+    right: var(--space-xl);
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    width: min(360px, calc(100vw - 48px));
+    pointer-events: none;
+}
+
+.compare-toast {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-md);
+    margin: 0;
+    padding: var(--space-lg);
+    border-left-width: 4px;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    pointer-events: auto;
+    animation: compare-toast-enter 180ms ease-out;
+}
+
+.compare-toast-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.compare-toast-title {
+    margin: 0 0 var(--space-xs);
+    font: 600 14px/20px var(--font-sans);
+}
+
+.compare-toast-message {
+    margin: 0;
+    font: 400 14px/20px var(--font-sans);
+    overflow-wrap: anywhere;
+}
+
+.compare-toast-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: inherit;
+    font: 400 24px/1 var(--font-sans);
+    cursor: pointer;
+}
+
+.compare-toast-close:hover {
+    background: var(--color-bg-surface);
+}
+
+.compare-toast-close:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
+
+@keyframes compare-toast-enter {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .compare-toast {
+        animation: none;
+    }
+}
+
+/* A closed toast must stay hidden, even with shared alert styles. */
+#toast-component:not(:popover-open) {
+    display: none;
+}
+
+/* Position the toast only when it is actually opened. */
+#toast-component:popover-open {
+    position: fixed;
+    top: var(--space-xl);
+    right: var(--space-xl);
+    bottom: auto;
+    left: auto;
+    margin: 0;
+}
+
+/* Keep the panel comfortable on narrower screens. */
+@media (max-width: 767px) {
+    .compare-panel {
+        padding: var(--space-lg);
+    }
+
+    .compare-label-column {
+        width: 160px;
+    }
+
+    .compare-product-heading,
+    .compare-value {
+        padding-left: var(--space-lg);
+    }
+
+    .compare-score-heading {
+    padding-left: var(--space-lg);
+    }
+
+    .compare-toast-stack {
+        top: var(--space-lg);
+        right: var(--space-lg);
+        left: var(--space-lg);
+        width: auto;
+    }
+}

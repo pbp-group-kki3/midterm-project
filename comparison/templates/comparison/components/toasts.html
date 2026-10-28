@@ -1,0 +1,28 @@
+<div
+    id="toast-component"
+    class="alert alert-info compare-toast toast-hidden"
+    popover="manual"
+>
+    <div class="compare-toast-content" role="status" aria-atomic="true">
+        <h3 id="toast-title" class="compare-toast-title"></h3>
+        <p id="toast-message" class="compare-toast-message"></p>
+    </div>
+
+    <button
+        type="button"
+        id="toast-close"
+        class="compare-toast-close"
+        aria-label="Dismiss notification"
+    >
+        <span aria-hidden="true">×</span>
+    </button>
+</div>
+
+<div id="compare-toast-messages" hidden>
+    {% for message in messages %}
+        <span
+            data-message="{{ message }}"
+            data-type="{% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}error{% elif message.level == DEFAULT_MESSAGE_LEVELS.WARNING %}warning{% elif message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}success{% else %}normal{% endif %}"
+        ></span>
+    {% endfor %}
+</div>

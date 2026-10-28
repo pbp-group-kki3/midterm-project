@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
+from django.contrib import messages
 from main.services.openfoodfacts import get_product
 from main.services.grading import spoonfeed_grade
 from comparison.services import (
@@ -89,5 +90,10 @@ def remove_product(request, barcode):
         ]
 
         request.session["compare_has_removed"] = True
+
+        # Toast notification implementation:
+        messages.success(request, "Product removed from comparison.")
+    else:
+        messages.warning(request, "This product is no longer in your comparison.")
 
     return redirect("comparison:compare_products")
