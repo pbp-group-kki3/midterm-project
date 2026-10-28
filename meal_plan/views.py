@@ -128,8 +128,7 @@ def plan_list(request):
     if not plans:
         defaults = planner.profile_defaults(request.user)
         context['profile'] = {
-            'diet': defaults['diet'],
-            'diet_label': DIET_LABELS.get(defaults['diet']),
+            'diet_labels': [DIET_LABELS[key] for key in defaults['diets']],
             'allergies': defaults['allergy_labels'],
         }
     return render(request, 'meal_plan/plan_list.html', context)
@@ -178,6 +177,7 @@ def plan_detail(request, pk):
         'days': days,
         'error_message': error.message if error else '',
         'halal_badge': HALAL_BADGE,
+        'halal_note': plan.diet == 'halal' or planner.profile_is_halal(request.user),
     }
     return render(request, 'meal_plan/plan_detail.html', context)
 
