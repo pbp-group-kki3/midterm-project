@@ -1,0 +1,47 @@
+<div class="mealplan-replace" data-replace-panel>
+    <div class="mealplan-replace-heading">
+        <h2 class="dialog-title" id="replace-title">Replace {{ entry.get_slot_display|lower }}</h2>
+        <p class="mealplan-dialog-text">Day {{ entry.day }} · {{ entry.date|date:"D, j M" }}. Pick another recipe that fits your plan{% if fit_text %} ({{ fit_text }}){% endif %}.</p>
+    </div>
+
+    {% if current %}
+        <div class="mealplan-current">
+            <p class="type-caption text-secondary">Current meal</p>
+            <p class="type-label-md">{{ current.title }}{% if current.calories_label %} · {{ current.calories_label }}{% endif %}</p>
+        </div>
+    {% endif %}
+
+    {% if error_message %}
+        <div class="alert alert-warning" role="status">{{ error_message }}</div>
+    {% elif options %}
+        <ul class="mealplan-options" aria-label="Recipes you can pick">
+            {% for option in options %}
+                <li class="mealplan-option">
+                    <div class="mealplan-option-thumb">
+                        {% if option.image_url %}<img src="{{ option.image_url }}" alt="" loading="lazy">{% endif %}
+                    </div>
+                    <div class="mealplan-option-text">
+                        <p class="type-card-title">{{ option.title }}</p>
+                        {% if option.option_meta %}<p class="type-caption text-secondary">{{ option.option_meta }}</p>{% endif %}
+                        <div class="mealplan-option-badges">
+                            <span class="badge badge-success">Fits your diet</span>
+                            {% if option.in_plan %}<span class="badge">Already in this plan</span>{% endif %}
+                        </div>
+                    </div>
+                    <form method="post" action="{% url 'meal_plan:meal_replace' plan.pk entry.pk %}" class="mealplan-option-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="recipe_id" value="{{ option.id }}">
+                        <button type="submit" class="btn btn-primary btn-sm" aria-label="Choose {{ option.title }}">Choose</button>
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="mealplan-replace-empty">No other recipes fit this plan right now. Try showing other options.</p>
+    {% endif %}
+
+    <div class="mealplan-replace-footer">
+        <a href="{{ more_url }}" class="btn btn-ghost" data-replace-more="{{ more_url }}&amp;partial=1">Show other options <span aria-hidden="true">↻</span></a>
+        <a href="{{ back_url }}" class="btn btn-secondary mealplan-dialog-button" data-dialog-close>Cancel</a>
+    </div>
+</div>
