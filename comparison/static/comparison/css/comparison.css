@@ -3,6 +3,31 @@
     padding: var(--space-xl);
     overflow-x: auto;
 }
+/* Back link above the title/action row, with the subtitle below it. */
+.compare-header {
+    display: block;
+}
+
+.compare-header-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-lg);
+}
+
+.compare-header-row .page-title {
+    margin: 0;
+}
+
+/* Figma action geometry; appearance and states come from .btn-primary. */
+.compare-save-action {
+    box-sizing: border-box;
+    flex-shrink: 0;
+    width: 184px;
+    height: var(--btn-height-md);
+    padding-inline: var(--space-lg);
+}
 
 /* Fixed layout keeps product headers aligned with every value below. */
 .compare-table {
@@ -225,6 +250,10 @@
     bottom: auto;
     left: auto;
     margin: 0;
+}
+
+.compare-save-dialog .input[aria-invalid="true"] {
+    border-color: var(--color-border-danger);
 }
 
 /* Keep the panel comfortable on narrower screens. */
