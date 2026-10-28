@@ -44,6 +44,15 @@
             Green highlights better available values.
             Equal or incomplete rows are not highlighted.
         </p>
+
+        <p
+            id="compare-save-location"
+            class="type-caption text-secondary mt-3"
+            {% if not is_saved %}hidden{% endif %}
+        >
+            Comparison saved. Find it in your profile's
+            <span class="compare-saved-link">Saved</span> section.
+        </p>
     </header>
 
     {% if unavailable_barcodes %}
