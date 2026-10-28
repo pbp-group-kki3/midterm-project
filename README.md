@@ -45,13 +45,14 @@ The Blog module provides educational content about sustainable food consumption 
 * **SERAFIN** - (2506637136) \
 Due to a misunderstanding on my part, commit convention will be adhered to from 28th of October 2026 onwards, all prior commits will remain as they are for stability and safety's sake. Below will be the original commits and more convention counterpart.
 
-testing git quickly 298c3b0c9ab55f6b381823fff073836237c4f15d -> test(main): testing get
-Initial Profile Setup b9b63eddb77b19937476a0d8288736e6bbadb1dd -> chore/feat(profiles): initial setup and frameowrk 
-Append to prior commit 0b95267dc14d4d1a21b9db8b0ffb007f2663f486 -> chore(profiles): committing files that were left out
-Initial Profile Model f0cab38a052ab1d410f109ad6f4b6d3835e2c4d1 -> feat(profiles): added profiles model 
-Profiles view 29c2a3fca3fb1a272f88714691705335ae119c7d -> feat(profiles): added profiles view
-Forgot to stage again this is for prior commit 328e28a861aced4254a043e709d68ae1c8f5b73a -> chore(profiles) commiting files that were left out 
-Register view and HTMLs set up and created ab956a8c1d62dd8542816bb87d6f818c83c08335 -> feat(profiles) added register html and view
-
-PROFILE SPEEDRUN 9fe9843e696dce7b9715dd614c006fe0c6f7b09e -> feat/refactor(profiles): added login system and profile html, refactored the code to be cleaner and better fit the requirements
-APPEND 690e61eb30ac58af9ee072c414cf5f12933edbf5 -> chore(profiles): commiting files that were left out 
+| Original Commit Hash & Message | Conventional Commit Counterpart |
+| :--- | :--- |
+| `298c3b0c9ab55f6b381823fff073836237c4f15d`<br>testing git quickly | `test(main): testing get` |
+| `b9b63eddb77b19937476a0d8288736e6bbadb1dd`<br>Initial Profile Setup | `chore/feat(profiles): initial setup and frameowrk` |
+| `0b95267dc14d4d1a21b9db8b0ffb007f2663f486`<br>Append to prior commit | `chore(profiles): committing files that were left out` |
+| `f0cab38a052ab1d410f109ad6f4b6d3835e2c4d1`<br>Initial Profile Model | `feat(profiles): added profiles model` |
+| `29c2a3fca3fb1a272f88714691705335ae119c7d`<br>Profiles view | `feat(profiles): added profiles view` |
+| `328e28a861aced4254a043e709d68ae1c8f5b73a`<br>Forgot to stage again this is for prior commit | `chore(profiles) commiting files that were left out` |
+| `ab956a8c1d62dd8542816bb87d6f818c83c08335`<br>Register view and HTMLs set up and created | `feat(profiles) added register html and view` |
+| `9fe9843e696dce7b9715dd614c006fe0c6f7b09e`<br>PROFILE SPEEDRUN | `feat/refactor(profiles): added login system and profile html, refactored the code to be cleaner and better fit the requirements` |
+| `690e61eb30ac58af9ee072c414cf5f12933edbf5`<br>APPEND | `chore(profiles): commiting files that were left out` |
