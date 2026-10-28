@@ -1,115 +1,78 @@
+# IMPORTS
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
-from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
+from django.contrib.auth import login, logout
+from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
-from .models import Profile
 
+# REGISTER VIEW
 def register_view(request):
     if request.method == 'POST':
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        confirm_password = request.POST.get('confirm_password')
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            profile = user.profile
+            
+            profile.diet = request.POST.get('diet', 'none')
+            allergies_str = request.POST.get('allergies', '')
+            if allergies_str:
+                profile.allergies = [a.strip() for a in allergies_str.split(',') if a.strip()]
 
-        if password != confirm_password:
-            return render(request, 'profiles/register.html', {'error': 'Passwords do not match'})
-
-        if User.objects.filter(username=username).exists():
-            return render(request, 'profiles/register.html', {'error': 'Username already taken'})
-
-        user = User.objects.create_user(username=username, email=email, password=password)
-        profile, created = Profile.objects.get_or_create(user=user)
-
-        profile.dietary_preferences = request.POST.get('dietary_preferences', '')
-        profile.allergies = request.POST.get('allergies', '')
-
-        if 'picture' in request.FILES:
-            profile.profile_picture = request.FILES['picture']
-
-        profile.save()
-        login(request, user)
-        return redirect('profile')
-
-    return render(request, 'profiles/register.html')
-
-def login_view(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
-        
-        if user is not None:
+            if 'picture' in request.FILES:
+                profile.profile_picture = request.FILES['picture']
+                
+            profile.save()
             login(request, user)
             return redirect('profile')
         else:
-            return render(request, 'profiles/login.html', {'error': 'Invalid username or password'})
+            messages.error(request, "Registration failed. Check password requirements.")
+            return render(request, 'profiles/register.html', {'error': 'Invalid registration data.'})
+            
+    return render(request, 'profiles/register.html')
 
-    return render(request, 'profiles/login.html')
-
-def logout_view(request):
-    logout(request)
-    return redirect('login')
-
+# PROFILE VIEW
 @login_required
 def profile_view(request):
-    profile, created = Profile.objects.get_or_create(user=request.user)
-    return render(request, 'profiles/profile.html', {'profile': profile})
+    return render(request, 'profiles/profile.html', {'profile': request.user.profile})
 
+# PROFILE EDIT VIEW
 @login_required
 def profile_edit(request):
-    profile, created = Profile.objects.get_or_create(user=request.user)
+    profile = request.user.profile
 
     if request.method == 'POST':
-        new_username = request.POST.get('username')
-        new_email = request.POST.get('email')
-
-        if new_username and new_username != request.user.username:
-            if User.objects.filter(username=new_username).exists():
-                messages.error(request, "Username is already taken.")
-                return redirect('profile')
-            request.user.username = new_username
+        profile.diet = request.POST.get('diet', 'none')
         
-        if new_email:
-            request.user.email = new_email
+        calorie_target = request.POST.get('calorie_target')
+        profile.calorie_target = int(calorie_target) if calorie_target else None
+        
+        meals_per_day = request.POST.get('meals_per_day')
+        if meals_per_day:
+            profile.meals_per_day = int(meals_per_day)
 
-        new_password = request.POST.get('new_password')
-        confirm_password = request.POST.get('confirm_password')
-        if new_password:
-            if new_password == confirm_password:
-                request.user.set_password(new_password)
-                update_session_auth_hash(request, request.user)
-            else:
-                messages.error(request, "Passwords do not match.")
-                return redirect('profile')
-
-        request.user.save()
-
-        if 'dietary_preferences' in request.POST:
-            profile.dietary_preferences = request.POST.get('dietary_preferences')
-        if 'allergies' in request.POST:
-            profile.allergies = request.POST.get('allergies')
-        if 'nutritional_goals' in request.POST:
-            profile.nutritional_goals = request.POST.get('nutritional_goals')
+        allergies_str = request.POST.get('allergies', '')
+        profile.allergies = [a.strip() for a in allergies_str.split(',') if a.strip()]
 
         if 'profile_picture' in request.FILES:
             profile.profile_picture = request.FILES['profile_picture']
 
         profile.save()
-        messages.success(request, "Profile updated successfully!")
+        messages.success(request, "Preferences updated successfully.")
         return redirect('profile')
 
     return redirect('profile')
 
+# PROFILE PICTURE DELETE VIEW
 @login_required
 def profile_picture_delete(request):
     if request.method == 'POST':
-        profile, created = Profile.objects.get_or_create(user=request.user)
+        profile = request.user.profile
         if profile.profile_picture:
             profile.profile_picture.delete(save=True)
             messages.success(request, "Profile picture removed.")
     return redirect('profile')
 
+# PROFILE DELETE VIEW
 @login_required
 def profile_delete(request):
     if request.method == 'POST':

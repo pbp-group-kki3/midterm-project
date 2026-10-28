@@ -1,4 +1,9 @@
+# IMPORTS
+from django.core.exceptions import ObjectDoesNotExist
+
+# PREFERENCES HELPER
 def get_preferences(user):
+    # DEFAULT PREFERENCES
     default_prefs = {
         'diet': 'none',
         'allergies': [],
@@ -7,17 +12,21 @@ def get_preferences(user):
         'exclude_ingredients': ''
     }
 
+    # AUTHENTICATION CHECK
     if not user.is_authenticated:
         return default_prefs
 
+    # PROFILE RETRIEVAL
     try:
         profile = user.profile
-    except:
+    except ObjectDoesNotExist:
         return default_prefs
 
+    # DIET AND ALLERGIES DATA
     diet = profile.diet
     allergies = profile.allergies if isinstance(profile.allergies, list) else []
 
+    # ALLERGY MAP
     allergy_map = {
         'Milk': {'off': 'en:milk', 'spoon': 'dairy'},
         'Peanuts': {'off': 'en:peanuts', 'spoon': 'peanut'},
@@ -30,6 +39,7 @@ def get_preferences(user):
         'Tree nuts': {'off': 'en:nuts', 'spoon': 'tree nut'},
     }
 
+    # TAG EXTRACTION
     off_tags = []
     spoon_intolerances = []
 
@@ -38,10 +48,12 @@ def get_preferences(user):
             off_tags.append(allergy_map[allergy]['off'])
             spoon_intolerances.append(allergy_map[allergy]['spoon'])
 
+    # HALAL EXCLUSIONS
     exclude_ingredients = ''
     if diet == 'halal':
         exclude_ingredients = 'pork,bacon,ham,wine,beer'
 
+    # RETURN DATA
     return {
         'diet': diet,
         'allergies': allergies,
