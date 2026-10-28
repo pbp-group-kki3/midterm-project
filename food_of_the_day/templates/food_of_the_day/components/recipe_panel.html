@@ -1,4 +1,4 @@
-<div class="card card-elevated" style="margin-top: var(--space-xl);">
+<div class="card card-elevated mt-6">
 
   <!-- Header with Title & Action Buttons matching Figma -->
   <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4">
@@ -28,7 +28,7 @@
 
   <!-- Did you know? Callout Banner (Moved above metrics per new Figma wireframe) -->
   {% if did_you_know %}
-    <div class="p-4 rounded-xl border border-brand-subtle my-2" style="background: var(--color-bg-brand-subtle);">
+    <div class="p-4 rounded-xl border border-default bg-brand-subtle my-2">
       <h4 class="font-bold text-brand" style="margin: 0 0 4px 0; font-size: 13px; letter-spacing: 0.02em;">
         Did you know?
       </h4>
@@ -223,9 +223,7 @@
         {% for c in comments %}
           <div class="p-3.5 bg-subtle rounded-xl space-y-1.5">
             <div class="flex items-center gap-2.5">
-              <div class="w-6 h-6 rounded-full bg-muted text-secondary font-bold text-[11px] flex items-center justify-center uppercase shrink-0">
-                {{ c.user.username|slice:":1" }}
-              </div>
+              {% include 'components/avatar.html' with name=c.user.username size='sm' %}
               <span class="font-semibold type-body-sm text-primary">@{{ c.user.username }}</span>
               <span class="type-caption text-tertiary">({{ c.created_at|timesince }} ago)</span>
             </div>
@@ -242,6 +240,17 @@
     </div>
   </div>
 
+  <style>
+    #save-recipe-btn.is-saved {
+      background-color: var(--color-bg-danger-subtle) !important;
+      border-color: var(--color-border-danger) !important;
+      color: var(--color-text-danger) !important;
+    }
+    #save-recipe-btn.is-saved #save-recipe-icon {
+      color: var(--red-500) !important;
+    }
+  </style>
+
   <script>
     function toggleSaveRecipe(mealId) {
       const btn = document.getElementById('save-recipe-btn');
@@ -254,22 +263,16 @@
 
       btn.setAttribute('data-saved', nextState ? 'true' : 'false');
       if (nextState) {
+        btn.classList.add('is-saved');
         icon.textContent = '♥';
-        icon.style.color = '#F43F5E';
         label.textContent = 'Saved';
-        btn.style.borderColor = '#FDA4AF';
-        btn.style.backgroundColor = '#FFF1F2';
-        btn.style.color = '#E11D48';
         try {
           localStorage.setItem('saved_meal_' + mealId, 'true');
         } catch (e) {}
       } else {
+        btn.classList.remove('is-saved');
         icon.textContent = '♡';
-        icon.style.color = '';
         label.textContent = 'Save';
-        btn.style.borderColor = '';
-        btn.style.backgroundColor = '';
-        btn.style.color = '';
         try {
           localStorage.removeItem('saved_meal_' + mealId);
         } catch (e) {}
