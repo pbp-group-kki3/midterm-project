@@ -10,7 +10,7 @@
 {% block content %}
     <div class="mealplan-page">
         <header class="mealplan-heading">
-            <a href="{% url 'meal_plan:plan_list' %}" class="back-link">← Back to Meal Plan</a>
+            <a href="{% url 'meal_plan:recipes' %}" class="back-link">← Back to Meal Plan</a>
             <h1 class="page-title page-title-lg">Create a meal plan</h1>
             <p class="page-subtitle mealplan-mobile-only">Spoonacular picks the recipes. Allergy filters use Spoonacular's labels, so always check the recipe too.</p>
         </header>
@@ -80,7 +80,7 @@
 
                 <div class="mealplan-form-actions">
                     <button type="submit" class="btn btn-primary mealplan-action" data-plan-submit>Create plan</button>
-                    <a href="{% url 'meal_plan:plan_list' %}" class="btn btn-secondary mealplan-action">Cancel</a>
+                    <a href="{% url 'meal_plan:recipes' %}" class="btn btn-secondary mealplan-action">Cancel</a>
                 </div>
             </form>
 
