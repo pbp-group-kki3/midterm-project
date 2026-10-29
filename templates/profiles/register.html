@@ -112,7 +112,7 @@
                 </div>
             </div>
 
-<!-- STEP 2 -->
+            <!-- STEP 2 -->
             <div id="step-2" class="hidden">
                 <div class="mb-6">
                     <h2 class="type-heading-m text-primary">Make it yours</h2>
@@ -300,34 +300,6 @@
             }
         }
     }
-
-    document.querySelectorAll('.chip-diet').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.chip-diet').forEach(b => b.classList.remove('is-selected'));
-            const val = btn.getAttribute('data-value');
-            if (selectedDiet === val) {
-                selectedDiet = 'none';
-            } else {
-                selectedDiet = val;
-                btn.classList.add('is-selected');
-            }
-            document.getElementById('diet_input').value = selectedDiet;
-        });
-    });
-
-    document.querySelectorAll('.chip-allergy').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const val = btn.getAttribute('data-value');
-            if (selectedAllergies.has(val)) {
-                selectedAllergies.delete(val);
-                btn.classList.remove('is-selected');
-            } else {
-                selectedAllergies.add(val);
-                btn.classList.add('is-selected');
-            }
-            document.getElementById('allergies_input').value = Array.from(selectedAllergies).join(',');
-        });
-    });
 
     function previewProfilePicture(event) {
         const file = event.target.files[0];

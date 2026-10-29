@@ -50,7 +50,7 @@ def get_preferences(user):
 
     # HALAL EXCLUSIONS
     exclude_ingredients = ''
-    if diet == 'halal':
+    if 'halal' in diet:
         exclude_ingredients = 'pork,bacon,ham,wine,beer'
 
     # RETURN DATA
