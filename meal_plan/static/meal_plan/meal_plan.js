@@ -286,7 +286,7 @@
         const daysInput = form.querySelector('[data-plan-days]');
         const snackInput = form.querySelector('[data-plan-snack]');
         const caloriesInput = form.querySelector('[data-plan-calories]');
-        const dietSelect = form.querySelector('select[name="diet"]');
+        const dietInputs = Array.from(form.querySelectorAll('[data-plan-diet]'));
         const allergyInputs = Array.from(form.querySelectorAll('[data-plan-allergy]'));
         const submit = form.querySelector('[data-plan-submit]');
         const profileTarget = parseInt(form.dataset.profileTarget, 10);
@@ -320,9 +320,12 @@
             }
             write('duration', duration);
             write('meals', snackInput.checked ? 'Breakfast, lunch, dinner, snack' : 'Breakfast, lunch, dinner');
-            if (dietSelect) {
-                write('diet', dietSelect.options[dietSelect.selectedIndex].textContent.trim());
-            }
+            const diets = dietInputs.filter(function (input) {
+                return input.checked;
+            }).map(function (input) {
+                return input.dataset.name;
+            });
+            write('diet', diets.length ? diets.join(', ') : 'No preference');
             const avoiding = allergyInputs.filter(function (input) {
                 return input.checked;
             }).map(function (input) {
@@ -337,9 +340,6 @@
             } else {
                 write('calories', defaultCalories.toLocaleString('en-US') + ' kcal/day (general reference)');
             }
-            allergyInputs.forEach(function (input) {
-                input.closest('.chip').classList.toggle('is-selected', input.checked);
-            });
         }
 
         form.addEventListener('input', update);
@@ -358,6 +358,12 @@
         });
         update();
     }
+
+    document.querySelectorAll('.mealplan-chip-input').forEach(function (input) {
+        input.addEventListener('change', function () {
+            input.closest('.chip').classList.toggle('is-selected', input.checked);
+        });
+    });
 
     const planForm = document.querySelector('[data-plan-form]');
     if (planForm) {

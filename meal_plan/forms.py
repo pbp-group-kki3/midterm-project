@@ -2,13 +2,13 @@ from django import forms
 
 from meal_plan.constants import (
     ALLERGY_CHOICES,
-    DEFAULT_DIET,
-    DIET_CHOICES,
+    DIET_CHIP_CHOICES,
     MAX_CALORIES,
     MAX_DAYS,
     MEAL_FILTER_CHOICES,
     MIN_CALORIES,
     MIN_DAYS,
+    PLANT_BASED_DIETS,
 )
 
 
@@ -37,11 +37,11 @@ class MealPlanForm(forms.Form):
         },
         widget=forms.NumberInput(attrs={'class': 'input', 'min': MIN_DAYS, 'max': MAX_DAYS, 'inputmode': 'numeric'}),
     )
-    diet = forms.ChoiceField(
+    diet = forms.MultipleChoiceField(
         label='Diet',
-        choices=DIET_CHOICES,
-        initial=DEFAULT_DIET,
-        widget=forms.Select(attrs={'class': 'input'}),
+        choices=DIET_CHIP_CHOICES,
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
     )
     allergies = forms.MultipleChoiceField(
         label='Allergies and intolerances',
@@ -80,6 +80,12 @@ class MealPlanForm(forms.Form):
             raise forms.ValidationError('Give your plan a name.')
         return name
 
+    def clean_diet(self):
+        diets = self.cleaned_data['diet']
+        if 'ketogenic' in diets and any(key in diets for key in PLANT_BASED_DIETS):
+            raise forms.ValidationError("Ketogenic can't be combined with vegetarian, vegan or pescatarian in one plan.")
+        return diets
+
 
 class RecipeFilterForm(forms.Form):
     q = forms.CharField(
@@ -94,11 +100,11 @@ class RecipeFilterForm(forms.Form):
         required=False,
         widget=forms.Select(attrs={'class': 'input'}),
     )
-    diet = forms.ChoiceField(
+    diet = forms.MultipleChoiceField(
         label='Diet',
-        choices=DIET_CHOICES,
+        choices=DIET_CHIP_CHOICES,
         required=False,
-        widget=forms.Select(attrs={'class': 'input'}),
+        widget=forms.CheckboxSelectMultiple,
     )
     max_calories = forms.IntegerField(
         label='Max kcal',

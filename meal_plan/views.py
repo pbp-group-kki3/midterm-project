@@ -16,8 +16,7 @@ from meal_plan.constants import (
     ALWAYS_SHOWN_ALLERGIES,
     DEFAULT_CALORIES,
     DEFAULT_DAYS,
-    DIET_CHOICES,
-    DIET_HELPERS,
+    DIET_CHIP_CHOICES,
     DIET_LABELS,
     HALAL_BADGE,
     MAX_DAYS,
@@ -76,6 +75,11 @@ def _allergy_chips(form, profile_keys):
     ]
 
 
+def _diet_chips(selected):
+    selected = selected or []
+    return [{'key': key, 'label': label, 'checked': key in selected} for key, label in DIET_CHIP_CHOICES]
+
+
 def _as_date(value):
     if isinstance(value, date):
         return value
@@ -88,6 +92,7 @@ def _as_date(value):
 def _plan_summary(form, profile_target):
     days = _bounded_int(form['days'].value(), DEFAULT_DAYS, MIN_DAYS, MAX_DAYS)
     selected = form['allergies'].value() or []
+    diets = form['diet'].value() or []
     goal = _bounded_int(form['calorie_goal'].value(), None, 1, 100000)
     if goal:
         calories = f'{goal:,} kcal/day (your goal)'
@@ -106,7 +111,7 @@ def _plan_summary(form, profile_target):
     return {
         'duration': duration,
         'meals': 'Breakfast, lunch, dinner, snack' if form['include_snack'].value() else 'Breakfast, lunch, dinner',
-        'diet': DIET_LABELS.get(form['diet'].value(), DIET_LABELS['none']),
+        'diet': ', '.join(label for key, label in DIET_CHIP_CHOICES if key in diets) or DIET_LABELS['none'],
         'avoiding': ', '.join(names) if names else 'Nothing selected',
         'calories': calories,
     }
@@ -137,13 +142,8 @@ def plan_list(request):
 @login_required(login_url=LOGIN_URL)
 def plan_create(request):
     defaults = planner.profile_defaults(request.user)
-    # Ask explicitly when several profile diets cannot fit one plan's diet field.
-    diet_choices = list(DIET_CHOICES)
-    if defaults['diet_requires_choice']:
-        diet_choices.insert(0, ('', 'Choose a diet for this plan'))
     if request.method == 'POST':
         form = MealPlanForm(request.POST)
-        form.fields['diet'].choices = diet_choices
         if form.is_valid():
             try:
                 plan = planner.create_plan(request.user, form.cleaned_data)
@@ -158,16 +158,14 @@ def plan_create(request):
         form = MealPlanForm(initial={
             'start_date': timezone.localdate(),
             'days': DEFAULT_DAYS,
-            'diet': '' if defaults['diet_requires_choice'] else defaults['diet'],
+            'diet': defaults['diets'],
             'allergies': defaults['allergies'],
             'include_snack': defaults['include_snack'],
         })
-        form.fields['diet'].choices = diet_choices
     context = {
         'form': form,
         'allergy_chips': _allergy_chips(form, defaults['allergies']),
-        'diet_options': _select_options(diet_choices, form['diet'].value(), DIET_HELPERS),
-        'profile_multiple_diets': defaults['diet_requires_choice'],
+        'diet_chips': _diet_chips(form['diet'].value()),
         'summary': _plan_summary(form, defaults['calorie_target']),
         'profile_target': defaults['calorie_target'] or '',
         'default_calories': DEFAULT_CALORIES,
@@ -184,7 +182,7 @@ def plan_detail(request, pk):
         'days': days,
         'error_message': error.message if error else '',
         'halal_badge': HALAL_BADGE,
-        'halal_note': plan.diet == 'halal' or planner.profile_is_halal(request.user),
+        'halal_note': 'halal' in plan.diet_keys,
     }
     return render(request, 'meal_plan/plan_detail.html', context)
 
@@ -275,7 +273,7 @@ def recipes(request):
     next_params = params.copy()
     next_params['page'] = page + 1
     next_url = f'{reverse("meal_plan:recipes")}?{next_params.urlencode()}' if has_more else ''
-    halal = filters.get('diet') == 'halal'
+    halal = 'halal' in (filters.get('diet') or [])
     if partial:
         html = render_to_string('meal_plan/includes/recipe_cards.html', {'cards': cards, 'halal': halal}, request=request)
         return JsonResponse({
@@ -287,7 +285,7 @@ def recipes(request):
     context = {
         'form': form,
         'meal_options': _select_options(MEAL_FILTER_CHOICES, form['meal'].value(), {}),
-        'diet_options': _select_options(DIET_CHOICES, form['diet'].value(), DIET_HELPERS),
+        'diet_chips': _diet_chips(form['diet'].value()),
         'cards': cards,
         'count_text': _count_text(shown, total),
         'next_url': next_url,

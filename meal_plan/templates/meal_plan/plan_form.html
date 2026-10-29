@@ -46,14 +46,19 @@
                     </div>
                 </div>
 
-                <div class="field">
-                    <label class="field-label" for="{{ form.diet.id_for_label }}">{{ form.diet.label }}</label>
-                    {% if profile_multiple_diets %}
-                        <p class="field-helper">Your profile contains multiple diets. This planner supports one diet per plan, so choose it explicitly. Other profile diets are not automatically combined.</p>
-                    {% endif %}
-                    {% include 'meal_plan/includes/select.html' with name=form.diet.html_name id=form.diet.id_for_label options=diet_options title='Diet' text='Choose one. You can change it later.' error=form.diet.errors %}
+                <fieldset class="mealplan-fieldset">
+                    <legend class="type-label-md mealplan-legend">{{ form.diet.label }}</legend>
+                    <div class="chip-row">
+                        {% for chip in diet_chips %}
+                            <label class="chip mealplan-chip{% if chip.checked %} is-selected{% endif %}">
+                                <input type="checkbox" name="{{ form.diet.html_name }}" value="{{ chip.key }}" class="mealplan-chip-input" data-plan-diet data-name="{{ chip.label }}"{% if chip.checked %} checked{% endif %}>
+                                {{ chip.label }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                    <p class="field-helper">Pick any that apply, or none for no preference. Halal skips pork and alcohol.</p>
                     {% for error in form.diet.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-                </div>
+                </fieldset>
 
                 <fieldset class="mealplan-fieldset">
                     <legend class="type-label-md mealplan-legend">{{ form.allergies.label }}</legend>
