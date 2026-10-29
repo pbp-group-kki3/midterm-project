@@ -59,7 +59,6 @@ def saved_items(user, category):
                 ),
             })
 
-    # Existing meal plans can be opened but are not removable bookmarks.
     if category in ("all", "meal-plan"):
         for record in MealPlan.objects.filter(user=user):
             items.append({
@@ -71,7 +70,13 @@ def saved_items(user, category):
                     "meal_plan:plan_detail",
                     args=[record.pk],
                 ),
-                "remove_url": None,
+                "remove_url": reverse(
+                    "profile_saved_remove",
+                    args=["meal-plan", record.pk],
+                ),
+                "confirm_title": "Delete this plan?",
+                "confirm_text": f"“{record.name}” and its {record.days_label} of meals will be removed. This can't be undone.",
+                "confirm_label": "Delete plan",
             })
 
     # Display the newest persisted records first.

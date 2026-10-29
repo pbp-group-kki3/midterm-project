@@ -18,6 +18,7 @@ from django.views.decorators.http import require_GET, require_POST
 
 from comparison.models import SavedComparison
 from main.models import FavoriteProduct
+from meal_plan.models import MealPlan
 from profiles.forms import AccountForm, PreferencesForm, SignupForm
 from profiles.preferences import normalize_allergies, normalize_diets
 from profiles.saved import SAVED_CATEGORIES, saved_items
@@ -250,13 +251,13 @@ def change_password_view(request):
         
     return redirect('profile')
 
-# Remove an owned saved record without deleting its source content.
 @login_required
 @require_POST
 def profile_saved_remove(request, kind, pk):
     models = {
         "product": FavoriteProduct,
         "comparison": SavedComparison,
+        "meal-plan": MealPlan,
     }
     model = models.get(kind)
 
@@ -271,7 +272,10 @@ def profile_saved_remove(request, kind, pk):
     if category not in dict(SAVED_CATEGORIES):
         category = "all"
 
-    messages.success(request, "Item removed from Saved.")
+    if kind == "meal-plan":
+        messages.success(request, f"“{record.name}” was deleted.")
+    else:
+        messages.success(request, "Item removed from Saved.")
 
     return redirect(
         reverse("profile_saved")

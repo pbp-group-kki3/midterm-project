@@ -42,9 +42,9 @@
                         <form
                             method="post"
                             action="{{ item.remove_url }}"
-                            data-confirm-title="Remove from Saved?"
-                            data-confirm-text="This removes the saved record only. It does not delete the original product or other source content."
-                            data-confirm-label="Remove"
+                            data-confirm-title="{{ item.confirm_title|default:'Remove from Saved?' }}"
+                            data-confirm-text="{{ item.confirm_text|default:'This removes the saved record only. It does not delete the original product or other source content.' }}"
+                            data-confirm-label="{{ item.confirm_label|default:'Remove' }}"
                         >
                             {% csrf_token %}
                             <input
