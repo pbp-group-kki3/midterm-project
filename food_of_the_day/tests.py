@@ -8,7 +8,7 @@ from django.core.management import call_command
 from django.db.utils import IntegrityError
 from django.core.exceptions import ValidationError
 
-from food_of_the_day.models import MealOfTheDay, MealComment
+from food_of_the_day.models import MealOfTheDay, MealComment, SavedMeal
 from food_of_the_day.forms import MealCommentForm
 from food_of_the_day.services import (
     get_recipe,
@@ -51,6 +51,32 @@ class MealCommentModelTest(TestCase):
         self.assertEqual(self.comment.user, self.user)
         self.assertEqual(self.comment.meal, self.meal)
         self.assertIn('testuser', str(self.comment))
+
+
+class SavedMealModelTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='saveuser', password='password123')
+        self.meal = MealOfTheDay.objects.create(date=datetime.date.today(), recipe_id=716429)
+        self.saved_meal = SavedMeal.objects.create(
+            user=self.user,
+            meal=self.meal,
+            recipe_title="Pasta with Garlic"
+        )
+
+    def test_saved_meal_creation(self):
+        self.assertEqual(self.saved_meal.user, self.user)
+        self.assertEqual(self.saved_meal.meal, self.meal)
+        self.assertEqual(self.saved_meal.recipe_title, "Pasta with Garlic")
+        self.assertIn("saveuser", str(self.saved_meal))
+
+    def test_unique_user_meal_constraint(self):
+        with self.assertRaises(IntegrityError):
+            SavedMeal.objects.create(
+                user=self.user,
+                meal=self.meal,
+                recipe_title="Duplicate Save"
+            )
+
 
 
 class FoodOfTheDayServicesTest(TestCase):
@@ -312,6 +338,174 @@ class FoodOfTheDayViewsTest(TestCase):
         response = self.client.get(reverse('food_of_the_day:slide_partial'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Healthy Green Bowl")
+
+    def test_toggle_save_meal_requires_login(self):
+        response = self.client.post(
+            reverse('food_of_the_day:toggle_save_meal', args=[self.meal.id]),
+            {'recipe_title': 'Healthy Green Bowl'}
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/profiles/login/', response['Location'])
+        self.assertEqual(SavedMeal.objects.count(), 0)
+
+    @patch('food_of_the_day.views.get_recipe')
+    def test_toggle_save_meal_authenticated(self, mock_get_recipe):
+        mock_get_recipe.return_value = self.sample_recipe
+        self.client.login(username='dineder', password='password123')
+
+        # First toggle: Save
+        response = self.client.post(
+            reverse('food_of_the_day:toggle_save_meal', args=[self.meal.id]),
+            {'recipe_title': 'Healthy Green Bowl'}
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(SavedMeal.objects.filter(user=self.user, meal=self.meal).exists())
+        saved = SavedMeal.objects.get(user=self.user, meal=self.meal)
+        self.assertEqual(saved.recipe_title, 'Healthy Green Bowl')
+
+        # Second toggle: Unsave
+        response2 = self.client.post(
+            reverse('food_of_the_day:toggle_save_meal', args=[self.meal.id])
+        )
+        self.assertEqual(response2.status_code, 302)
+        self.assertFalse(SavedMeal.objects.filter(user=self.user, meal=self.meal).exists())
+
+    @patch('food_of_the_day.views.get_recipe')
+    def test_toggle_save_meal_ajax(self, mock_get_recipe):
+        mock_get_recipe.return_value = self.sample_recipe
+        self.client.login(username='dineder', password='password123')
+
+        response = self.client.post(
+            reverse('food_of_the_day:toggle_save_meal', args=[self.meal.id]),
+            {'recipe_title': 'Healthy Green Bowl'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['saved'])
+        self.assertEqual(data['meal_id'], self.meal.id)
+
+    @patch('food_of_the_day.views.get_recipe')
+    def test_is_saved_in_context(self, mock_get_recipe):
+        mock_get_recipe.return_value = self.sample_recipe
+        self.client.login(username='dineder', password='password123')
+
+        # Initially not saved
+        res = self.client.get(reverse('food_of_the_day:detail', args=[self.meal.id]))
+        self.assertFalse(res.context['is_saved'])
+
+        # Save meal
+        SavedMeal.objects.create(user=self.user, meal=self.meal, recipe_title="Healthy Green Bowl")
+
+        # Now context reflects saved state
+        res2 = self.client.get(reverse('food_of_the_day:detail', args=[self.meal.id]))
+        self.assertTrue(res2.context['is_saved'])
+
+    def test_saved_meal_in_profile_saved_collection(self):
+        self.client.login(username='dineder', password='password123')
+        SavedMeal.objects.create(user=self.user, meal=self.meal, recipe_title="Healthy Green Bowl")
+
+        # Check 'meal' category
+        res_meal = self.client.get(reverse('profile_saved'), {'category': 'meal'})
+        self.assertEqual(res_meal.status_code, 200)
+        self.assertContains(res_meal, "Healthy Green Bowl")
+
+        # Check 'all' category
+        res_all = self.client.get(reverse('profile_saved'), {'category': 'all'})
+        self.assertEqual(res_all.status_code, 200)
+        self.assertContains(res_all, "Healthy Green Bowl")
+
+    def test_profile_saved_remove_meal(self):
+        self.client.login(username='dineder', password='password123')
+        saved = SavedMeal.objects.create(user=self.user, meal=self.meal, recipe_title="Healthy Green Bowl")
+
+        # Remove via profile_saved_remove
+        response = self.client.post(reverse('profile_saved_remove', args=['meal', saved.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(SavedMeal.objects.filter(pk=saved.pk).exists())
+
+    @patch('food_of_the_day.views.get_recipe')
+    def test_toggle_save_meal_creates_snapshot(self, mock_get_recipe):
+        mock_get_recipe.return_value = self.sample_recipe
+        self.client.login(username='dineder', password='password123')
+
+        response = self.client.post(
+            reverse('food_of_the_day:toggle_save_meal', args=[self.meal.id]),
+            {'recipe_title': 'Healthy Green Bowl'}
+        )
+        self.assertEqual(response.status_code, 302)
+        saved = SavedMeal.objects.get(user=self.user, meal=self.meal)
+        self.assertEqual(saved.recipe_id, self.meal.recipe_id)
+        self.assertEqual(saved.recipe_title, 'Healthy Green Bowl')
+        self.assertIsInstance(saved.snapshot_data, dict)
+        self.assertEqual(saved.snapshot_data.get('title'), 'Healthy Green Bowl')
+        self.assertEqual(saved.snapshot_data.get('calories'), 350)
+        self.assertIn('1 cup spinach', saved.snapshot_data.get('ingredients', []))
+
+    def test_saved_meal_persists_when_mealoftheday_deleted(self):
+        saved = SavedMeal.objects.create(
+            user=self.user,
+            meal=self.meal,
+            recipe_id=self.meal.recipe_id,
+            recipe_title="Healthy Green Bowl",
+            snapshot_data={'title': 'Healthy Green Bowl', 'calories': 350}
+        )
+        # Delete MealOfTheDay
+        self.meal.delete()
+
+        # SavedMeal must NOT be deleted (on_delete=models.SET_NULL)
+        saved.refresh_from_db()
+        self.assertIsNone(saved.meal)
+        self.assertEqual(saved.recipe_title, "Healthy Green Bowl")
+        self.assertEqual(saved.recipe_id, 716429)
+        self.assertEqual(saved.snapshot_data.get('calories'), 350)
+
+    @patch('food_of_the_day.views.get_recipe')
+    def test_detail_view_snapshot_fallback(self, mock_get_recipe):
+        from food_of_the_day.models import MealOfTheDay
+        past_date = self.today - datetime.timedelta(days=1)
+        meal = MealOfTheDay.objects.create(date=past_date, recipe_id=888888)
+
+        # Create saved meal with snapshot
+        SavedMeal.objects.create(
+            user=self.user,
+            meal=meal,
+            recipe_id=888888,
+            recipe_title="Fallback Snapshot Salad",
+            snapshot_data={
+                'id': 888888,
+                'title': 'Fallback Snapshot Salad',
+                'calories': 320,
+                'servings': 2,
+                'readyInMinutes': 15,
+                'ingredients': ['1 head lettuce', 'Olive oil'],
+                'instructions': ['Chop lettuce', 'Drizzle olive oil'],
+                'sourceUrl': 'https://spoonacular.com',
+            }
+        )
+
+        # Simulate Spoonacular being offline / returning None
+        mock_get_recipe.return_value = None
+
+        response = self.client.get(reverse('food_of_the_day:detail', args=[meal.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Fallback Snapshot Salad")
+
+    def test_build_recipe_snapshot_function(self):
+        from food_of_the_day.services import build_recipe_snapshot
+        snapshot = build_recipe_snapshot(self.sample_recipe)
+        self.assertEqual(snapshot['title'], 'Healthy Green Bowl')
+        self.assertEqual(snapshot['calories'], 350)
+        self.assertEqual(snapshot['ready_in_minutes'], 30)
+        self.assertEqual(snapshot['servings'], 2)
+        self.assertEqual(len(snapshot['ingredients']), 1)
+        self.assertEqual(len(snapshot['instructions']), 1)
+
+    def test_build_recipe_snapshot_none_handling(self):
+        from food_of_the_day.services import build_recipe_snapshot
+        self.assertEqual(build_recipe_snapshot(None), {})
+        self.assertEqual(build_recipe_snapshot('not a dict'), {})
+
 
 
 class SeedMealsCommandTest(TestCase):

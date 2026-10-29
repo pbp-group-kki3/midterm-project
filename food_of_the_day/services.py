@@ -303,3 +303,53 @@ def extract_instructions(recipe):
                     if cleaned:
                         steps.append(cleaned)
     return steps
+
+
+def build_recipe_snapshot(recipe):
+    """
+    Serializes a recipe dict into a standalone, portable snapshot.
+    Preserves exact recipe details at bookmark time, immune to Spoonacular
+    rate limits, downtime, or future modifications.
+    """
+    if not recipe or not isinstance(recipe, dict):
+        return {}
+
+    raw_source_url = recipe.get('sourceUrl')
+    source_url = raw_source_url if is_safe_external_url(raw_source_url) else 'https://spoonacular.com'
+
+    raw_image_url = recipe.get('image')
+    safe_image_url = raw_image_url if is_safe_external_url(raw_image_url) else None
+
+    dish_types = recipe.get('dishTypes', [])
+    if not isinstance(dish_types, list):
+        dish_types = []
+
+    ingredients = extract_ingredients(recipe)
+    instructions = extract_instructions(recipe)
+    calories = extract_calories(recipe)
+    key_nutrients = extract_key_nutrients(recipe)
+    did_you_know = get_did_you_know(recipe)
+
+    return {
+        'id': recipe.get('id'),
+        'title': str(recipe.get('title') or '').strip(),
+        'image': safe_image_url,
+        'readyInMinutes': recipe.get('readyInMinutes'),
+        'ready_in_minutes': recipe.get('readyInMinutes'),
+        'servings': recipe.get('servings'),
+        'healthScore': recipe.get('healthScore'),
+        'health_score': recipe.get('healthScore'),
+        'dishTypes': dish_types,
+        'dish_types': dish_types,
+        'calories': calories,
+        'key_nutrients': key_nutrients,
+        'did_you_know': did_you_know,
+        'ingredients': ingredients,
+        'instructions': instructions,
+        'extendedIngredients': [{'original': item} for item in ingredients],
+        'analyzedInstructions': [{'steps': [{'step': step} for step in instructions]}],
+        'sourceName': str(recipe.get('sourceName') or 'Spoonacular')[:100],
+        'source_name': str(recipe.get('sourceName') or 'Spoonacular')[:100],
+        'sourceUrl': source_url,
+        'source_url': source_url,
+    }
