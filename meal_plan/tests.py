@@ -914,6 +914,38 @@ class DeletePlanViewTests(MealPlanTestCase):
         self.assertTrue(MealPlan.objects.filter(pk=plan.pk).exists())
 
 
+class SavedPageTests(MealPlanTestCase):
+    def test_saved_meal_plans_have_a_delete_button(self):
+        plan = self.make_plan(days=7, name='Green week')
+        self.login()
+        response = self.client.get(reverse('profile_saved'), {'category': 'meal-plan'})
+        self.assertContains(response, 'Green week')
+        self.assertContains(response, 'action="%s"' % reverse('profile_saved_remove', args=['meal-plan', plan.pk]))
+        self.assertContains(response, 'data-confirm-title="Delete this plan?"')
+        self.assertContains(response, 'and its 7 days of meals will be removed.')
+        self.assertContains(response, 'data-confirm-label="Delete plan"')
+        self.assertEqual(self.api.calls, [])
+
+    def test_deleting_from_saved_removes_the_plan(self):
+        plan = self.make_plan(name='Green week')
+        self.login()
+        url = reverse('profile_saved_remove', args=['meal-plan', plan.pk])
+        response = self.client.post(url, {'category': 'meal-plan'})
+        self.assertRedirects(response, reverse('profile_saved') + '?category=meal-plan', fetch_redirect_response=False)
+        self.assertFalse(MealPlan.objects.exists())
+        self.assertFalse(MealPlanEntry.objects.exists())
+        response = self.client.get(response.url)
+        self.assertContains(response, 'data-message="“Green week” was deleted."')
+
+    def test_saved_delete_needs_post_and_your_own_plan(self):
+        plan = self.make_plan(user=self.other)
+        self.login()
+        url = reverse('profile_saved_remove', args=['meal-plan', plan.pk])
+        self.assertEqual(self.client.get(url).status_code, 405)
+        self.assertEqual(self.client.post(url).status_code, 404)
+        self.assertTrue(MealPlan.objects.filter(pk=plan.pk).exists())
+
+
 class RecipesViewTests(MealPlanTestCase):
     def setUp(self):
         super().setUp()
