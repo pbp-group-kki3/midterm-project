@@ -2,7 +2,6 @@ from django.urls import reverse
 
 from comparison.models import SavedComparison
 from main.models import FavoriteProduct
-from meal_plan.models import MealPlan
 
 
 # Define the categories supported by the Saved filter links.
@@ -11,7 +10,6 @@ SAVED_CATEGORIES = (
     ("product", "Products"),
     ("comparison", "Comparisons"),
     ("article", "Articles"),
-    ("meal-plan", "Meal plans"),
     ("meal", "Meals"),
 )
 
@@ -57,21 +55,6 @@ def saved_items(user, category):
                     "profile_saved_remove",
                     args=["comparison", record.pk],
                 ),
-            })
-
-    # Existing meal plans can be opened but are not removable bookmarks.
-    if category in ("all", "meal-plan"):
-        for record in MealPlan.objects.filter(user=user):
-            items.append({
-                "title": record.name,
-                "type": "Meal plan",
-                "metadata": f"{record.days_label} · {record.calorie_label}",
-                "created_at": record.created_at,
-                "open_url": reverse(
-                    "meal_plan:plan_detail",
-                    args=[record.pk],
-                ),
-                "remove_url": None,
             })
 
     # Saved Meal of the Day records (with snapshot metadata fallback).
