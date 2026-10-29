@@ -117,6 +117,18 @@ def _plan_summary(form, profile_target):
     }
 
 
+def _form_context(form, defaults, plan=None):
+    return {
+        'form': form,
+        'plan': plan,
+        'allergy_chips': _allergy_chips(form, defaults['allergies']),
+        'diet_chips': _diet_chips(form['diet'].value()),
+        'summary': _plan_summary(form, defaults['calorie_target']),
+        'profile_target': defaults['calorie_target'] or '',
+        'default_calories': DEFAULT_CALORIES,
+    }
+
+
 def _remember_offers(request, entry, options):
     offers = dict(request.session.get(OFFERS_KEY, {}))
     offers.pop(str(entry.pk), None)
@@ -162,15 +174,39 @@ def plan_create(request):
             'allergies': defaults['allergies'],
             'include_snack': defaults['include_snack'],
         })
-    context = {
-        'form': form,
-        'allergy_chips': _allergy_chips(form, defaults['allergies']),
-        'diet_chips': _diet_chips(form['diet'].value()),
-        'summary': _plan_summary(form, defaults['calorie_target']),
-        'profile_target': defaults['calorie_target'] or '',
-        'default_calories': DEFAULT_CALORIES,
-    }
-    return render(request, 'meal_plan/plan_form.html', context)
+    return render(request, 'meal_plan/plan_form.html', _form_context(form, defaults))
+
+
+@login_required(login_url=LOGIN_URL)
+def plan_edit(request, pk):
+    plan = get_object_or_404(MealPlan, pk=pk, user=request.user)
+    defaults = planner.profile_defaults(request.user)
+    if request.method == 'POST':
+        form = MealPlanForm(request.POST)
+        if form.is_valid():
+            try:
+                new_meals = planner.update_plan(plan, form.cleaned_data)
+            except (planner.PlanError, SpoonacularError) as error:
+                form.add_error(None, error.message)
+            else:
+                if new_meals and form.cleaned_data['include_snack'] and not plan.include_snack:
+                    messages.warning(request, "We couldn't add snacks right now, so this plan has no snacks.")
+                if new_meals:
+                    messages.success(request, f'“{plan.name}” was updated with new meals.')
+                else:
+                    messages.success(request, f'“{plan.name}” was updated.')
+                return redirect(_plan_url(plan))
+    else:
+        form = MealPlanForm(initial={
+            'name': plan.name,
+            'start_date': plan.date,
+            'days': plan.days,
+            'diet': plan.diet_keys,
+            'allergies': plan.allergies,
+            'include_snack': plan.include_snack,
+            'calorie_goal': plan.calorie_goal,
+        })
+    return render(request, 'meal_plan/plan_form.html', _form_context(form, defaults, plan))
 
 
 @login_required(login_url=LOGIN_URL)

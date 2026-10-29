@@ -370,38 +370,82 @@ def _pick_snacks(days, calories, filters, request_key=''):
     return [card['id'] for card in closest_by_calories(cards, calories)[:days]]
 
 
-def create_plan(user, data):
-    days = data['days']
-    goal, _ = daily_goal(data.get('calorie_goal'), user)
-    allergies = list(data.get('allergies') or [])
+def meal_settings(user, data):
     diets = profile_diets({'diet': data.get('diet')})
-    diet = main_diet(diets)
-    filters = plan_filters(diet, allergies, halal='halal' in diets)
-    snack_calories = round(goal * SNACK_SHARE) if data.get('include_snack') else 0
+    goal, _ = daily_goal(data.get('calorie_goal'), user)
+    return {
+        'days': data['days'],
+        'diet': main_diet(diets),
+        'diets': diets,
+        'allergies': list(data.get('allergies') or []),
+        'include_snack': bool(data.get('include_snack')),
+        'calorie_goal': goal,
+    }
+
+
+def meals_need_changing(plan, settings):
+    return (
+        settings['days'] != plan.days
+        or settings['diets'] != plan.diet_keys
+        or sorted(settings['allergies']) != sorted(plan.allergies)
+        or settings['include_snack'] != plan.include_snack
+        or settings['calorie_goal'] != plan.calorie_goal
+    )
+
+
+def _pick_meals(settings, request_key):
+    filters = plan_filters(settings['diet'], settings['allergies'], halal='halal' in settings['diets'])
+    goal = settings['calorie_goal']
+    snack_calories = round(goal * SNACK_SHARE) if settings['include_snack'] else 0
+    meal_days = _generate_days(settings['days'], goal - snack_calories, filters, request_key)
+    snacks = _pick_snacks(settings['days'], snack_calories, filters, request_key) if snack_calories else []
+    fields = {
+        'timeframe': 'day' if settings['days'] == 1 else 'week',
+        'days': settings['days'],
+        'diet': settings['diet'],
+        'diets': settings['diets'],
+        'allergies': settings['allergies'],
+        'include_snack': bool(snacks),
+        'calorie_goal': goal,
+    }
+    return fields, meal_days, snacks
+
+
+def _save_meals(plan, meal_days, snacks):
+    entries = []
+    for number, meals in enumerate(meal_days, start=1):
+        for slot, meal in zip(SLOTS, meals):
+            entries.append(MealPlanEntry(plan=plan, day=number, slot=slot, recipe_id=meal['id']))
+        if snacks:
+            entries.append(MealPlanEntry(plan=plan, day=number, slot=SNACK, recipe_id=snacks[(number - 1) % len(snacks)]))
+    MealPlanEntry.objects.bulk_create(entries)
+
+
+def create_plan(user, data):
     request_key = f"{user.pk}:{data['name']}:{data['start_date']}"
-    meal_days = _generate_days(days, goal - snack_calories, filters, request_key)
-    snacks = _pick_snacks(days, snack_calories, filters, request_key) if snack_calories else []
+    fields, meal_days, snacks = _pick_meals(meal_settings(user, data), request_key)
     with transaction.atomic():
-        plan = MealPlan.objects.create(
-            user=user,
-            name=data['name'],
-            date=data['start_date'],
-            timeframe='day' if days == 1 else 'week',
-            days=days,
-            diet=diet,
-            diets=diets,
-            allergies=allergies,
-            include_snack=bool(snacks),
-            calorie_goal=goal,
-        )
-        entries = []
-        for number, meals in enumerate(meal_days, start=1):
-            for slot, meal in zip(SLOTS, meals):
-                entries.append(MealPlanEntry(plan=plan, day=number, slot=slot, recipe_id=meal['id']))
-            if snacks:
-                entries.append(MealPlanEntry(plan=plan, day=number, slot=SNACK, recipe_id=snacks[(number - 1) % len(snacks)]))
-        MealPlanEntry.objects.bulk_create(entries)
+        plan = MealPlan.objects.create(user=user, name=data['name'], date=data['start_date'], **fields)
+        _save_meals(plan, meal_days, snacks)
     return plan
+
+
+def update_plan(plan, data):
+    settings = meal_settings(plan.user, data)
+    new_meals = meals_need_changing(plan, settings)
+    fields = {'name': data['name'], 'date': data['start_date']}
+    if new_meals:
+        request_key = f"{plan.user.pk}:{data['name']}:{data['start_date']}"
+        meal_fields, meal_days, snacks = _pick_meals(settings, request_key)
+        fields.update(meal_fields)
+    with transaction.atomic():
+        for name, value in fields.items():
+            setattr(plan, name, value)
+        plan.save()
+        if new_meals:
+            plan.entries.all().delete()
+            _save_meals(plan, meal_days, snacks)
+    return new_meals
 
 
 def plan_days(plan):

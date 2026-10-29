@@ -27,7 +27,7 @@
                 </div>
             </div>
             <div class="page-actions mealplan-actions">
-                <a href="{% url 'meal_plan:plan_list' %}" class="btn btn-secondary mealplan-action mealplan-desktop-only">My plans</a>
+                <a href="{% url 'meal_plan:plan_edit' plan.pk %}" class="btn btn-secondary mealplan-action">Edit plan</a>
                 <button type="button" class="btn btn-danger mealplan-action" data-dialog-open="delete-dialog">Delete plan</button>
             </div>
         </header>
