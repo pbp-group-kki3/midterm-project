@@ -6,7 +6,19 @@
 {#   otherwise               -> "+ Compare" #}
 {# style = "btn-outline" on cards, "btn-primary" on the detail page #}
 {# change: js-compare-form = main.js sends it in the background, so the page doesn't reload #}
-{% if not user.is_authenticated %}
+{% if detail_overlay %}
+    <button
+        type="button"
+        class="btn btn-outline btn-block"
+        disabled
+    >
+        {% if code in compare_barcodes %}
+            Added
+        {% else %}
+            Comparison locked
+        {% endif %}
+    </button>
+{% elif not user.is_authenticated %}
     {# logged out: goes to login (team doc + Figma) #}
     <a href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}" class="btn {{ style }} btn-block">+ Compare</a>
 {% elif code in compare_barcodes and not compare_full %}

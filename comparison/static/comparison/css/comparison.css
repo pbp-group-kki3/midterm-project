@@ -31,8 +31,13 @@
 
 /* Fixed layout keeps product headers aligned with every value below. */
 .compare-table {
+    --compare-label-width: 240px;
+
     width: 100%;
-    min-width: 760px;
+    min-width: calc(
+        var(--compare-label-width) +
+        var(--compare-product-count, 2) * 280px
+    );
     table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
@@ -41,7 +46,7 @@
 
 /* Matches the desktop criterion column in the approved design. */
 .compare-label-column {
-    width: 240px;
+    width: var(--compare-label-width);
 }
 
 /* Equal spacing between product columns. */
@@ -156,14 +161,200 @@
     border-color: var(--color-border-danger);
 }
 
+#compare-save-feedback[hidden],
+#compare-save-location[hidden] {
+    display: none;
+}
+
+.compare-saved-link {
+    color: var(--color-text-brand);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* Keep indicators inside their product column. */
+.compare-score-heading .score-row {
+    width: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.compare-score-heading .score-tile {
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+/* Match the total width of the indicator row. */
+.compare-score-heading .btn-group {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+}
+
+.compare-score-heading .btn-group > .btn {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+/* Product-only detail overlay. Shared visual components stay unchanged. */
+.compare-detail-dialog {
+    background-color: var(--color-bg-canvas);
+    position: fixed;
+    width: min(
+        calc(var(--container-max) + var(--space-xl) * 2),
+        calc(100% - var(--space-2xl))
+    );
+    max-width: none;
+    max-height: calc(100vh - var(--space-2xl));
+    max-height: calc(100dvh - var(--space-2xl));
+    padding: 0;
+    overflow: hidden;
+}
+
+.compare-detail-dialog[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+.compare-detail-close {
+    position: absolute;
+    top: var(--space-sm);
+    right: var(--space-sm);
+    z-index: 2;
+    background: var(--color-bg-surface);
+}
+
+/* Reserve space for the X without introducing a title bar. */
+.compare-detail-scroll {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    padding:
+        var(--space-4xl)
+        var(--space-xl)
+        var(--space-xl);
+}
+
+.compare-detail-dialog [hidden] {
+    display: none;
+}
+
+.compare-detail-status {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.compare-detail-error {
+    display: grid;
+    gap: var(--space-lg);
+}
+
+.compare-detail-error .btn {
+    justify-self: start;
+}
+
+.compare-detail-dialog .product-detail-content,
+.compare-detail-dialog .product-detail-hero > *,
+.compare-detail-dialog .discover-details > *,
+.compare-detail-dialog .discover-details-stack {
+    min-width: 0;
+}
+
+.compare-detail-dialog .product-detail-hero {
+    margin-top: 0;
+}
+
+.compare-detail-dialog .page-title,
+.compare-detail-dialog .page-subtitle,
+.compare-detail-dialog .product-action-feedback {
+    overflow-wrap: anywhere;
+}
+
+.compare-detail-dialog .score-row {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.compare-detail-dialog .score-tile {
+    min-width: 0;
+}
+
+.compare-detail-dialog .product-detail-actions {
+    flex-wrap: wrap;
+}
+
+.compare-detail-dialog .product-detail-actions > * {
+    min-width: 0;
+}
+
+.compare-detail-dialog .product-detail-actions .btn {
+    white-space: normal;
+}
+
+.compare-detail-dialog .discover-total,
+.compare-detail-dialog .discover-row {
+    flex-wrap: wrap;
+}
+
+.compare-detail-dialog .discover-row-label {
+    min-width: 0;
+}
+
+.compare-detail-dialog .discover-row-value {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.compare-detail-dialog .dialog-close:focus-visible,
+.compare-detail-dialog .discover-clamp-toggle:focus-visible,
+.compare-detail-scroll:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+    .compare-detail-dialog .product-detail-hero,
+    .compare-detail-dialog .discover-details {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .compare-detail-dialog {
+        width: calc(100% - var(--space-lg));
+        max-height: calc(100vh - var(--space-lg));
+        max-height: calc(100dvh - var(--space-lg));
+    }
+
+    .compare-detail-scroll {
+        padding:
+            var(--space-4xl)
+            var(--space-lg)
+            var(--space-lg);
+    }
+}
+
+@media (max-width: 420px) {
+    .compare-detail-dialog .product-detail-actions {
+        flex-direction: column;
+    }
+
+    .compare-detail-dialog .product-detail-actions > * {
+        width: 100%;
+        flex-basis: auto;
+    }
+}
+
 /* Keep the panel comfortable on narrower screens. */
 @media (max-width: 767px) {
     .compare-panel {
         padding: var(--space-lg);
     }
 
-    .compare-label-column {
-        width: 160px;
+    .compare-table {
+        --compare-label-width: 160px;
     }
 
     .compare-product-heading,
