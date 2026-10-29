@@ -15,7 +15,11 @@
                 <h1 class="page-title page-title-lg">{{ plan.name }}</h1>
                 <p class="mealplan-subtitle text-secondary">{{ plan.date|date:"j M Y" }}{% if plan.days > 1 %} – {{ plan.end_date|date:"j M Y" }}{% endif %} · {{ plan.days_label }}</p>
                 <div class="mealplan-badges">
-                    <span class="badge">{{ plan.diet_label }}</span>
+                    {% for label in plan.diet_labels %}
+                        <span class="badge">{{ label }}</span>
+                    {% empty %}
+                        <span class="badge">No preference</span>
+                    {% endfor %}
                     {% for allergy in plan.allergy_badges %}
                         <span class="badge">{{ allergy }}</span>
                     {% endfor %}

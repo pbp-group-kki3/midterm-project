@@ -825,10 +825,10 @@ a.mealplan-card-link:hover {
     gap: var(--space-lg);
 }
 
-/* Search, Meal, Diet, Max kcal, Max minutes in one row */
+/* Search, Meal, Max kcal, Max minutes in one row (Diet chips sit below) */
 .mealplan-filter-fields {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     align-items: start;
     gap: var(--space-lg);
 }
