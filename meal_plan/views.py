@@ -137,8 +137,13 @@ def plan_list(request):
 @login_required(login_url=LOGIN_URL)
 def plan_create(request):
     defaults = planner.profile_defaults(request.user)
+    # Ask explicitly when several profile diets cannot fit one plan's diet field.
+    diet_choices = list(DIET_CHOICES)
+    if defaults['diet_requires_choice']:
+        diet_choices.insert(0, ('', 'Choose a diet for this plan'))
     if request.method == 'POST':
         form = MealPlanForm(request.POST)
+        form.fields['diet'].choices = diet_choices
         if form.is_valid():
             try:
                 plan = planner.create_plan(request.user, form.cleaned_data)
@@ -153,14 +158,16 @@ def plan_create(request):
         form = MealPlanForm(initial={
             'start_date': timezone.localdate(),
             'days': DEFAULT_DAYS,
-            'diet': defaults['diet'],
+            'diet': '' if defaults['diet_requires_choice'] else defaults['diet'],
             'allergies': defaults['allergies'],
             'include_snack': defaults['include_snack'],
         })
+        form.fields['diet'].choices = diet_choices
     context = {
         'form': form,
         'allergy_chips': _allergy_chips(form, defaults['allergies']),
-        'diet_options': _select_options(DIET_CHOICES, form['diet'].value(), DIET_HELPERS),
+        'diet_options': _select_options(diet_choices, form['diet'].value(), DIET_HELPERS),
+        'profile_multiple_diets': defaults['diet_requires_choice'],
         'summary': _plan_summary(form, defaults['calorie_target']),
         'profile_target': defaults['calorie_target'] or '',
         'default_calories': DEFAULT_CALORIES,
