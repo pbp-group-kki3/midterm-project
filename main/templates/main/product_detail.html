@@ -14,6 +14,12 @@
             <span class="icon icon-arrow-left" aria-hidden="true"></span>
             Back to Compare
         </a>
+    {# change: opened from Saved in the profile -> go back there #}
+    {% elif request.GET.source == "saved" %}
+        <a href="{% url 'profile_saved' %}" class="back-link">
+            <span class="icon icon-arrow-left" aria-hidden="true"></span>
+            Back to Saved
+        </a>
     {% else %}
         <a href="{% url 'main:show_main' %}#discover" class="back-link">
             <span class="icon icon-arrow-left" aria-hidden="true"></span>
