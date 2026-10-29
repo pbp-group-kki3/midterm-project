@@ -26,10 +26,11 @@ def saved_items(user, category):
                 "type": "Product",
                 "metadata": f"Barcode {record.barcode}",
                 "created_at": record.created_at,
+                # change: ?source=saved tells the product page to show "Back to Saved"
                 "open_url": reverse(
                     "main:product_detail",
                     args=[record.barcode],
-                ),
+                ) + "?source=saved",
                 "remove_url": reverse(
                     "profile_saved_remove",
                     args=["product", record.pk],
@@ -88,10 +89,11 @@ def saved_items(user, category):
                     "type": "Meal",
                     "metadata": metadata,
                     "created_at": record.created_at,
+                    # change: ?source=saved tells the meal page to show "Back to Saved"
                     "open_url": reverse(
                         "food_of_the_day:detail",
                         args=[record.meal.pk],
-                    ) if record.meal else reverse("food_of_the_day:index"),
+                    ) + "?source=saved" if record.meal else reverse("food_of_the_day:index"),
                     "remove_url": reverse(
                         "profile_saved_remove",
                         args=["meal", record.pk],
