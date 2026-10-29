@@ -513,3 +513,32 @@ class ProfileIntegrationTests(TestCase):
         self.assertContains(response, 'Some selected products could not be loaded.', count=1)
         self.assertContains(response, 'id="toast-component"', count=1)
         self.assertNotContains(response, '/comparison/js/toast.js')
+
+
+# change: Saved has no x button any more, and its Open links say where they came from
+class SavedBackLinkTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user('saver', password='SpoonFeed-Test-Password-928!')
+        self.client.force_login(self.user)
+        FavoriteProduct.objects.create(user=self.user, barcode='111', product_name='Owned product')
+
+    def test_saved_rows_have_no_remove_button(self):
+        response = self.client.get(reverse('profile_saved'))
+        self.assertContains(response, 'Owned product')
+        self.assertNotContains(response, 'profile-saved-remove')
+
+    def test_saved_product_opens_with_source_saved(self):
+        response = self.client.get(reverse('profile_saved'), {'category': 'product'})
+        self.assertContains(response, reverse('main:product_detail', args=['111']) + '?source=saved')
+
+    # change: the product page reads ?source=saved and offers the way back
+    @patch('main.views.get_alternatives', return_value=[])
+    @patch('main.views.get_product', return_value={'code': '111', 'product_name': 'Owned product'})
+    def test_product_detail_back_link_follows_the_source(self, fake_product, fake_alternatives):
+        url = reverse('main:product_detail', args=['111'])
+        from_saved = self.client.get(url, {'source': 'saved'})
+        self.assertContains(from_saved, 'Back to Saved')
+        self.assertContains(from_saved, 'href="' + reverse('profile_saved') + '"')
+        from_discover = self.client.get(url)
+        self.assertContains(from_discover, 'Back to Discover')
+        self.assertNotContains(from_discover, 'Back to Saved')
