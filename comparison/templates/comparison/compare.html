@@ -4,6 +4,10 @@
 {% block title %}Compare | SpoonFeed{% endblock %}
 
 {% block extra_head %}
+    <link
+        rel="stylesheet"
+        href="{% static 'main/main.css' %}"
+    >
     <link rel="preconnect" href="https://images.openfoodfacts.org">
     <link
         rel="stylesheet"
@@ -40,15 +44,18 @@
         </div>
 
         <p class="page-subtitle">
-            Green highlights better available values.
-            Equal or incomplete rows are not highlighted.
+            Green highlights the best available values when at least two products have comparable data.
+            Rows where all comparable values are equal are not highlighted.
         </p>
-        {% if is_saved %}
-            <p class="type-body-sm text-secondary mt-3">
-                Comparison saved. Find it in your profile's
-                <a class="link" href="{% url 'profile_saved' %}?category=comparison">Saved</a> section.
-            </p>
-        {% endif %}
+
+        <p
+            id="compare-save-location"
+            class="type-caption text-secondary mt-3"
+            {% if not is_saved %}hidden{% endif %}
+        >
+            Comparison saved. Find it in your profile's
+            <a class="compare-saved-link" href="{% url 'profile_saved' %}?category=comparison">Saved</a> section.
+        </p>
     </header>
 
     {% if show_compare_panel %}
@@ -58,7 +65,10 @@
             aria-label="Product comparison"
             tabindex="0"
         >
-            <table class="compare-table">
+            <table
+                class="compare-table"
+                style="--compare-product-count: {{ table_column_count|add:'-1' }};"
+            >
                 <caption class="sr-only">
                     Scores, nutrition, labels and allergens
                     for the selected products
@@ -119,7 +129,10 @@
 
                         {% if show_add_product %}
                             <th scope="col" class="compare-product-heading">
-                                <a href="/" class="compare-add-product">
+                                <a
+                                    href="{% url 'main:show_main' %}#discover"
+                                    class="compare-add-product"
+                                >
                                     <span class="type-label-md">
                                         + Add product
                                     </span>
@@ -193,13 +206,16 @@
                                     </button>
                                     {% endif %}
 
-                                    <button
-                                        type="button"
-                                        class="btn btn-primary btn-sm flex-1 min-w-0"
-                                        disabled
+                                    <a
+                                        href="{% url 'main:product_detail' product.compare_barcode %}?source=comparison"
+                                        class="btn btn-primary btn-sm flex-1 min-w-0 js-product-detail"
+                                        data-product-barcode="{{ product.compare_barcode }}"
+                                        data-product-name="{{ product.product_name|default:'Unnamed product' }}"
+                                        aria-haspopup="dialog"
+                                        aria-controls="compare-product-dialog"
                                     >
                                         Details
-                                    </button>
+                                    </a>
                                 </div>
                             </td>
                         {% endfor %}
@@ -276,6 +292,7 @@
     {% endif %}
 
     <!---Dialog overlays-->
+    {% include "comparison/components/product_details_dialog.html" %}
     {% include "comparison/components/save_dialog.html" %}
     {% include "comparison/components/remove_dialog.html" %}
     
@@ -283,7 +300,17 @@
 
 {% block extra_js %}
     <script
+        src="{% static 'main/main.js' %}"
+        defer
+    ></script>
+
+    <script
         src="{% static 'comparison/js/comparison.js' %}"
+        defer
+    ></script>
+
+    <script
+        src="{% static 'comparison/js/product_detail_overlay.js' %}"
         defer
     ></script>
 {% endblock %}

@@ -14,6 +14,8 @@ from django.contrib.auth.decorators import login_required
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from main.models import FavoriteProduct, ViewHistory
+from django.urls import reverse
+from django.views.decorators.cache import never_cache
 
 
 # Tags on a card (Figma: up to 2 slots, read from labels_tags). (tag, text, badge style)
@@ -190,9 +192,30 @@ def show_main(request):
 
     return render(request, "main/main.html", context)
 
+@never_cache
 def product_detail(request, barcode):
+    # FOR PRODUCT COMPARISON PRODUCT DETAILS
+    overlay = request.GET.get("fragment") == "1"
+
+    if overlay and request.method != "GET":
+        return JsonResponse(
+            {"message": "Product details must be requested with GET."},
+            status=405,
+            headers={"Allow": "GET"},
+        )
+    
     product = get_product(barcode)                           
     if product is None:
+        if overlay:
+            return JsonResponse(
+                {
+                    "message": (
+                        "We couldn't load this product right now. "
+                        "Please try again."
+                    )
+                },
+                status=503,
+            )
         return render(request, "main/product_detail.html", {"product": None})
 
     prefs = get_preferences(request.user) if request.user.is_authenticated else None
@@ -204,15 +227,21 @@ def product_detail(request, barcode):
     ingredient_badges = build_ingredient_badges(product)
     environment = build_environment(product)
 
-    alternatives = [prepare_card(a, prefs, saved) for a in get_alternatives(product)]   
+    # Recommendations remain part of the standalone page only.
+    alternatives = []
+
+    if not overlay:
+        alternatives = [prepare_card(alternative, prefs, saved) for alternative in get_alternatives(product)]
 
     is_favorite = False
-    if request.user.is_authenticated:                       
-        ViewHistory.objects.update_or_create(                
-            user=request.user,
-            barcode=barcode,
-            defaults={"product_name": product.get("product_name") or ""},   
-        )
+    if request.user.is_authenticated:  
+        if not overlay:                     
+            ViewHistory.objects.update_or_create(                
+                user=request.user,
+                barcode=barcode,
+                defaults={"product_name": product.get("product_name") or ""},   
+            )
+
         is_favorite = FavoriteProduct.objects.filter(user=request.user, barcode=barcode).exists()
 
     context = {
@@ -227,8 +256,25 @@ def product_detail(request, barcode):
         "environment": environment,
         "alternatives": alternatives,
         "is_favorite": is_favorite,
+        "detail_overlay": overlay,
+        "detail_return_url": (reverse("comparison:compare_products") if overlay else request.get_full_path()),
     }
     context.update(compare_tray(request))
+
+    if overlay:
+        return JsonResponse(
+            {
+                "barcode": str(barcode),
+                "product_name": (
+                    product.get("product_name") or "Unnamed product"
+                ),
+                "html": render_to_string(
+                    "main/components/product_detail_content.html",
+                    context,
+                    request=request,
+                ),
+            },
+        )
     return render(request, "main/product_detail.html", context)
 
 # function : add to favorites action

@@ -1,0 +1,57 @@
+    <dialog
+        id="compare-product-dialog"
+        class="dialog compare-detail-dialog"
+        data-product-overlay
+        aria-label="Product details"
+    >
+        <button
+            type="button"
+            id="compare-detail-close"
+            class="dialog-close compare-detail-close"
+            aria-label="Close product details"
+            autofocus
+        >
+            <span
+                class="icon icon-x"
+                aria-hidden="true"
+            ></span>
+        </button>
+
+        <div
+            id="compare-detail-scroll"
+            class="compare-detail-scroll"
+            tabindex="0"
+            aria-label="Scrollable product details"
+        >
+            <p
+                id="compare-detail-status"
+                class="type-body-sm text-secondary compare-detail-status"
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                hidden
+            ></p>
+
+            <div
+                id="compare-detail-error"
+                class="compare-detail-error"
+                hidden
+            >
+                <p
+                    id="compare-detail-error-text"
+                    class="alert alert-danger"
+                    role="alert"
+                ></p>
+
+                <button
+                    type="button"
+                    id="compare-detail-retry"
+                    class="btn btn-secondary"
+                >
+                    Retry
+                </button>
+            </div>
+
+            <div id="compare-detail-content"></div>
+        </div>
+    </dialog>
