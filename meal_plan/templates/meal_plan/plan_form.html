@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Create a meal plan | SpoonFeed{% endblock %}
+{% block title %}{% if plan %}Edit plan{% else %}Create a meal plan{% endif %} | SpoonFeed{% endblock %}
 
 {% block extra_head %}
     <link rel="stylesheet" href="{% static 'meal_plan/meal_plan.css' %}">
@@ -10,9 +10,15 @@
 {% block content %}
     <div class="mealplan-page">
         <header class="mealplan-heading">
-            <a href="{% url 'meal_plan:recipes' %}" class="back-link">← Back to Meal Plan</a>
-            <h1 class="page-title page-title-lg">Create a meal plan</h1>
-            <p class="page-subtitle mealplan-mobile-only">Spoonacular picks the recipes. Allergy filters use Spoonacular's labels, so always check the recipe too.</p>
+            {% if plan %}
+                <a href="{% url 'meal_plan:plan_detail' plan.pk %}" class="back-link">← Back to plan</a>
+                <h1 class="page-title page-title-lg">Edit plan</h1>
+                <p class="page-subtitle">Changing the days, diet, allergies, snack or calorie goal picks new meals for this plan.</p>
+            {% else %}
+                <a href="{% url 'meal_plan:recipes' %}" class="back-link">← Back to Meal Plan</a>
+                <h1 class="page-title page-title-lg">Create a meal plan</h1>
+                <p class="page-subtitle mealplan-mobile-only">Spoonacular picks the recipes. Allergy filters use Spoonacular's labels, so always check the recipe too.</p>
+            {% endif %}
         </header>
 
 
@@ -86,8 +92,13 @@
                 </div>
 
                 <div class="mealplan-form-actions">
-                    <button type="submit" class="btn btn-primary mealplan-action" data-plan-submit>Create plan</button>
-                    <a href="{% url 'meal_plan:recipes' %}" class="btn btn-secondary mealplan-action">Cancel</a>
+                    {% if plan %}
+                        <button type="submit" class="btn btn-primary mealplan-action" data-plan-submit data-busy-label="Saving…">Save changes</button>
+                        <a href="{% url 'meal_plan:plan_detail' plan.pk %}" class="btn btn-secondary mealplan-action">Cancel</a>
+                    {% else %}
+                        <button type="submit" class="btn btn-primary mealplan-action" data-plan-submit data-busy-label="Creating your plan…">Create plan</button>
+                        <a href="{% url 'meal_plan:recipes' %}" class="btn btn-secondary mealplan-action">Cancel</a>
+                    {% endif %}
                 </div>
             </form>
 

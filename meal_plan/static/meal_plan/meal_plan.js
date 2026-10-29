@@ -289,6 +289,7 @@
         const dietInputs = Array.from(form.querySelectorAll('[data-plan-diet]'));
         const allergyInputs = Array.from(form.querySelectorAll('[data-plan-allergy]'));
         const submit = form.querySelector('[data-plan-submit]');
+        const submitLabel = submit ? submit.textContent : '';
         const profileTarget = parseInt(form.dataset.profileTarget, 10);
         const defaultCalories = parseInt(form.dataset.defaultCalories, 10) || 2000;
         const output = {};
@@ -347,13 +348,13 @@
         form.addEventListener('submit', function () {
             if (submit) {
                 submit.disabled = true;
-                submit.textContent = 'Creating your plan…';
+                submit.textContent = submit.dataset.busyLabel || submitLabel;
             }
         });
         window.addEventListener('pageshow', function () {
             if (submit) {
                 submit.disabled = false;
-                submit.textContent = 'Create plan';
+                submit.textContent = submitLabel;
             }
         });
         update();

@@ -11,6 +11,7 @@ urlpatterns = [
     path('plans/', views.plan_list, name='plan_list'),
     path('plans/new/', views.plan_create, name='plan_create'),
     path('plans/<int:pk>/', views.plan_detail, name='plan_detail'),
+    path('plans/<int:pk>/edit/', views.plan_edit, name='plan_edit'),
     path('plans/<int:pk>/delete/', views.plan_delete, name='plan_delete'),
     path('plans/<int:pk>/meals/<int:entry_pk>/replace/', views.meal_replace, name='meal_replace'),
 ]
