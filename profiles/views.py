@@ -17,10 +17,11 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_POST
 
 from comparison.models import SavedComparison
-from main.models import FavoriteProduct
+from main.models import FavoriteProduct,ViewHistory
 from profiles.forms import AccountForm, PreferencesForm, SignupForm
 from profiles.preferences import normalize_allergies, normalize_diets
 from profiles.saved import SAVED_CATEGORIES, saved_items
+
 
 # REGISTER VIEW
 # Validate signup and save the account and preferences together.
@@ -115,6 +116,9 @@ def _profile_context(
     records = saved_items(request.user, category) if section == "saved" else []
     saved_page = Paginator(records, 12).get_page(request.GET.get("page"))
 
+    # Load History items only while displaying the History section, newest first.
+    history_items = ViewHistory.objects.filter(user=request.user).order_by('-viewed_at') if section == "history" else []
+
     return {
         "profile": profile,
         "active_section": section,
@@ -125,6 +129,7 @@ def _profile_context(
         "saved_categories": SAVED_CATEGORIES,
         "saved_category": category,
         "saved_page": saved_page,
+        "history_items": history_items,
     }
 
 
@@ -339,3 +344,20 @@ class ProfileLoginView(LoginView):
             return ""
 
         return destination
+
+# HISTORY ITEM DELETE VIEW
+@login_required
+@require_POST
+def history_item_delete(request, item_id):
+    # Filter by both id and user to prevent unauthorized deletions
+    ViewHistory.objects.filter(id=item_id, user=request.user).delete()
+    messages.success(request, "Item removed from history.")
+    return redirect(reverse('profile') + "?section=history")
+
+# CLEAR ALL HISTORY VIEW
+@login_required
+@require_POST
+def history_clear(request):
+    ViewHistory.objects.filter(user=request.user).delete()
+    messages.success(request, "History cleared successfully.")
+    return redirect(reverse('profile') + "?section=history")
