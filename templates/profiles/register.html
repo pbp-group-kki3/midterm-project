@@ -7,20 +7,6 @@
 
 {% block content %}
 
-<!-- TOAST NOTIFICATIONS (For Django Messages) -->
-{% if messages %}
-    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 w-full max-w-sm pointer-events-none">
-        {% for message in messages %}
-            <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} shadow-lg pointer-events-auto flex justify-between items-center toast-message transition-opacity duration-300" role="alert">
-                <span class="type-body-sm font-medium">{{ message }}</span>
-                <button type="button" class="icon-btn icon-btn-plain ml-3 text-current" onclick="this.closest('.alert').remove()" aria-label="Close">
-                    <span class="icon icon-x" aria-hidden="true"></span>
-                </button>
-            </div>
-        {% endfor %}
-    </div>
-{% endif %}
-
 <!-- LAYOUT -->
 <div class="flex flex-col md:flex-row w-full max-w-6xl mx-auto rounded-xl shadow-lg overflow-hidden min-h-[620px] border border-default">
     
@@ -59,15 +45,12 @@
         <!-- FORM -->
         <form method="POST" action="{% url 'register' %}" enctype="multipart/form-data" id="spoonfeedForm" class="w-full max-w-md mx-auto">
             {% csrf_token %}
-            <input type="hidden" name="diet" id="diet_input" value="{{ data.diet|default:'none' }}">
-            <input type="hidden" name="allergies" id="allergies_input" value="{{ data.allergies|default:'' }}">
+            <input type="hidden" name="next" value="{{ next }}">
 
-            <!-- GENERAL ALERT -->
-            {% if errors %}
-            <div class="alert alert-danger mb-6 shadow-sm">
-                <span class="type-body-sm font-medium">Please fix the errors below to continue.</span>
-            </div>
-            {% endif %}
+            <!-- Display signup errors that are not attached to one field. -->
+            {% for error in signup_form.non_field_errors %}
+                <p class="field-error" role="alert">{{ error }}</p>
+            {% endfor %}
 
             <!-- STEP 1 -->
             <div id="step-1">
@@ -78,67 +61,49 @@
                     <div class="field">
                         <label class="field-label type-label-md">Username</label>
                         <input type="text" name="username" id="input_username" value="{{ data.username|default:'' }}" placeholder="JoeVeggieLover" class="input {% if errors.username %}is-error{% endif %}">
-                        {% if errors.username %}<p class="field-error type-body-sm text-danger">{{ errors.username }}</p>{% endif %}
+                        {% if errors.username %}<p class="field-error type-body-sm text-danger" data-server-error>{{ errors.username }}</p>{% endif %}
                         <p class="field-error type-body-sm text-danger hidden js-error" id="err_input_username"></p>
                     </div>
                     
                     <div class="field">
                         <label class="field-label type-label-md">Email</label>
                         <input type="email" name="email" id="input_email" value="{{ data.email|default:'' }}" placeholder="joe@example.com" class="input {% if errors.email %}is-error{% endif %}">
-                        {% if errors.email %}<p class="field-error type-body-sm text-danger">{{ errors.email }}</p>{% endif %}
+                        {% if errors.email %}<p class="field-error type-body-sm text-danger" data-server-error>{{ errors.email }}</p>{% endif %}
                         <p class="field-error type-body-sm text-danger hidden js-error" id="err_input_email"></p>
                     </div>
                     
                     <div class="field">
                         <label class="field-label type-label-md">Password</label>
                         <input type="password" name="password" id="input_password" placeholder="••••••••" class="input {% if errors.password %}is-error{% endif %}">
-                        {% if errors.password %}<p class="field-error type-body-sm text-danger">{{ errors.password }}</p>{% endif %}
+                        {% if errors.password %}<p class="field-error type-body-sm text-danger" data-server-error>{{ errors.password }}</p>{% endif %}
                         <p class="field-error type-body-sm text-danger hidden js-error" id="err_input_password"></p>
                     </div>
                     
                     <div class="field">
                         <label class="field-label type-label-md">Confirm password</label>
                         <input type="password" name="confirm_password" id="input_confirm_password" placeholder="••••••••" class="input {% if errors.confirm_password %}is-error{% endif %}">
-                        {% if errors.confirm_password %}<p class="field-error type-body-sm text-danger">{{ errors.confirm_password }}</p>{% endif %}
+                        {% if errors.confirm_password %}<p class="field-error type-body-sm text-danger" data-server-error>{{ errors.confirm_password }}</p>{% endif %}
                         <p class="field-error type-body-sm text-danger hidden js-error" id="err_input_confirm_password"></p>
                     </div>
                     
                     <div class="pt-4 flex flex-col gap-4">
-                        <button type="button" onclick="goToStep(2)" class="btn btn-primary btn-block">Continue</button>
+                        <button type="button" onclick="goToStep(2)" id="signup-continue" class="btn btn-primary btn-block">Continue</button>
                         <p class="type-body-sm text-center text-secondary">
-                            Already have an account? <a href="{% url 'login' %}" class="link font-semibold">Log in</a>
+                            Already have an account? <a href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% endif %}" class="link font-semibold">Log in</a>
                         </p>
                     </div>
                 </div>
             </div>
 
-<!-- STEP 2 -->
+            <!-- STEP 2 -->
             <div id="step-2" class="hidden">
                 <div class="mb-6">
                     <h2 class="type-heading-m text-primary">Make it yours</h2>
                     <p class="type-body-sm text-secondary">Tell us what works for you, so we can help you find food that fits.</p>
                 </div>
                 <div class="form-stack">
-                    <div class="field">
-                        <label class="field-label type-label-md">Dietary Preferences (Select multiple)</label>
-                        <div class="chip-row">
-                            <button type="button" class="chip chip-diet" data-value="halal">Halal</button>
-                            <button type="button" class="chip chip-diet" data-value="vegetarian">Vegetarian</button>
-                            <button type="button" class="chip chip-diet" data-value="vegan">Vegan</button>
-                            <button type="button" class="chip chip-diet" data-value="pescatarian">Pescatarian</button>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label class="field-label type-label-md">Allergies</label>
-                        <div class="chip-row">
-                            <button type="button" class="chip chip-allergy" data-value="Milk">Milk</button>
-                            <button type="button" class="chip chip-allergy" data-value="Peanuts">Peanuts</button>
-                            <button type="button" class="chip chip-allergy" data-value="Gluten">Gluten</button>
-                            <button type="button" class="chip chip-allergy" data-value="Soy">Soy</button>
-                            <button type="button" class="chip chip-allergy" data-value="Eggs">Eggs</button>
-                            <button type="button" class="chip chip-allergy" data-value="Shellfish">Shellfish</button>
-                        </div>
-                    </div>
+                    <!-- Render each diet and allergy checkbox once. -->
+                    {% include "profiles/components/preference_fields.html" with form=signup_form %}
                     <div class="pt-4 flex flex-col gap-4">
                         <button type="button" onclick="goToStep(3)" class="btn btn-primary btn-block">Continue</button>
                         <div class="flex justify-between w-full">
@@ -167,6 +132,10 @@
                             
                             <label class="btn btn-secondary btn-sm btn-block cursor-pointer mt-2" for="pictureInput">Add photo</label>
                             <input type="file" name="picture" id="pictureInput" accept="image/*" class="hidden" onchange="previewProfilePicture(event)">
+                            <!-- Display server-side profile-picture validation errors. -->
+                            {% for error in signup_form.picture.errors %}
+                                <p class="field-error" role="alert">{{ error }}</p>
+                            {% endfor %}
                             <span class="photo-picker-hint">Optional</span>
                         </div>
                     </div>
@@ -186,172 +155,202 @@
 <!-- SCRIPTS -->
 {% block extra_js %}
 <script>
+    // Track the currently visible signup step.
     let currentStep = 1;
-    const selectedDiets = new Set();
-    const selectedAllergies = new Set();
+    let step1Request = null;
 
+    // Display a client-side error beside its signup input.
+    function showError(input, message) {
+        input.classList.add("is-error");
+        const error = document.getElementById(`err_${input.id}`);
+
+        if (error) {
+            error.textContent = message;
+            error.classList.remove("hidden");
+        }
+    }
+
+    // Check account fields before allowing the user to continue.
     function validateStep1() {
-        let isValid = true;
-        const username = document.getElementById('input_username');
-        const email = document.getElementById('input_email');
-        const pass = document.getElementById('input_password');
-        const confirmPass = document.getElementById('input_confirm_password');
-
-        // Simple email regex pattern
-        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        // Clear existing JS errors
-        document.querySelectorAll('.js-error').forEach(el => el.classList.add('hidden'));
-        document.querySelectorAll('.input').forEach(el => el.classList.remove('is-error'));
-
-        // Multi-select for Diets
-        document.querySelectorAll('.chip-diet').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const val = btn.getAttribute('data-value');
-                if (selectedDiets.has(val)) {
-                    selectedDiets.delete(val);
-                    btn.classList.remove('is-selected');
-                } else {
-                    selectedDiets.add(val);
-                    btn.classList.add('is-selected');
-                }
-                // Joins multiple selected diets with commas for backend processing
-                document.getElementById('diet_input').value = Array.from(selectedDiets).join(',');
-            });
+        document.querySelectorAll(".js-error").forEach((error) => {
+            if (!error.hasAttribute('data-server-error')) error.classList.add("hidden");
         });
 
-        // Multi-select for Allergies
-        document.querySelectorAll('.chip-allergy').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const val = btn.getAttribute('data-value');
-                if (selectedAllergies.has(val)) {
-                    selectedAllergies.delete(val);
-                    btn.classList.remove('is-selected');
-                } else {
-                    selectedAllergies.add(val);
-                    btn.classList.add('is-selected');
-                }
-                document.getElementById('allergies_input').value = Array.from(selectedAllergies).join(',');
-            });
+        const username = document.getElementById("input_username");
+        const email = document.getElementById("input_email");
+        const password = document.getElementById("input_password");
+        const confirmation = document.getElementById("input_confirm_password");
+        const fields = [username, email, password, confirmation];
+
+        let valid = true;
+
+        // Keep known server errors until the affected input is edited.
+        fields.forEach((field) => {
+            const serverError = field.closest('.field').querySelector('[data-server-error]:not(.hidden)');
+            field.classList.toggle('is-error', Boolean(serverError));
+            if (serverError) valid = false;
         });
 
-        // Client-side checks
-        if (!username.value.trim()) { 
-            showError(username, "Username is required."); 
-            isValid = false; 
-        }
-        
-        // Check if email is empty OR invalid format
-        if (!email.value.trim()) { 
-            showError(email, "Email is required."); 
-            isValid = false; 
-        } else if (!emailPattern.test(email.value.trim())) {
-            showError(email, "Please enter a valid email address."); 
-            isValid = false; 
+        if (!username.value.trim()) {
+            showError(username, "Username is required.");
+            valid = false;
         }
 
-        if (pass.value.length < 8) { 
-            showError(pass, "Password must be at least 8 characters."); 
-            isValid = false; 
-        }
-        if (pass.value !== confirmPass.value) { 
-            showError(confirmPass, "Passwords do not match."); 
-            isValid = false; 
+        if (!email.value.trim() || !email.checkValidity()) {
+            showError(email, "Enter a valid email address.");
+            valid = false;
         }
 
-        return isValid;
+        if (password.value.length < 8) {
+            showError(password, "Password must be at least 8 characters.");
+            valid = false;
+        }
+
+        if (password.value !== confirmation.value) {
+            showError(confirmation, "Passwords do not match.");
+            valid = false;
+        }
+
+        return valid;
     }
 
-    function showError(inputElement, message) {
-        inputElement.classList.add('is-error');
-        const errorElement = document.getElementById(`err_${inputElement.id}`);
-        if (errorElement) {
-            errorElement.innerText = message;
-            errorElement.classList.remove('hidden');
-        }
-    }
+    // Show one signup step and update its progress indicator.
+    function displayStep(step) {
+        for (let number = 1; number <= 3; number += 1) {
+            document.getElementById(`step-${number}`).classList.toggle(
+                "hidden",
+                number !== step
+            );
 
-    function goToStep(step) {
-        // Lock progression if moving forward from step 1
-        if (currentStep === 1 && step > 1) {
-            if (!validateStep1()) {
-                return; // Stop execution, don't change steps
-            }
+            const circle = document.getElementById(`circle-${number}`);
+            const active = number <= step;
+
+            circle.className = active
+                ? "avatar avatar-sm bg-brand text-on-brand z-10 font-bold border-2 border-brand"
+                : "avatar avatar-sm bg-subtle text-secondary z-10 font-bold";
+
+            circle.textContent = String(number);
         }
-        
-        document.getElementById(`step-${currentStep}`).classList.add('hidden');
-        document.getElementById(`step-${step}`).classList.remove('hidden');
-        updateProgressIndicators(step);
+
         currentStep = step;
     }
 
-    function updateProgressIndicators(step) {
-        for (let i = 1; i <= 3; i++) {
-            const circle = document.getElementById(`circle-${i}`);
-            if (i < step) {
-                circle.className = "avatar avatar-sm bg-brand text-on-brand z-10 font-bold border-2 border-brand";
-                circle.innerHTML = `✓`;
-            } else if (i === step) {
-                circle.className = "avatar avatar-sm bg-brand text-on-brand z-10 font-bold border-2 border-brand";
-                circle.innerHTML = i;
-            } else {
-                circle.className = "avatar avatar-sm bg-subtle text-secondary z-10 font-bold";
-                circle.innerHTML = i;
+    // Ask the existing signup endpoint to validate account details before Step 2.
+    async function goToStep(step) {
+        if (currentStep === 1 && step > 1) {
+            if (step1Request || !validateStep1()) return;
+
+            const form = document.getElementById('spoonfeedForm');
+            const button = document.getElementById('signup-continue');
+            const controller = new AbortController();
+            const body = new FormData();
+            step1Request = controller;
+            button.disabled = true;
+            button.textContent = 'Checking...';
+            button.setAttribute('aria-busy', 'true');
+
+            // Send only Step 1 fields and CSRF; optional photos are uploaded on submit.
+            form.querySelectorAll('#step-1 input[name]').forEach(input => body.append(input.name, input.value));
+            body.append('csrfmiddlewaretoken', form.elements.csrfmiddlewaretoken.value);
+            body.append('validate_step', '1');
+            let timedOut = false;
+            const timeout = window.setTimeout(() => {
+                timedOut = true;
+                controller.abort();
+            }, 15000);
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST', body, signal: controller.signal,
+                    credentials: 'same-origin', cache: 'no-store',
+                    headers: {'Accept': 'application/json'},
+                });
+                const data = await response.json();
+                if (controller.signal.aborted) return;
+
+                if (!response.ok || !data.ok) {
+                    if (!data.errors || !Object.keys(data.errors).length) throw new Error('Validation unavailable');
+                    const names = {password1: 'password', password2: 'confirm_password'};
+                    let firstInput;
+                    Object.entries(data.errors).forEach(([name, errors]) => {
+                        const input = document.getElementById(`input_${names[name] || name}`)
+                            || document.getElementById('input_email');
+                        showError(input, errors.map(error => error.message).join(' '));
+                        document.getElementById(`err_${input.id}`).setAttribute('data-server-error', 'true');
+                        firstInput ||= input;
+                    });
+                    firstInput?.focus();
+                    return;
+                }
+            } catch (error) {
+                if (controller.signal.aborted && !timedOut) return;
+                showError(document.getElementById('input_email'), "We couldn't check your details. Please try Continue again.");
+                return;
+            } finally {
+                window.clearTimeout(timeout);
+                step1Request = null;
+                button.disabled = false;
+                button.textContent = 'Continue';
+                button.removeAttribute('aria-busy');
             }
         }
+
+        displayStep(step);
+
+        document.querySelector(`#step-${step} h2`)?.scrollIntoView({
+            block: "nearest",
+        });
     }
 
-    document.querySelectorAll('.chip-diet').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.chip-diet').forEach(b => b.classList.remove('is-selected'));
-            const val = btn.getAttribute('data-value');
-            if (selectedDiet === val) {
-                selectedDiet = 'none';
-            } else {
-                selectedDiet = val;
-                btn.classList.add('is-selected');
-            }
-            document.getElementById('diet_input').value = selectedDiet;
-        });
-    });
-
-    document.querySelectorAll('.chip-allergy').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const val = btn.getAttribute('data-value');
-            if (selectedAllergies.has(val)) {
-                selectedAllergies.delete(val);
-                btn.classList.remove('is-selected');
-            } else {
-                selectedAllergies.add(val);
-                btn.classList.add('is-selected');
-            }
-            document.getElementById('allergies_input').value = Array.from(selectedAllergies).join(',');
-        });
-    });
-
+    // Preview the chosen picture without uploading it immediately.
     function previewProfilePicture(event) {
         const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = document.getElementById('uploadedImagePreview');
-                img.src = e.target.result;
-                img.classList.remove('hidden');
-                document.getElementById('imagePreviewContainer').classList.add('hidden');
-            }
-            reader.readAsDataURL(file);
+
+        if (!file) {
+            return;
         }
+
+        const reader = new FileReader();
+
+        reader.addEventListener("load", () => {
+            const image = document.getElementById("uploadedImagePreview");
+            image.src = reader.result;
+            image.classList.remove("hidden");
+
+            document.getElementById(
+                "imagePreviewContainer"
+            ).classList.add("hidden");
+        });
+
+        reader.readAsDataURL(file);
     }
 
-    // Toast auto-dismiss logic
-    document.addEventListener("DOMContentLoaded", () => {
-        const toasts = document.querySelectorAll(".toast-message");
-        toasts.forEach(toast => {
-            setTimeout(() => {
-                toast.classList.add('opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 4000);
+    // Clear stale feedback only for the input the user is editing.
+    document.querySelectorAll('#step-1 .input').forEach((input) => {
+        input.addEventListener('input', () => {
+            // Ignore a response for account details that have since changed.
+            step1Request?.abort();
+            input.classList.remove('is-error');
+            input.closest('.field').querySelectorAll('.field-error').forEach((error) => {
+                error.classList.add('hidden');
+                error.removeAttribute('data-server-error');
+            });
         });
     });
+
+    // Prevent submission when the account fields fail client-side validation.
+    document.getElementById("spoonfeedForm").addEventListener(
+        "submit",
+        (event) => {
+            if (!validateStep1()) {
+                event.preventDefault();
+                displayStep(1);
+            }
+        }
+    );
+
+    // Reopen the step selected by the server after a validation error.
+    displayStep({{ registration_step|default:1 }});
+
 </script>
 {% endblock %}
