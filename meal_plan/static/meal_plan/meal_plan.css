@@ -923,10 +923,6 @@ a.mealplan-card-link:hover {
         display: block;
     }
 
-    .mealplan-desktop-only {
-        display: none;
-    }
-
     .mealplan-actions,
     .mealplan-form-actions,
     .mealplan-filter-actions {
