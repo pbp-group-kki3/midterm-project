@@ -12,7 +12,6 @@
 {% endblock %}
 
 {% block content %}
-    {% include "comparison/components/toasts.html" %}
     <header class="page-header compare-header">
         <a href="/" class="back-link mb-3">
             <span class="icon icon-arrow-left" aria-hidden="true"></span>
@@ -45,13 +44,6 @@
             Equal or incomplete rows are not highlighted.
         </p>
     </header>
-
-    {% if unavailable_barcodes %}
-        <div class="alert alert-warning mb-6" role="status">
-            Some selected products could not be loaded.
-            Please try again later.
-        </div>
-    {% endif %}
 
     {% if show_compare_panel %}
         <div
@@ -284,11 +276,6 @@
 {% block extra_js %}
     <script
         src="{% static 'comparison/js/comparison.js' %}"
-        defer
-    ></script>
-
-    <script
-        src="{% static 'comparison/js/toast.js' %}"
         defer
     ></script>
 {% endblock %}

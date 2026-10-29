@@ -7,20 +7,6 @@
 
 {% block content %}
 
-<!-- TOAST NOTIFICATIONS -->
-{% if messages %}
-    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 w-full max-w-sm pointer-events-none">
-        {% for message in messages %}
-            <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} shadow-lg pointer-events-auto flex justify-between items-center toast-message transition-opacity duration-300" role="alert">
-                <span class="type-body-sm font-medium">{{ message }}</span>
-                <button type="button" class="icon-btn icon-btn-plain ml-3 text-current" onclick="this.closest('.alert').remove()" aria-label="Close">
-                    <span class="icon icon-x" aria-hidden="true"></span>
-                </button>
-            </div>
-        {% endfor %}
-    </div>
-{% endif %}
-
 <!-- PROFILE HEADER -->
 <header class="page-header max-w-6xl mx-auto">
     <div class="page-header-user min-w-0">
@@ -360,46 +346,5 @@
         }
     }
 
-    // Helper function to dynamically trigger a toast notification on any action
-    function showToast(message, type = 'success') {
-        let container = document.getElementById('toast-container');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'toast-container';
-            container.className = 'fixed bottom-6 right-6 z-50 flex flex-col gap-3 w-full max-w-sm pointer-events-none';
-            document.body.appendChild(container);
-        }
-
-        const alertClass = type === 'error' ? 'alert-danger' : 'alert-success';
-        
-        const toast = document.createElement('div');
-        toast.className = `alert ${alertClass} shadow-lg pointer-events-auto flex justify-between items-center toast-message transition-opacity duration-300`;
-        toast.setAttribute('role', 'alert');
-        
-        toast.innerHTML = `
-            <span class="type-body-sm font-medium">${message}</span>
-            <button type="button" class="icon-btn icon-btn-plain ml-3 text-current" onclick="this.closest('.alert').remove()" aria-label="Close">
-                <span class="icon icon-x" aria-hidden="true"></span>
-            </button>
-        `;
-
-        container.appendChild(toast);
-
-    // Auto dismiss after 4 seconds
-    setTimeout(() => {
-        toast.classList.add('opacity-0');
-        setTimeout(() => toast.remove(), 300);
-    }, 4000);
-}
-    // Toast auto-dismiss logic
-    document.addEventListener("DOMContentLoaded", () => {
-        const toasts = document.querySelectorAll(".toast-message");
-        toasts.forEach(toast => {
-            setTimeout(() => {
-                toast.classList.add('opacity-0');
-                setTimeout(() => toast.remove(), 300); // Wait for transition before removing from DOM
-            }, 4000); // 4 seconds visible
-        });
-    });
 </script>
 {% endblock %}

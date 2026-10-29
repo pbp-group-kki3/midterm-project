@@ -6,20 +6,6 @@
 {% block title %}SpoonFeed — Log in{% endblock %}
 
 {% block content %}
-<!-- TOAST NOTIFICATIONS -->
-{% if messages %}
-    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 w-full max-w-sm pointer-events-none">
-        {% for message in messages %}
-            <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} shadow-lg pointer-events-auto flex justify-between items-center toast-message transition-opacity duration-300" role="alert">
-                <span class="type-body-sm font-medium">{{ message }}</span>
-                <button type="button" class="icon-btn icon-btn-plain ml-3 text-current" onclick="this.closest('.alert').remove()" aria-label="Close">
-                    <span class="icon icon-x" aria-hidden="true"></span>
-                </button>
-            </div>
-        {% endfor %}
-    </div>
-{% endif %}
-
 <!-- LAYOUT -->
 <div class="flex flex-col md:flex-row w-full max-w-6xl mx-auto rounded-xl shadow-lg overflow-hidden min-h-[550px] border border-default">
     
@@ -85,19 +71,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    // Toast auto-dismiss logic
-    document.addEventListener("DOMContentLoaded", () => {
-        const toasts = document.querySelectorAll(".toast-message");
-        toasts.forEach(toast => {
-            setTimeout(() => {
-                toast.classList.add('opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 4000);
-        });
-    });
-</script>
 {% endblock %}
