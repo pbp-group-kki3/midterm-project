@@ -1,63 +1,57 @@
 # IMPORTS
 from django.core.exceptions import ObjectDoesNotExist
+from profiles.preferences import (
+    ALLERGY_MAP,
+    normalize_allergies,
+    normalize_diets,
+)
 
 # PREFERENCES HELPER
 def get_preferences(user):
     # DEFAULT PREFERENCES
-    default_prefs = {
-        'diet': 'none',
-        'allergies': [],
-        'off_tags': [],
-        'spoonacular_intolerances': [],
-        'exclude_ingredients': ''
+    defaults = {
+        "diet": [],
+        "allergies": [],
+        "off_tags": [],
+        "spoonacular_intolerances": [],
+        "exclude_ingredients": "",
     }
 
     # AUTHENTICATION CHECK
     if not user.is_authenticated:
-        return default_prefs
+        return defaults
 
     # PROFILE RETRIEVAL
     try:
         profile = user.profile
     except ObjectDoesNotExist:
-        return default_prefs
+        return defaults
 
     # DIET AND ALLERGIES DATA
-    diet = profile.diet
-    allergies = profile.allergies if isinstance(profile.allergies, list) else []
+    diets = normalize_diets(profile.diet)
+    allergies = normalize_allergies(profile.allergies)
 
-    # ALLERGY MAP
-    allergy_map = {
-        'Milk': {'off': 'en:milk', 'spoon': 'dairy'},
-        'Peanuts': {'off': 'en:peanuts', 'spoon': 'peanut'},
-        'Gluten': {'off': 'en:gluten', 'spoon': 'gluten'},
-        'Soy': {'off': 'en:soybeans', 'spoon': 'soy'},
-        'Eggs': {'off': 'en:eggs', 'spoon': 'egg'},
-        'Fish': {'off': 'en:fish', 'spoon': 'seafood'},
-        'Shellfish': {'off': 'en:crustaceans', 'spoon': 'shellfish'},
-        'Sesame': {'off': 'en:sesame-seeds', 'spoon': 'sesame'},
-        'Tree nuts': {'off': 'en:nuts', 'spoon': 'tree nut'},
-    }
+    # Convert selected allergies to Open Food Facts tags.
+    off_tags = list(dict.fromkeys(
+        ALLERGY_MAP[allergy]["off"]
+        for allergy in allergies
+    ))
 
-    # TAG EXTRACTION
-    off_tags = []
-    spoon_intolerances = []
-
-    for allergy in allergies:
-        if allergy in allergy_map:
-            off_tags.append(allergy_map[allergy]['off'])
-            spoon_intolerances.append(allergy_map[allergy]['spoon'])
-
-    # HALAL EXCLUSIONS
-    exclude_ingredients = ''
-    if 'halal' in diet:
-        exclude_ingredients = 'pork,bacon,ham,wine,beer'
+    # Convert selected allergies to Spoonacular intolerance values.
+    spoon_intolerances = list(dict.fromkeys(
+        ALLERGY_MAP[allergy]["spoon"]
+        for allergy in allergies
+    ))
 
     # RETURN DATA
     return {
-        'diet': diet,
-        'allergies': allergies,
-        'off_tags': off_tags,
-        'spoonacular_intolerances': spoon_intolerances,
-        'exclude_ingredients': exclude_ingredients
+        "diet": diets,
+        "allergies": allergies,
+        "off_tags": off_tags,
+        "spoonacular_intolerances": spoon_intolerances,
+        "exclude_ingredients": (
+            "pork,bacon,ham,wine,beer"
+            if "halal" in diets
+            else ""
+        ),
     }

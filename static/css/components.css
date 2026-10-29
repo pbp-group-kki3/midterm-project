@@ -36,7 +36,9 @@
        20. Logo
        21. Navbar
        22. Footer
-       23. Icons */
+       23. Icons
+       24. Profile preferences and Saved collection
+       25. Shared toast notifications */
 
 
 /* 1. Buttons
@@ -1835,4 +1837,280 @@ textarea.input {
 
 .icon-on-brand {
     color: var(--color-icon-on-brand);
+}
+
+/* 24. Profile preferences and Saved collection.
+   Scoped additions; existing chips, buttons, icons and dialogs stay shared. */
+.profile-chip {
+    position: relative;
+    min-height: var(--space-3xl);
+}
+
+.profile-chip-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.profile-chip:has(.profile-chip-input:checked) {
+    border-color: var(--color-border-brand);
+    background: var(--color-bg-brand-subtle);
+    color: var(--color-text-brand);
+}
+
+.profile-chip:has(.profile-chip-input:focus-visible) {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+}
+
+.profile-saved-collection {
+    display: grid;
+    gap: var(--space-lg);
+    min-width: 0;
+}
+
+.profile-saved-filters .chip {
+    min-height: var(--space-3xl);
+    border-width: 1.5px;
+}
+
+.profile-saved-filters .chip.is-selected {
+    border-width: 2px;
+}
+
+.profile-saved-filters .chip:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+}
+
+.profile-saved-list {
+    display: grid;
+    gap: var(--space-md);
+    min-width: 0;
+}
+
+.profile-saved-row {
+    display: grid;
+    grid-template-columns: var(--space-4xl) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: calc(var(--space-lg) + var(--space-xs));
+    padding: var(--space-lg);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+}
+
+.profile-saved-thumbnail {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--space-4xl);
+    height: var(--space-4xl);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-canvas);
+    color: var(--color-icon-default);
+}
+
+.profile-saved-copy {
+    display: grid;
+    gap: var(--space-xs);
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.profile-saved-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center;
+    gap: var(--space-sm);
+    min-width: 0;
+}
+
+.profile-saved-open {
+    width: calc(var(--space-4xl) * 3 - var(--space-sm));
+    max-width: 100%;
+}
+
+.profile-saved-remove {
+    width: var(--btn-height-md);
+    min-height: var(--btn-height-md);
+    padding: 0;
+    border-color: var(--color-border-danger);
+}
+
+.profile-confirm-dialog {
+    max-height: calc(100vh - var(--space-2xl));
+    max-height: calc(100dvh - var(--space-2xl));
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+}
+
+/* Section actions follow the Profile and Preferences idle/edit Figma states. */
+.profile-section-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-lg);
+}
+
+.profile-section-header > div {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.profile-section-header .btn,
+.profile-section-actions .btn {
+    min-width: min(calc(var(--space-3xl) * 4), 100%);
+    max-width: 100%;
+}
+
+.profile-section-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-md);
+}
+
+.profile-section-actions[hidden],
+.profile-section-actions.hidden,
+.profile-section-header [hidden] {
+    display: none;
+}
+
+.profile-chip:has(.profile-chip-input:disabled) {
+    cursor: default;
+}
+
+@media (max-width: 48rem) {
+    .profile-saved-row {
+        grid-template-columns: var(--space-4xl) minmax(0, 1fr);
+        gap: var(--space-md);
+    }
+
+    .profile-saved-actions {
+        grid-column: 1 / -1;
+    }
+}
+
+
+/* 25. Shared toast notifications (original comparison design). */
+/* Toast notification for SpoonFeed. */
+.toast.alert-success {
+    --toast-accent: var(--color-bg-success);
+    --toast-surface: var(--color-bg-success-subtle);
+}
+
+.toast.alert-warning {
+    --toast-accent: var(--color-bg-warning);
+    --toast-surface: var(--color-bg-warning-subtle);
+}
+
+.toast.alert-danger {
+    --toast-accent: var(--color-bg-danger);
+    --toast-surface: var(--color-bg-danger-subtle);
+}
+
+.toast.alert-info {
+    --toast-accent: var(--color-bg-info);
+    --toast-surface: var(--color-bg-info-subtle);
+}
+
+/* Compact flash message with a circular status icon. */
+#toast-component {
+    position: fixed;
+    inset: auto;
+    top: var(--space-xl);
+    right: var(--space-xl);
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+    width: min(440px, calc(100vw - 32px));
+    min-height: 76px;
+    box-sizing: border-box;
+    margin: 0;
+    padding: var(--space-lg);
+    border: 1px solid var(--toast-accent);
+    border-radius: var(--radius-lg);
+    background: var(--toast-surface);
+    color: var(--color-text-primary);
+    box-shadow: var(--shadow-lg);
+    transition: opacity 200ms ease, transform 200ms ease;
+}
+
+/* Shared alert styles must not reveal a hidden notification. */
+#toast-component[hidden] {
+    display: none;
+}
+
+#toast-component.toast-hidden {
+    opacity: 0;
+    transform: translateY(-8px);
+}
+
+#toast-component.toast-show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    background: var(--toast-accent);
+    color: var(--color-text-on-brand);
+}
+
+.toast-letter {
+    font: 700 24px/1 var(--font-sans);
+}
+
+.toast-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.toast-message {
+    margin: 0;
+    font: 600 15px/22px var(--font-sans);
+    overflow-wrap: anywhere;
+}
+
+.toast-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+}
+
+.toast-close:hover {
+    background: var(--color-bg-surface);
+}
+
+.toast-close:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #toast-component {
+        transition: none;
+    }
 }

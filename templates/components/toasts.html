@@ -1,28 +1,28 @@
 <div
     id="toast-component"
-    class="alert alert-info compare-toast toast-hidden"
+    class="alert alert-info toast toast-hidden" hidden
     popover="manual"
 >
-    <span class="compare-toast-badge" aria-hidden="true">
-        <span id="toast-symbol" class="compare-toast-letter">i</span>
+    <span class="toast-badge" aria-hidden="true">
+        <span id="toast-symbol" class="toast-letter">i</span>
     </span>
 
-    <div class="compare-toast-content" role="status" aria-atomic="true">
+    <div class="toast-content" role="status" aria-atomic="true">
         <span id="toast-title" class="sr-only"></span>
-        <p id="toast-message" class="compare-toast-message"></p>
+        <p id="toast-message" class="toast-message"></p>
     </div>
 
     <button
         type="button"
         id="toast-close"
-        class="compare-toast-close"
+        class="toast-close"
         aria-label="Dismiss notification"
     >
         <span class="icon icon-x" aria-hidden="true"></span>
     </button>
 </div>
 
-<div id="compare-toast-messages" hidden>
+<div id="toast-messages" hidden>
     {% for message in messages %}
         <span
             data-message="{{ message }}"
