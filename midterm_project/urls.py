@@ -38,7 +38,7 @@ urlpatterns = [
     
     path("food-of-the-day/", include("food_of_the_day.urls")),
 
-    path('blog/', coming_soon, {'slug': 'blog'}),
+    path('blog/', include('blog.urls')),
 
     path('profiles/register/', register_view, name='register'),
     path('profiles/login/', LoginView.as_view(template_name='profiles/login.html'), name='login'),

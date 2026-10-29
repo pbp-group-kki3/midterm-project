@@ -14,6 +14,7 @@ from meal_plan.constants import (
     DIET_LABELS,
     HALAL_EXCLUDE,
     HALAL_PLAN_NOTE,
+    MAIN_DIET_ORDER,
     MAX_CALORIES,
     MIN_CALORIES,
     RECIPES_PER_PAGE,
@@ -67,9 +68,27 @@ def profile_calorie_target(user):
     return target
 
 
+def profile_diets(prefs):
+    value = prefs.get('diet')
+    if isinstance(value, str):
+        value = value.split(',')
+    if not isinstance(value, (list, tuple)):
+        return []
+    chosen = {item.strip().lower() for item in value if isinstance(item, str)}
+    return [key for key in DIET_LABELS if key != DEFAULT_DIET and key in chosen]
+
+
+def main_diet(diets):
+    return next((key for key in MAIN_DIET_ORDER if key in diets), DEFAULT_DIET)
+
+
+def profile_is_halal(user):
+    return 'halal' in profile_diets(get_preferences(user))
+
+
 def profile_defaults(user):
     prefs = get_preferences(user)
-    diet = prefs.get('diet')
+    diets = profile_diets(prefs)
     allergies = []
     for word in prefs.get('spoonacular_intolerances') or []:
         key = ALLERGY_FROM_WORD.get(word)
@@ -77,7 +96,8 @@ def profile_defaults(user):
             allergies.append(key)
     meals_per_day = _positive_int(_profile_value(user, 'meals_per_day')) or len(SLOTS)
     return {
-        'diet': diet if diet in DIET_LABELS else DEFAULT_DIET,
+        'diet': main_diet(diets),
+        'diets': diets,
         'allergies': allergies,
         'allergy_labels': [str(label) for label in prefs.get('allergies') or []],
         'calorie_target': profile_calorie_target(user),
@@ -94,18 +114,18 @@ def daily_goal(goal, user):
     return DEFAULT_CALORIES, 'default'
 
 
-def plan_filters(diet, allergies, prefs=None):
+def plan_filters(diet, allergies, prefs=None, halal=False):
     intolerances = []
     for key in allergies:
         for word in ALLERGY_WORDS.get(key, []):
             if word not in intolerances:
                 intolerances.append(word)
-    halal = diet == 'halal'
+    halal = halal or diet == 'halal'
     if prefs:
         for word in prefs.get('spoonacular_intolerances') or []:
             if word not in intolerances:
                 intolerances.append(word)
-        halal = halal or prefs.get('diet') == 'halal'
+        halal = halal or 'halal' in profile_diets(prefs)
     return {
         'diet': SPOONACULAR_DIETS.get(diet, ''),
         'intolerances': intolerances,
@@ -358,7 +378,7 @@ def create_plan(user, data):
     days = data['days']
     goal, _ = daily_goal(data.get('calorie_goal'), user)
     allergies = list(data.get('allergies') or [])
-    filters = plan_filters(data['diet'], allergies)
+    filters = plan_filters(data['diet'], allergies, halal=profile_is_halal(user))
     snack_calories = round(goal * SNACK_SHARE) if data.get('include_snack') else 0
     request_key = f"{user.pk}:{data['name']}:{data['start_date']}"
     meal_days = _generate_days(days, goal - snack_calories, filters, request_key)

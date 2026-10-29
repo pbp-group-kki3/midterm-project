@@ -43,11 +43,11 @@
         {% else %}
             <div class="mealplan-profile-strip">
                 <span class="type-caption text-secondary">Plans use your profile</span>
-                {% if profile.diet == 'none' %}
+                {% for label in profile.diet_labels %}
+                    <span class="badge badge-success mealplan-diet-badge">{{ label }}</span>
+                {% empty %}
                     <span class="badge">No preference</span>
-                {% else %}
-                    <span class="badge badge-success mealplan-diet-badge">{{ profile.diet_label }}</span>
-                {% endif %}
+                {% endfor %}
                 <span class="type-caption text-tertiary">{% if profile.allergies %}Allergies: {{ profile.allergies|join:", " }}{% else %}No allergies set{% endif %}</span>
                 <a href="{% url 'profile' %}" class="mealplan-card-link">Edit preferences <span aria-hidden="true">→</span></a>
             </div>
