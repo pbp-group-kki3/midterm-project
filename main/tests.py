@@ -453,3 +453,395 @@ class LoadMoreNoReloadTests(TestCase):
         self.assertTrue(data["has_more"])
         self.assertIn("show=18", data["more_url"])
 
+class ProductOverlayAndTrayTests(TestCase):
+    def setUp(self):
+        from copy import deepcopy
+
+        self.user = get_user_model().objects.create_user(
+            username="overlay-tray-tester",
+            password="overlay-tray-test-password",
+        )
+
+        self.codes = [
+            "1111111111111",
+            "2222222222222",
+            "3333333333333",
+        ]
+
+        self.products = {
+            code: {
+                "code": code,
+                "product_name": f"Test product {index}",
+                "brands": "Test brand",
+                "quantity": "250 ml",
+                "image_front_small_url": (
+                    "https://example.com/product.jpg"
+                ),
+                "nutriscore_grade": "b",
+                "ecoscore_grade": "c",
+                "ecoscore_score": 50,
+                "nova_group": 3,
+                "categories_tags": ["en:milks"],
+                "labels_tags": [],
+                "allergens_tags": ["en:milk"],
+                "ingredients_text": "Milk and test ingredients.",
+                "nutriments": {
+                    "energy-kcal_100g": 44,
+                    "fat_100g": 1.2,
+                    "salt_100g": 0.1,
+                },
+            }
+            for index, code in enumerate(self.codes, start=1)
+        }
+
+        self.get_product = self.enterContext(
+            patch("main.views.get_product")
+        )
+        self.get_product.side_effect = (
+            lambda barcode: deepcopy(
+                self.products.get(barcode)
+            )
+        )
+
+        self.alternatives = self.enterContext(
+            patch(
+                "main.views.get_alternatives",
+                return_value=[
+                    deepcopy(self.products[self.codes[1]])
+                ],
+            )
+        )
+
+        self.enterContext(
+            patch(
+                "main.views.browse_products",
+                return_value=[],
+            )
+        )
+        self.enterContext(
+            patch(
+                "main.views.get_preferences",
+                return_value=None,
+            )
+        )
+
+        self.client.force_login(self.user)
+
+        session = self.client.session
+        session["compare"] = self.codes[:2]
+        session["compare_info"] = {
+            code: {
+                "name": self.products[code]["product_name"],
+                "grade": "C",
+            }
+            for code in self.codes[:2]
+        }
+        session.save()
+
+    def detail_url(self, code=None):
+        return reverse(
+            "main:product_detail",
+            args=[code or self.codes[0]],
+        )
+
+    def fragment(self, code=None, client=None):
+        return (client or self.client).get(
+            self.detail_url(code),
+            {"fragment": "1", "source": "comparison"},
+            HTTP_ACCEPT="application/json",
+        )
+
+    def test_fragment_matches_each_requested_product(self):
+        for code in self.codes:
+            response = self.fragment(code)
+
+            self.assertEqual(response.status_code, 200)
+            data = response.json()
+
+            self.assertEqual(data["barcode"], code)
+            self.assertIn(
+                f'data-product-barcode="{code}"',
+                data["html"],
+            )
+            self.assertIn(
+                self.products[code]["product_name"],
+                data["html"],
+            )
+
+    def test_fragment_has_details_without_shell_or_recommendations(self):
+        response = self.fragment()
+        html = response.json()["html"]
+
+        for text in [
+            "How the grade is built",
+            "Nutrition per",
+            "Ingredients and allergens",
+            "Environment",
+            "Source: Open Food Facts",
+        ]:
+            self.assertIn(text, html)
+
+        for text in [
+            "<html",
+            "<script",
+            'class="site-header"',
+            'class="site-footer"',
+            'id="compare-tray-holder"',
+            "Back to Discover",
+            "Back to Compare",
+            "Recommendations",
+            "Comparison selections are locked while viewing details.",
+            "js-compare-form",
+        ]:
+            self.assertNotIn(text, html)
+
+        self.assertIn('name="csrfmiddlewaretoken"', html)
+        self.assertIn(
+            f'id="product-detail-heading-{self.codes[0]}"',
+            html,
+        )
+        self.assertIn(
+            "no-store",
+            response.headers["Cache-Control"],
+        )
+        self.alternatives.assert_not_called()
+
+    def test_fragment_preserves_lineup_and_does_not_write_history(self):
+        before = list(self.client.session["compare"])
+        before_info = dict(
+            self.client.session["compare_info"]
+        )
+
+        self.fragment()
+        self.fragment(self.codes[1])
+
+        self.assertEqual(
+            self.client.session["compare"],
+            before,
+        )
+        self.assertEqual(
+            self.client.session["compare_info"],
+            before_info,
+        )
+        self.assertFalse(
+            ViewHistory.objects.filter(
+                user=self.user
+            ).exists()
+        )
+
+    def test_unavailable_fragment_returns_retryable_error(self):
+        response = self.fragment("unknown-product")
+
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("message", response.json())
+        self.assertNotIn("html", response.json())
+
+    def test_fragment_rejects_post(self):
+        response = self.client.post(
+            f"{self.detail_url()}?fragment=1"
+        )
+
+        self.assertEqual(response.status_code, 405)
+        self.assertEqual(
+            response.headers["Allow"],
+            "GET",
+        )
+
+    def test_standalone_has_no_tray_and_preserves_selection(self):
+        before = list(self.client.session["compare"])
+
+        response = self.client.get(self.detail_url())
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            "main/product_detail.html",
+        )
+        self.assertTemplateUsed(
+            response,
+            "main/components/product_detail_content.html",
+        )
+
+        self.assertContains(response, "Back to Discover")
+        self.assertContains(response, "Recommendations")
+        self.assertNotContains(
+            response,
+            'id="compare-tray-holder"',
+        )
+        self.assertNotContains(
+            response,
+            'class="discover-tray',
+        )
+
+        self.assertEqual(
+            self.client.session["compare"],
+            before,
+        )
+        self.assertTrue(
+            ViewHistory.objects.filter(
+                user=self.user,
+                barcode=self.codes[0],
+            ).exists()
+        )
+
+    def test_returning_to_discover_renders_preserved_tray(self):
+        self.client.get(self.detail_url())
+
+        response = self.client.get(
+            reverse("main:show_main")
+        )
+
+        self.assertContains(
+            response,
+            'id="compare-tray-holder"',
+        )
+        self.assertContains(response, "2 of 3 selected")
+
+        for code in self.codes[:2]:
+            self.assertContains(
+                response,
+                self.products[code]["product_name"],
+            )
+
+        self.assertEqual(
+            self.client.session["compare"],
+            self.codes[:2],
+        )
+
+    def test_standalone_compare_action_updates_session_without_tray(self):
+        third = self.codes[2]
+
+        response = self.client.post(
+            reverse(
+                "main:add_to_compare",
+                args=[third],
+            ),
+            {
+                "product_name": self.products[third]["product_name"],
+                "grade": "C",
+                "next": self.detail_url(third),
+                "slots": (
+                    '[{"code":"3333333333333",'
+                    '"name":"Test product 3",'
+                    '"grade":"C","style":"btn-primary"}]'
+                ),
+            },
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            self.client.session["compare"],
+            self.codes,
+        )
+        self.assertIn("Added", response.json()["buttons"][third])
+
+        detail = self.client.get(self.detail_url(third))
+        self.assertNotContains(
+            detail,
+            'id="compare-tray-holder"',
+        )
+
+        discover = self.client.get(
+            reverse("main:show_main")
+        )
+        self.assertContains(discover, "3 of 3 selected")
+
+    def test_discover_ajax_response_still_supplies_tray(self):
+        response = self.client.post(
+            reverse(
+                "main:remove_from_compare",
+                args=[self.codes[1]],
+            ),
+            {"slots": "[]"},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            "1 of 3 selected",
+            response.json()["tray"],
+        )
+        self.assertEqual(
+            self.client.session["compare"],
+            [self.codes[0]],
+        )
+
+    def test_favorite_action_preserves_lineup(self):
+        before = list(self.client.session["compare"])
+
+        response = self.client.post(
+            reverse(
+                "main:toggle_favorite",
+                args=[self.codes[0]],
+            ),
+            {"product_name": "Test product 1"},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["saved"])
+        self.assertEqual(
+            self.client.session["compare"],
+            before,
+        )
+
+    def test_favorite_still_requires_authentication(self):
+        self.client.logout()
+
+        response = self.client.post(
+            reverse(
+                "main:toggle_favorite",
+                args=[self.codes[0]],
+            ),
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(
+            FavoriteProduct.objects.exists()
+        )
+
+    def test_favorite_still_requires_csrf(self):
+        from django.test import Client
+
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.force_login(self.user)
+
+        self.fragment(client=csrf_client)
+
+        response = csrf_client.post(
+            reverse(
+                "main:toggle_favorite",
+                args=[self.codes[0]],
+            ),
+            {"product_name": "Test product 1"},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(
+            FavoriteProduct.objects.exists()
+        )
+
+    def test_fragment_ids_are_unique(self):
+        from html.parser import HTMLParser
+
+        class IDCollector(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.ids = []
+
+            def handle_starttag(self, tag, attrs):
+                attributes = dict(attrs)
+
+                if "id" in attributes:
+                    self.ids.append(attributes["id"])
+
+        parser = IDCollector()
+        parser.feed(self.fragment().json()["html"])
+
+        self.assertEqual(
+            len(parser.ids),
+            len(set(parser.ids)),
+        )

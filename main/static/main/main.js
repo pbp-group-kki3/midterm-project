@@ -126,44 +126,290 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // Heart / Save button: send the form in the background so the page doesn't reload and jump to the top
-    // change: listens on the whole page now (not on each heart), so hearts on cards added by "Load more" work too
+    const pendingFavorites = new Set();
+
+    function matchingFavoriteForms(action) {
+        return [...document.querySelectorAll(".js-favorite-form")]
+            .filter((form) => form.action === action);
+    }
+
+    function showFavoriteError(form, message) {
+        let feedback = form.querySelector(".product-action-feedback");
+
+        if (!feedback) {
+            feedback = document.createElement("p");
+            feedback.className =
+                "product-action-feedback field-error mt-2";
+            feedback.setAttribute("role", "alert");
+            form.append(feedback);
+        }
+
+        feedback.textContent = message;
+
+        const loginURL = form.closest(
+            ".product-detail-content"
+        )?.dataset.loginUrl;
+
+        if (loginURL) {
+            const link = document.createElement("a");
+            link.href = loginURL;
+            link.className = "link";
+            link.textContent = "Sign in";
+
+            feedback.append(
+                document.createTextNode(" "),
+                link
+            );
+        }
+    }
+
     document.addEventListener("submit", async (event) => {
         const form = event.target.closest(".js-favorite-form");
+
         if (!form) {
             return;
         }
-        event.preventDefault();                                       // stop the normal page reload
-        const button = form.querySelector("button");
+
+        event.preventDefault();
+
+        const action = form.action;
+        const inOverlay = Boolean(
+            form.closest("[data-product-overlay]")
+        );
+
+        if (pendingFavorites.has(action)) {
+            return;
+        }
+
+        const body = new FormData(form);
+
+        pendingFavorites.add(action);
+
+        matchingFavoriteForms(action).forEach((matchingForm) => {
+            matchingForm.querySelector(
+                ".product-action-feedback"
+            )?.remove();
+
+            matchingForm.setAttribute("aria-busy", "true");
+
+            const button = matchingForm.querySelector("button");
+
+            if (button) {
+                button.disabled = true;
+            }
+        });
+
         try {
-            const response = await fetch(form.action, {
+            const response = await fetch(action, {
                 method: "POST",
-                body: new FormData(form),                             // includes the csrf token
-                headers: { "X-Requested-With": "XMLHttpRequest" },    // tells the view to answer with JSON
+                body,
+                credentials: "same-origin",
+                mode: "same-origin",
+                headers: {
+                    Accept: "application/json",
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRFToken": (
+                        body.get("csrfmiddlewaretoken") || ""
+                    ),
+                },
             });
-            if (response.redirected || !response.ok) {                // e.g. logged out -> login page
-                window.location.href = response.url;
+
+            if (response.redirected || !response.ok) {
+                if (!inOverlay) {
+                    window.location.href = response.url;
+                    return;
+                }
+
+                throw new Error(
+                    response.status === 403
+                        ? "Your session or security token needs refreshing. "
+                          + "Reload the page before trying again."
+                        : "We couldn't confirm the favorite change."
+                );
+            }
+
+            const contentType =
+                response.headers.get("Content-Type") || "";
+
+            if (!contentType.includes("application/json")) {
+                throw new Error(
+                    "The server returned an unexpected response."
+                );
+            }
+
+            const data = await response.json();
+
+            if (typeof data.saved !== "boolean") {
+                throw new Error(
+                    "The server did not confirm the favorite state."
+                );
+            }
+
+            matchingFavoriteForms(action).forEach((matchingForm) => {
+                const button = matchingForm.querySelector("button");
+
+                if (button) {
+                    showFavorite(button, data.saved);
+                }
+            });
+
+            document.dispatchEvent(
+                new CustomEvent("spoonfeed:favorite-changed", {
+                    detail: {
+                        action,
+                        saved: data.saved,
+                    },
+                })
+            );
+        } catch (error) {
+            if (!inOverlay) {
+                // Preserve the existing standalone fallback.
+                form.submit();
                 return;
             }
-            const data = await response.json();                       // {"saved": true} or {"saved": false}
-            showFavorite(button, data.saved);
-        } catch (error) {
-            form.submit();                                            // network problem: fall back to the normal form
+
+            matchingFavoriteForms(action).forEach((matchingForm) => {
+                showFavoriteError(
+                    matchingForm,
+                    error.message
+                    + " Reopen the product to check its current state "
+                    + "before retrying."
+                );
+            });
+        } finally {
+            pendingFavorites.delete(action);
+
+            matchingFavoriteForms(action).forEach((matchingForm) => {
+                matchingForm.removeAttribute("aria-busy");
+
+                const button = matchingForm.querySelector("button");
+
+                if (button) {
+                    button.disabled = false;
+                }
+            });
         }
     });
 
     // Long ingredient lists: show "Show all ingredients" only when the text is really cut off
-    document.querySelectorAll(".discover-clamp-toggle").forEach((toggle) => {
-        const text = document.getElementById(toggle.dataset.clampTarget);
-        if (text && text.scrollHeight > text.clientHeight) {
-            toggle.classList.remove("is-hidden");
-        }
-        toggle.addEventListener("click", () => {
-            const open = text.classList.toggle("is-open");
-            toggle.textContent = open ? "Show less" : "Show all ingredients";
-        });
-    });
+    initProductDetails(document);
 });
+
+const productDetailInitializers = new WeakMap();
+
+function initProductDetails(root = document) {
+    productDetailInitializers.get(root)?.();
+
+    const cleanups = [];
+    const measurements = [];
+    let frame = null;
+
+    function measure() {
+        frame = null;
+
+        measurements.forEach(({ toggle, text }) => {
+            const open = text.classList.contains("is-open");
+            const clipped =
+                text.scrollHeight > text.clientHeight + 1;
+
+            toggle.classList.toggle(
+                "is-hidden",
+                !open && !clipped
+            );
+
+            toggle.setAttribute(
+                "aria-expanded",
+                String(open)
+            );
+        });
+    }
+
+    function scheduleMeasure() {
+        if (frame === null) {
+            frame = requestAnimationFrame(measure);
+        }
+    }
+
+    const observer = typeof ResizeObserver === "function"
+        ? new ResizeObserver(scheduleMeasure)
+        : null;
+
+    root.querySelectorAll(".discover-clamp-toggle").forEach(
+        (toggle) => {
+            const targetID = toggle.dataset.clampTarget;
+
+            if (!targetID) {
+                return;
+            }
+
+            const text = root.querySelector(
+                `#${CSS.escape(targetID)}`
+            );
+
+            if (!text) {
+                return;
+            }
+
+            function toggleIngredients() {
+                const open = text.classList.toggle("is-open");
+
+                toggle.textContent = open
+                    ? "Show less"
+                    : "Show all ingredients";
+
+                toggle.setAttribute(
+                    "aria-expanded",
+                    String(open)
+                );
+
+                scheduleMeasure();
+            }
+
+            toggle.addEventListener(
+                "click",
+                toggleIngredients
+            );
+
+            cleanups.push(() => {
+                toggle.removeEventListener(
+                    "click",
+                    toggleIngredients
+                );
+            });
+
+            measurements.push({ toggle, text });
+            observer?.observe(text);
+        }
+    );
+
+    window.addEventListener("resize", scheduleMeasure);
+    scheduleMeasure();
+
+    function cleanup() {
+        if (frame !== null) {
+            cancelAnimationFrame(frame);
+        }
+
+        observer?.disconnect();
+
+        window.removeEventListener(
+            "resize",
+            scheduleMeasure
+        );
+
+        cleanups.forEach((removeListener) => {
+            removeListener();
+        });
+
+        if (productDetailInitializers.get(root) === cleanup) {
+            productDetailInitializers.delete(root);
+        }
+    }
+
+    productDetailInitializers.set(root, cleanup);
+
+    return cleanup;
+}
 
 // Switch a heart or Save button between saved and not saved, using the shared classes
 function showFavorite(button, saved) {

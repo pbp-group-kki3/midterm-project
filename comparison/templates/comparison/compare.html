@@ -4,6 +4,10 @@
 {% block title %}Compare | SpoonFeed{% endblock %}
 
 {% block extra_head %}
+    <link
+        rel="stylesheet"
+        href="{% static 'main/main.css' %}"
+    >
     <link rel="preconnect" href="https://images.openfoodfacts.org">
     <link
         rel="stylesheet"
@@ -133,7 +137,10 @@
 
                         {% if show_add_product %}
                             <th scope="col" class="compare-product-heading">
-                                <a href="/" class="compare-add-product">
+                                <a
+                                    href="{% url 'main:show_main' %}#discover"
+                                    class="compare-add-product"
+                                >
                                     <span class="type-label-md">
                                         + Add product
                                     </span>
@@ -205,13 +212,16 @@
                                         Remove
                                     </button>
 
-                                    <button
-                                        type="button"
-                                        class="btn btn-primary btn-sm flex-1 min-w-0"
-                                        disabled
+                                    <a
+                                        href="{% url 'main:product_detail' product.compare_barcode %}?source=comparison"
+                                        class="btn btn-primary btn-sm flex-1 min-w-0 js-product-detail"
+                                        data-product-barcode="{{ product.compare_barcode }}"
+                                        data-product-name="{{ product.product_name|default:'Unnamed product' }}"
+                                        aria-haspopup="dialog"
+                                        aria-controls="compare-product-dialog"
                                     >
                                         Details
-                                    </button>
+                                    </a>
                                 </div>
                             </td>
                         {% endfor %}
@@ -288,6 +298,7 @@
     {% endif %}
 
     <!---Dialog overlays-->
+    {% include "comparison/components/product_details_dialog.html" %}
     {% include "comparison/components/save_dialog.html" %}
     {% include "comparison/components/remove_dialog.html" %}
     
@@ -295,12 +306,22 @@
 
 {% block extra_js %}
     <script
+        src="{% static 'main/main.js' %}"
+        defer
+    ></script>
+
+    <script
         src="{% static 'comparison/js/comparison.js' %}"
         defer
     ></script>
 
     <script
         src="{% static 'comparison/js/toast.js' %}"
+        defer
+    ></script>
+
+    <script
+        src="{% static 'comparison/js/product_detail_overlay.js' %}"
         defer
     ></script>
 {% endblock %}
