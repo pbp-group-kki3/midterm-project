@@ -33,6 +33,8 @@ from profiles.views import (
     profile_saved_remove,
     profile_view,
     register_view,
+    history_item_delete,
+    history_clear,
 )
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -62,6 +64,8 @@ urlpatterns = [
     path("profiles/saved/", profile_saved, name="profile_saved"),
     path("profiles/saved/comparisons/<int:pk>/", profile_saved_comparison, name="profile_saved_comparison"),
     path("profiles/saved/<str:kind>/<int:pk>/remove/", profile_saved_remove, name="profile_saved_remove"),
+    path('profiles/history/delete/<int:item_id>/', history_item_delete, name='history_item_delete'),
+    path('profiles/history/clear/', history_clear, name='history_clear'),
 ]
 
 if settings.DEBUG:

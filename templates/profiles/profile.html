@@ -274,19 +274,82 @@
         </section>
 
         <!-- HISTORY SECTION -->
-        <!-- Display the History section when selected by the server. -->
         <section id="sec-history" class="profile-section space-y-6{% if active_section != 'history' %} hidden{% endif %}">
             <div class="flex flex-col gap-2">
                 <h2 class="type-heading-m text-primary">History</h2>
-                <p class="type-body-sm text-secondary">Products you've viewed recently.</p>
+                <p class="type-body-sm text-secondary">Products you've looked at recently.</p>
             </div>
-            <div class="card flex flex-col items-center justify-center py-12 text-center">
-                <div class="empty-state max-w-sm">
-                    <span class="icon icon-history text-tertiary text-4xl mb-2" aria-hidden="true"></span>
-                    <h3 class="empty-state-title type-card-title text-primary">No history yet</h3>
-                    <p class="empty-state-text type-body-sm text-secondary">Products you view will show up here.</p>
+
+            {% if history_items %}
+                <!-- Group history items by their viewed_at date -->
+                {% regroup history_items by viewed_at.date as grouped_history %}
+                
+                <div class="flex flex-col gap-8">
+                    {% for group in grouped_history %}
+                        <div class="flex flex-col gap-4">
+                            <!-- Date Group Header -->
+                            <h3 class="type-label-md text-primary font-semibold">
+                                {{ group.grouper|date:"l, F j" }}
+                            </h3>
+                            
+                            <div class="flex flex-col gap-3">
+                                {% for item in group.list %}
+                                    <!-- History Item Card -->
+                                    <div class="card flex items-center justify-between p-4 bg-white border border-subtle rounded-xl shadow-sm">
+                                        <div class="flex items-center gap-4 min-w-0">
+                                            <!-- Left Icon -->
+                                            <div class="w-12 h-12 bg-surface flex items-center justify-center rounded-lg shrink-0 text-secondary">
+                                                <span class="icon icon-saved" aria-hidden="true"></span>
+                                            </div>
+                                            
+                                            <!-- Details -->
+                                            <div class="flex flex-col min-w-0">
+                                                <span class="font-bold text-primary truncate">{{ item.product_name|default:"Unknown Product" }}</span>
+                                                <span class="text-xs text-secondary">Product</span>
+                                                <span class="text-xs text-tertiary">Viewed: {{ item.viewed_at|time:"H:i" }}</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Actions -->
+                                        <div class="flex items-center gap-2 shrink-0 ml-4">
+                                            <!-- Open Button -->
+                                            <a href="{% url 'main:product_detail' item.barcode %}" class="btn btn-secondary">Open</a>
+                                            
+                                        <!-- Delete Item Button (Updated with confirmation attributes) -->
+                                        <form method="POST" action="{% url 'history_item_delete' item.id %}" class="inline"
+                                            data-confirm-title="Remove this item?" 
+                                            data-confirm-text="This product will be removed from your history." 
+                                            data-confirm-label="Remove">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn border-danger text-danger bg-transparent hover:bg-danger-subtle p-2 rounded-lg" aria-label="Remove item">
+                                                <span class="icon icon-x" aria-hidden="true"></span>
+                                            </button>
+                                        </form>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
                 </div>
-            </div>
+
+                <!-- Clear History Button -->
+                <div class="pt-4">
+                    <form method="POST" action="{% url 'history_clear' %}" data-confirm-title="Clear all history?" data-confirm-text="This will remove all your recently viewed products." data-confirm-label="Clear">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-secondary bg-surface text-primary">Clear history</button>
+                    </form>
+                </div>
+            {% else %}
+                <!-- Empty State -->
+                <div class="card flex flex-col items-center justify-center py-12 text-center">
+                    <div class="empty-state max-w-sm">
+                        <span class="icon icon-history text-tertiary text-4xl mb-2" aria-hidden="true"></span>
+                        <h3 class="empty-state-title type-card-title text-primary">No history yet</h3>
+                        <p class="empty-state-text type-body-sm text-secondary">Products you view will show up here.</p>
+                    </div>
+                </div>
+            {% endif %}
         </section>
     </div>
 </div>
