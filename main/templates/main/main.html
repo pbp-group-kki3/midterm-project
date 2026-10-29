@@ -83,11 +83,6 @@
         {% endfor %}
     </div>
 
-    {# One-time notes, e.g. "Remove one to add another" (shared .alert, Django messages) #}
-    {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} mt-6">{{ message }}</div>
-    {% endfor %}
-
     <section class="mt-6">
         {% if error %}
             {# search_products returned None: the API failed #}
