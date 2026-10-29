@@ -210,3 +210,30 @@ class ComparisonHighlightTests(SimpleTestCase):
                     rows[label]["cells"][2]["display"],
                     "Not available",
                 )
+
+
+# change: a comparison opened from Saved goes back to Saved, a normal one back to Discover
+from unittest.mock import patch
+from django.contrib.auth.models import User
+from django.urls import reverse
+from comparison.models import SavedComparison
+
+
+class CompareBackLinkTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='comparer', password='password123')
+        self.client.force_login(self.user)
+
+    @patch('comparison.views.load_comparison_products', return_value=([], []))
+    def test_normal_compare_goes_back_to_discover(self, fake_load):
+        response = self.client.get(reverse('comparison:compare_products'))
+        self.assertContains(response, 'Back to Discover')
+        self.assertNotContains(response, 'Back to Saved')
+
+    def test_saved_compare_goes_back_to_saved(self):
+        saved = SavedComparison.objects.create(user=self.user, name='Saved lineup', barcodes=['111', '222'])
+        products = [{'compare_barcode': code, 'product_name': 'Example', 'nutriments': {}} for code in saved.barcodes]
+        with patch('comparison.views.load_comparison_products', return_value=(products, [])):
+            response = self.client.get(reverse('profile_saved_comparison', args=[saved.pk]))
+        self.assertContains(response, 'Back to Saved')
+        self.assertNotContains(response, 'Back to Discover')
