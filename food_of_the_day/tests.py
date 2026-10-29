@@ -332,6 +332,39 @@ class FoodOfTheDayViewsTest(TestCase):
         # Should not create a second identical comment
         self.assertEqual(MealComment.objects.count(), 1)
 
+    def test_add_comment_ajax_success(self):
+        self.client.login(username='dineder', password='password123')
+        response = self.client.post(
+            reverse('food_of_the_day:add_comment', args=[self.meal.id]),
+            {'text': 'Asynchronous comment via AJAX.'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['comment']['user'], 'dineder')
+        self.assertEqual(data['comment']['text'], 'Asynchronous comment via AJAX.')
+        self.assertEqual(MealComment.objects.count(), 1)
+
+    def test_add_comment_ajax_duplicate_rejected(self):
+        self.client.login(username='dineder', password='password123')
+        # First comment
+        self.client.post(
+            reverse('food_of_the_day:add_comment', args=[self.meal.id]),
+            {'text': 'Fast spam comment test.'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        # Immediate duplicate via AJAX
+        response2 = self.client.post(
+            reverse('food_of_the_day:add_comment', args=[self.meal.id]),
+            {'text': 'Fast spam comment test.'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(response2.status_code, 429)
+        data = response2.json()
+        self.assertIn('error', data)
+        self.assertEqual(MealComment.objects.count(), 1)
+
     @patch('food_of_the_day.views.get_recipe')
     def test_slide_partial_view(self, mock_get_recipe):
         mock_get_recipe.return_value = self.sample_recipe
