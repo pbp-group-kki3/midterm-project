@@ -8,16 +8,18 @@
 {% block content %}
 <div class="space-y-6">
 
-  <!-- Breadcrumb Navigation -->
-  <nav class="flex items-center gap-2 type-body-sm text-secondary">
-    <a href="/" class="hover:text-brand">Home</a>
-    <span>&rsaquo;</span>
-    <a href="{% url 'food_of_the_day:index' %}" class="hover:text-brand">Meal of the Day</a>
-    <span>&rsaquo;</span>
-    <span class="text-primary font-medium truncate max-w-xs">
-      {% if recipe %}{{ recipe.title }}{% else %}Featured Recipe{% endif %}
-    </span>
-  </nav>
+  {# change: "<- Back to ..." link instead of the breadcrumb, same style as the product and compare pages #}
+  {% if request.GET.source == "saved" %}
+    <a href="{% url 'profile_saved' %}" class="back-link">
+      <span class="icon icon-arrow-left" aria-hidden="true"></span>
+      Back to Saved
+    </a>
+  {% else %}
+    <a href="{% url 'food_of_the_day:index' %}" class="back-link">
+      <span class="icon icon-arrow-left" aria-hidden="true"></span>
+      Back to Meal of the Day
+    </a>
+  {% endif %}
 
   {% if not meal or not recipe %}
     <div class="empty-state">
