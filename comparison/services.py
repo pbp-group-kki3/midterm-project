@@ -71,14 +71,11 @@ def normalize_nova(value):
 
 
 def build_ranked_cells(displays, ranks):
+    available_ranks = [rank for rank in ranks if rank is not None]
     best_rank = None
 
-    if (
-        len(ranks) >= 2
-        and all(rank is not None for rank in ranks)
-        and len(set(ranks)) > 1
-    ):
-        best_rank = min(ranks)
+    if len(available_ranks) >= 2 and len(set(available_ranks)) > 1:
+        best_rank = min(available_ranks)
 
     return [
         {
@@ -233,17 +230,14 @@ def build_nutrition_rows(products):
             value = get_numeric_value(nutriments.get(field))
             values.append(value)
 
+        available_values = [value for value in values if value is not None]
         best_value = None
 
-        if (
-            len(values) >= 2
-            and all(value is not None for value in values)
-            and len(set(values)) > 1
-        ):
+        if len(available_values) >= 2 and len(set(available_values)) > 1:
             if direction == "lower":
-                best_value = min(values)
+                best_value = min(available_values)
             else:
-                best_value = max(values)
+                best_value = max(available_values)
 
         cells = []
 
