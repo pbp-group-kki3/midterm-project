@@ -15,8 +15,10 @@ from comparison.forms import SavedComparisonForm
 from comparison.models import SavedComparison
 # Create your views here.
 @require_GET
-def compare_products(request):
-    selected_barcodes = request.session.get("compare", [])
+def compare_products(request, saved_comparison=None):
+    # Display saved lineups without replacing the active session selection.
+    viewing_saved = saved_comparison is not None
+    selected_barcodes = saved_comparison.barcodes if viewing_saved else request.session.get("compare", [])
     barcodes = list(dict.fromkeys(selected_barcodes))[:3]
 
     products, unavailable_barcodes = load_comparison_products(barcodes)
@@ -35,11 +37,12 @@ def compare_products(request):
     )
 
     has_removed = request.session.get("compare_has_removed", False)
-    show_add_product = has_removed and len(barcodes) < 3
+    show_add_product = not viewing_saved and has_removed and len(barcodes) < 3
     display_column_count = len(products) + int(show_add_product)
 
     can_save = (
-        2 <= len(barcodes) <= 3
+        not viewing_saved
+        and 2 <= len(barcodes) <= 3
         and len(products) == len(barcodes)
         and all(
             isinstance(barcode, str)
@@ -65,6 +68,7 @@ def compare_products(request):
 
     context = {
         "products": products,
+        "viewing_saved": viewing_saved,
         "unavailable_barcodes": unavailable_barcodes,
         "nutrition_rows": nutrition_rows, # label, nilai, and Better indicator
         "comparison_sections": comparison_sections,

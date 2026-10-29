@@ -98,6 +98,7 @@ def profile_defaults(user):
     return {
         'diet': main_diet(diets),
         'diets': diets,
+        'diet_requires_choice': len(diets) > 1,
         'allergies': allergies,
         'allergy_labels': [str(label) for label in prefs.get('allergies') or []],
         'calorie_target': profile_calorie_target(user),

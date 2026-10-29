@@ -86,7 +86,7 @@ def preference_fit(product, prefs):
         and value.strip()
         and value.strip().lower() != "none"
     ))
-    
+
     allergy_tags = prefs.get("off_tags") or []              # e.g. ["en:milk"]
     if not diets and not allergy_tags:
         return None                                         # no preferences set: nothing to compare
@@ -109,8 +109,8 @@ def preference_fit(product, prefs):
         if no_tag and no_tag in tags:
             return {"status": "conflict", "text": f"Not {diet}"}
         if yes_tag not in tags:
-            return {"status": "unknown", "text": f"? Can't verify {diet}"}
-        
+            unverified_diets.append(diet)
+
     if unverified_diets:
         return {
             "status": "unknown",
