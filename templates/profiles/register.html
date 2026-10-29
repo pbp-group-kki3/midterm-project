@@ -120,7 +120,7 @@
                 </div>
                 <div class="form-stack">
                     <div class="field">
-                        <label class="field-label type-label-md">Dietary Preferences (Select multiple)</label>
+                        <label class="field-label type-label-md">Dietary Preferences (can select multiple)</label>
                         <div class="chip-row">
                             <button type="button" class="chip chip-diet" data-value="halal">Halal</button>
                             <button type="button" class="chip chip-diet" data-value="vegetarian">Vegetarian</button>
@@ -129,7 +129,7 @@
                         </div>
                     </div>
                     <div class="field">
-                        <label class="field-label type-label-md">Allergies</label>
+                        <label class="field-label type-label-md">Allergies(can select multiple)</label>
                         <div class="chip-row">
                             <button type="button" class="chip chip-allergy" data-value="Milk">Milk</button>
                             <button type="button" class="chip chip-allergy" data-value="Peanuts">Peanuts</button>
@@ -190,6 +190,36 @@
     const selectedDiets = new Set();
     const selectedAllergies = new Set();
 
+    // 1. EVENT LISTENERS (Moved outside of validation function)
+    document.querySelectorAll('.chip-diet').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const val = btn.getAttribute('data-value');
+            if (selectedDiets.has(val)) {
+                selectedDiets.delete(val);
+                btn.classList.remove('is-selected');
+            } else {
+                selectedDiets.add(val);
+                btn.classList.add('is-selected');
+            }
+            document.getElementById('diet_input').value = Array.from(selectedDiets).join(',');
+        });
+    });
+
+    document.querySelectorAll('.chip-allergy').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const val = btn.getAttribute('data-value');
+            if (selectedAllergies.has(val)) {
+                selectedAllergies.delete(val);
+                btn.classList.remove('is-selected');
+            } else {
+                selectedAllergies.add(val);
+                btn.classList.add('is-selected');
+            }
+            document.getElementById('allergies_input').value = Array.from(selectedAllergies).join(',');
+        });
+    });
+
+    // 2. VALIDATION FUNCTION
     function validateStep1() {
         let isValid = true;
         const username = document.getElementById('input_username');
@@ -197,51 +227,16 @@
         const pass = document.getElementById('input_password');
         const confirmPass = document.getElementById('input_confirm_password');
 
-        // Simple email regex pattern
         const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-        // Clear existing JS errors
         document.querySelectorAll('.js-error').forEach(el => el.classList.add('hidden'));
         document.querySelectorAll('.input').forEach(el => el.classList.remove('is-error'));
 
-        // Multi-select for Diets
-        document.querySelectorAll('.chip-diet').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const val = btn.getAttribute('data-value');
-                if (selectedDiets.has(val)) {
-                    selectedDiets.delete(val);
-                    btn.classList.remove('is-selected');
-                } else {
-                    selectedDiets.add(val);
-                    btn.classList.add('is-selected');
-                }
-                // Joins multiple selected diets with commas for backend processing
-                document.getElementById('diet_input').value = Array.from(selectedDiets).join(',');
-            });
-        });
-
-        // Multi-select for Allergies
-        document.querySelectorAll('.chip-allergy').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const val = btn.getAttribute('data-value');
-                if (selectedAllergies.has(val)) {
-                    selectedAllergies.delete(val);
-                    btn.classList.remove('is-selected');
-                } else {
-                    selectedAllergies.add(val);
-                    btn.classList.add('is-selected');
-                }
-                document.getElementById('allergies_input').value = Array.from(selectedAllergies).join(',');
-            });
-        });
-
-        // Client-side checks
         if (!username.value.trim()) { 
             showError(username, "Username is required."); 
             isValid = false; 
         }
         
-        // Check if email is empty OR invalid format
         if (!email.value.trim()) { 
             showError(email, "Email is required."); 
             isValid = false; 
@@ -262,6 +257,7 @@
         return isValid;
     }
 
+    // 3. HELPER FUNCTIONS
     function showError(inputElement, message) {
         inputElement.classList.add('is-error');
         const errorElement = document.getElementById(`err_${inputElement.id}`);
@@ -272,10 +268,9 @@
     }
 
     function goToStep(step) {
-        // Lock progression if moving forward from step 1
         if (currentStep === 1 && step > 1) {
             if (!validateStep1()) {
-                return; // Stop execution, don't change steps
+                return; 
             }
         }
         
@@ -315,7 +310,6 @@
         }
     }
 
-    // Toast auto-dismiss logic
     document.addEventListener("DOMContentLoaded", () => {
         const toasts = document.querySelectorAll(".toast-message");
         toasts.forEach(toast => {
