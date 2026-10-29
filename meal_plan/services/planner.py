@@ -82,10 +82,6 @@ def main_diet(diets):
     return next((key for key in MAIN_DIET_ORDER if key in diets), DEFAULT_DIET)
 
 
-def profile_is_halal(user):
-    return 'halal' in profile_diets(get_preferences(user))
-
-
 def profile_defaults(user):
     prefs = get_preferences(user)
     diets = profile_diets(prefs)
@@ -98,7 +94,6 @@ def profile_defaults(user):
     return {
         'diet': main_diet(diets),
         'diets': diets,
-        'diet_requires_choice': len(diets) > 1,
         'allergies': allergies,
         'allergy_labels': [str(label) for label in prefs.get('allergies') or []],
         'calorie_target': profile_calorie_target(user),
@@ -379,7 +374,9 @@ def create_plan(user, data):
     days = data['days']
     goal, _ = daily_goal(data.get('calorie_goal'), user)
     allergies = list(data.get('allergies') or [])
-    filters = plan_filters(data['diet'], allergies, halal=profile_is_halal(user))
+    diets = profile_diets({'diet': data.get('diet')})
+    diet = main_diet(diets)
+    filters = plan_filters(diet, allergies, halal='halal' in diets)
     snack_calories = round(goal * SNACK_SHARE) if data.get('include_snack') else 0
     request_key = f"{user.pk}:{data['name']}:{data['start_date']}"
     meal_days = _generate_days(days, goal - snack_calories, filters, request_key)
@@ -391,7 +388,8 @@ def create_plan(user, data):
             date=data['start_date'],
             timeframe='day' if days == 1 else 'week',
             days=days,
-            diet=data['diet'],
+            diet=diet,
+            diets=diets,
             allergies=allergies,
             include_snack=bool(snacks),
             calorie_goal=goal,
@@ -429,20 +427,19 @@ def plan_days(plan):
 
 
 def plan_fit_text(plan, current):
-    parts = []
-    if plan.diet == 'halal':
-        parts.append(HALAL_PLAN_NOTE)
-    elif plan.diet != DEFAULT_DIET:
-        parts.append(DIET_LABELS.get(plan.diet, ''))
+    keys = plan.diet_keys
+    parts = [DIET_LABELS[key] for key in keys if key != 'halal']
+    if 'halal' in keys:
+        parts.append(HALAL_PLAN_NOTE.lower() if parts else HALAL_PLAN_NOTE)
     if current and current.get('calories') is not None:
         parts.append(f'about {current["calories"]:,} kcal')
-    return ', '.join(part for part in parts if part)
+    return ', '.join(parts)
 
 
 def replacement_options(plan, entry, round_number=0):
     current_cards, _ = recipe_cards([entry.recipe_id])
     current = current_cards.get(entry.recipe_id)
-    filters = plan_filters(plan.diet, plan.allergies, get_preferences(plan.user))
+    filters = plan_filters(plan.diet, plan.allergies, get_preferences(plan.user), halal='halal' in plan.diet_keys)
     params = _search_params(entry.slot, filters)
     params.update({'sort': 'random', 'number': SWAP_CANDIDATES})
     data = spoonacular.search_recipes(params, cache_variant=round_number)
@@ -459,10 +456,10 @@ def replacement_options(plan, entry, round_number=0):
 
 
 def browse_recipes(filters, page=1):
-    diet = filters.get('diet') or DEFAULT_DIET
-    diets = [SPOONACULAR_DIETS.get(diet, '')]
-    if filters.get('sustainable') and diet not in ('vegetarian', 'vegan'):
-        diets.append('vegetarian')
+    diets = profile_diets({'diet': filters.get('diet')})
+    words = [SPOONACULAR_DIETS[key] for key in diets if SPOONACULAR_DIETS.get(key)]
+    if filters.get('sustainable') and not any(key in diets for key in ('vegetarian', 'vegan')):
+        words.append('vegetarian')
     intolerances = []
     if filters.get('gluten_free'):
         intolerances.append('gluten')
@@ -472,9 +469,9 @@ def browse_recipes(filters, page=1):
     params = {
         'query': query,
         'type': SEARCH_TYPES.get(filters.get('meal') or '', ''),
-        'diet': [word for word in diets if word],
+        'diet': words,
         'intolerances': intolerances,
-        'excludeIngredients': HALAL_EXCLUDE if diet == 'halal' else [],
+        'excludeIngredients': HALAL_EXCLUDE if 'halal' in diets else [],
         'maxCalories': filters.get('max_calories'),
         'maxReadyTime': filters.get('max_minutes'),
         'sort': '' if query else 'popularity',

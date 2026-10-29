@@ -407,15 +407,34 @@ class PlannerTests(MealPlanTestCase):
         self.assertEqual(plan.calorie_goal, 2000)
         self.assertEqual(list(plan.entries.values_list('day', 'slot', 'recipe_id')), [(1, 'breakfast', 101), (1, 'lunch', 201), (1, 'dinner', 202)])
 
-    def test_create_plan_keeps_halal_from_the_profile(self):
-        self.set_profile(diet=['halal', 'vegetarian'])
-        planner.create_plan(self.user, {
-            'name': 'Both', 'start_date': date(2026, 10, 26), 'days': 1, 'diet': 'vegetarian',
+    def test_create_plan_combines_halal_with_another_diet(self):
+        plan = planner.create_plan(self.user, {
+            'name': 'Both', 'start_date': date(2026, 10, 26), 'days': 1, 'diet': ['halal', 'vegetarian'],
             'allergies': [], 'include_snack': False, 'calorie_goal': None,
         })
         generate = self.api.calls_to('/mealplanner/generate')[0].params
         self.assertEqual(generate['diet'], 'vegetarian')
         self.assertEqual(generate['exclude'], 'pork,bacon,ham,wine,beer')
+        self.assertEqual(plan.diet, 'vegetarian')
+        self.assertEqual(plan.diets, ['vegetarian', 'halal'])
+        self.assertEqual(plan.diet_labels, ['Vegetarian', 'Halal not verified'])
+
+    def test_create_plan_without_a_diet(self):
+        plan = planner.create_plan(self.user, {
+            'name': 'Any', 'start_date': date(2026, 10, 26), 'days': 1, 'diet': [],
+            'allergies': [], 'include_snack': False, 'calorie_goal': None,
+        })
+        self.assertNotIn('diet', self.api.calls_to('/mealplanner/generate')[0].params)
+        self.assertEqual(plan.diet, 'none')
+        self.assertEqual(plan.diets, [])
+        self.assertEqual(plan.diet_label, 'No preference')
+
+    def test_replace_text_lists_every_plan_diet(self):
+        plan = self.make_plan(days=1, diet='vegetarian')
+        plan.diets = ['vegetarian', 'halal']
+        self.assertEqual(planner.plan_fit_text(plan, {'calories': 310}), 'Vegetarian, no pork or alcohol, about 310 kcal')
+        plan.diets = ['halal']
+        self.assertEqual(planner.plan_fit_text(plan, None), 'No pork or alcohol')
 
     def test_create_plan_for_a_week_with_snacks(self):
         self.api.search_results = self.snacks
@@ -665,39 +684,51 @@ class PlanCreateViewTests(MealPlanTestCase):
         self.login()
         response = self.client.get(reverse('meal_plan:plan_create'))
         self.assertContains(response, 'Create a meal plan')
-        self.assertContains(response, '<option value="vegan" selected>Vegan</option>', html=True)
+        self.assertContains(response, 'value="vegan" class="mealplan-chip-input" data-plan-diet data-name="Vegan" checked')
         self.assertContains(response, 'value="dairy" class="mealplan-chip-input" data-plan-allergy data-name="Dairy" checked')
         self.assertContains(response, 'Sesame')
         self.assertContains(response, 'data-profile-target="1900"')
         self.assertContains(response, '1,900 kcal/day (from your profile)')
         self.assertContains(response, 'Breakfast, lunch, dinner, snack')
         self.assertContains(response, 'Dairy, Sesame')
-        self.assertContains(response, 'Halal')
-        self.assertContains(response, 'Skips pork and alcohol')
+        self.assertContains(response, 'Halal skips pork and alcohol')
         self.assertEqual(self.api.calls, [])
 
-    # Multiple profile diets require a deliberate choice for each plan.
-    def test_form_requires_a_diet_when_the_profile_has_several(self):
+    def test_form_ticks_every_diet_from_the_profile(self):
         self.set_profile(diet=['halal', 'vegetarian'])
         self.login()
         response = self.client.get(reverse('meal_plan:plan_create'))
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['form']['diet'].value(), '')
-        self.assertTrue(response.context['profile_multiple_diets'])
-        self.assertContains(response, 'Choose a diet for this plan')
+        self.assertContains(response, 'value="vegetarian" class="mealplan-chip-input" data-plan-diet data-name="Vegetarian" checked')
+        self.assertContains(response, 'value="halal" class="mealplan-chip-input" data-plan-diet data-name="Halal" checked')
+        self.assertContains(response, 'value="vegan" class="mealplan-chip-input" data-plan-diet data-name="Vegan">')
+        self.assertContains(response, 'data-summary="diet">Vegetarian, Halal<')
         self.assertEqual(self.api.calls, [])
 
+    def test_several_diets_are_saved_on_the_plan(self):
+        self.api.search_results = self.snacks
+        self.login()
+        response = self.client.post(reverse('meal_plan:plan_create'), self.valid_data(diet=['vegetarian', 'halal']))
+        plan = MealPlan.objects.get()
+        self.assertRedirects(response, reverse('meal_plan:plan_detail', args=[plan.pk]), fetch_redirect_response=False)
+        self.assertEqual(plan.diets, ['vegetarian', 'halal'])
+        self.assertEqual(plan.diet, 'vegetarian')
+
+    def test_no_diet_ticked_means_no_preference(self):
+        self.api.search_results = self.snacks
+        self.login()
         data = self.valid_data()
-        data['diet'] = ''
-        response = self.client.post(reverse('meal_plan:plan_create'), data)
-        self.assertIn('diet', response.context['form'].errors)
+        data.pop('diet')
+        self.client.post(reverse('meal_plan:plan_create'), data)
+        plan = MealPlan.objects.get()
+        self.assertEqual(plan.diets, [])
+        self.assertEqual(plan.diet_label, 'No preference')
+
+    def test_ketogenic_cannot_be_combined_with_plant_based_diets(self):
+        self.login()
+        response = self.client.post(reverse('meal_plan:plan_create'), self.valid_data(diet=['ketogenic', 'vegan']))
+        self.assertContains(response, 'Ketogenic can&#x27;t be combined with vegetarian, vegan or pescatarian in one plan.')
         self.assertFalse(MealPlan.objects.exists())
         self.assertEqual(self.api.calls, [])
-
-        data['diet'] = 'vegetarian'
-        response = self.client.post(reverse('meal_plan:plan_create'), data)
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(MealPlan.objects.get().diet, 'vegetarian')
 
     def test_back_and_cancel_go_to_the_meal_plan_page(self):
         self.login()
@@ -796,13 +827,18 @@ class PlanDetailViewTests(MealPlanTestCase):
         self.assertContains(response, 'Halal not verified')
         self.assertNotContains(response, '>Halal<')
 
-    def test_halal_note_also_shows_when_the_profile_is_halal(self):
+    def test_halal_note_and_badges_follow_the_plans_diets(self):
         plan = self.make_plan(days=1, diet='vegetarian')
+        self.set_profile(diet=['halal', 'vegetarian'])
         self.login()
         url = reverse('meal_plan:plan_detail', args=[plan.pk])
         self.assertNotContains(self.client.get(url), 'skip pork and alcohol')
-        self.set_profile(diet=['halal', 'vegetarian'])
-        self.assertContains(self.client.get(url), 'skip pork and alcohol')
+        plan.diets = ['vegetarian', 'halal']
+        plan.save()
+        response = self.client.get(url)
+        self.assertContains(response, 'skip pork and alcohol')
+        self.assertContains(response, '<span class="badge">Vegetarian</span>', html=True)
+        self.assertContains(response, '<span class="badge">Halal not verified</span>', html=True)
 
     def test_detail_survives_spoonacular_being_down(self):
         plan = self.make_plan(days=1)
@@ -981,6 +1017,16 @@ class RecipesViewTests(MealPlanTestCase):
         response = self.client.get(reverse('meal_plan:recipes'), {'diet': 'halal'})
         self.assertContains(response, 'Halal not verified')
         self.assertEqual(self.api.calls[0].params['excludeIngredients'], 'pork,bacon,ham,wine,beer')
+
+    def test_diet_chips_combine_in_the_search(self):
+        response = self.client.get(reverse('meal_plan:recipes'), {'diet': ['vegetarian', 'pescatarian', 'halal']})
+        params = self.api.calls[0].params
+        self.assertEqual(params['diet'], 'vegetarian,pescetarian')
+        self.assertEqual(params['excludeIngredients'], 'pork,bacon,ham,wine,beer')
+        self.assertContains(response, 'value="vegetarian" class="mealplan-chip-input" checked')
+        self.assertContains(response, 'value="halal" class="mealplan-chip-input" checked')
+        self.assertContains(response, 'value="vegan" class="mealplan-chip-input">')
+        self.assertContains(response, 'diet=halal&amp;page=2')
 
     def test_no_results_shows_the_empty_state(self):
         self.api.search_results = []

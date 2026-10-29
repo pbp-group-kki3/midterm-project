@@ -29,6 +29,7 @@ class MealPlan(models.Model):
     timeframe = models.CharField(max_length=4, choices=TIMEFRAME_CHOICES)
     days = models.PositiveSmallIntegerField(validators=[MinValueValidator(MIN_DAYS), MaxValueValidator(MAX_DAYS)])
     diet = models.CharField(max_length=20, choices=DIET_CHOICES, default=DEFAULT_DIET)
+    diets = models.JSONField(default=list, blank=True)
     allergies = models.JSONField(default=list, blank=True)
     include_snack = models.BooleanField(default=False)
     calorie_goal = models.PositiveIntegerField()
@@ -45,10 +46,19 @@ class MealPlan(models.Model):
         return self.date + timedelta(days=self.days - 1)
 
     @property
+    def diet_keys(self):
+        chosen = {key for key in self.diets or [] if isinstance(key, str)}
+        if not chosen and self.diet != DEFAULT_DIET:
+            chosen = {self.diet}
+        return [key for key in DIET_LABELS if key != DEFAULT_DIET and key in chosen]
+
+    @property
+    def diet_labels(self):
+        return [HALAL_BADGE if key == 'halal' else DIET_LABELS[key] for key in self.diet_keys]
+
+    @property
     def diet_label(self):
-        if self.diet == 'halal':
-            return HALAL_BADGE
-        return DIET_LABELS.get(self.diet, DIET_LABELS[DEFAULT_DIET])
+        return ', '.join(self.diet_labels) or DIET_LABELS[DEFAULT_DIET]
 
     @property
     def calorie_label(self):

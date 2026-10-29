@@ -392,13 +392,13 @@ class ProfileIntegrationTests(TestCase):
             self.assertEqual(client.post(url).status_code, 403)
         self.assertTrue(User.objects.filter(pk=self.user.pk).exists())
 
-    def test_multiple_diets_require_explicit_plan_choice(self):
+    def test_multiple_profile_diets_are_ticked_in_the_plan_form(self):
         self.user.profile.diet = ['halal', 'vegetarian']
         self.user.profile.save()
         response = self.client.get(reverse('meal_plan:plan_create'))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['form']['diet'].value(), '')
-        response = self.client.post(reverse('meal_plan:plan_create'), {'diet': ''})
+        self.assertEqual(response.context['form']['diet'].value(), ['vegetarian', 'halal'])
+        response = self.client.post(reverse('meal_plan:plan_create'), {'diet': ['ketogenic', 'vegan']})
         self.assertIn('diet', response.context['form'].errors)
 
     # Signup redirects to Login without creating an authenticated session.
