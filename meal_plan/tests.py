@@ -609,6 +609,7 @@ class LoginRequiredTests(MealPlanTestCase):
             reverse('meal_plan:plan_list'),
             reverse('meal_plan:plan_create'),
             reverse('meal_plan:plan_detail', args=[plan.pk]),
+            reverse('meal_plan:plan_edit', args=[plan.pk]),
             reverse('meal_plan:meal_replace', args=[plan.pk, entry.pk]),
             reverse('meal_plan:recipes'),
         ]
@@ -855,6 +856,135 @@ class PlanDetailViewTests(MealPlanTestCase):
         self.login()
         response = self.client.get(reverse('meal_plan:plan_detail', args=[plan.pk]))
         self.assertEqual(response.status_code, 404)
+
+    def test_header_has_edit_and_delete_buttons(self):
+        plan = self.make_plan(days=1)
+        self.login()
+        response = self.client.get(reverse('meal_plan:plan_detail', args=[plan.pk]))
+        edit_url = reverse('meal_plan:plan_edit', args=[plan.pk])
+        self.assertContains(response, f'<a href="{edit_url}" class="btn btn-secondary mealplan-action">Edit plan</a>', html=True)
+        self.assertContains(response, 'data-dialog-open="delete-dialog">Delete plan</button>')
+        self.assertContains(response, '← My plans</a>')
+        self.assertNotContains(response, '>My plans</a>')
+
+
+class PlanEditViewTests(MealPlanTestCase):
+    def setUp(self):
+        super().setUp()
+        self.api.add(make_recipe(402, 'Yogurt Parfait', kcal=300))
+        self.plan = self.make_plan(days=2, diet='vegetarian', allergies=['gluten'])
+        self.plan.entries.filter(day=1, slot='breakfast').update(recipe_id=402)
+        self.url = reverse('meal_plan:plan_edit', args=[self.plan.pk])
+        self.detail_url = reverse('meal_plan:plan_detail', args=[self.plan.pk])
+        self.login()
+
+    def edit_data(self, **changes):
+        data = {
+            'name': 'Green week',
+            'start_date': '2026-10-26',
+            'days': '2',
+            'diet': ['vegetarian'],
+            'allergies': ['gluten'],
+            'calorie_goal': '1800',
+        }
+        data.update(changes)
+        return data
+
+    def recipe_ids(self):
+        return list(self.plan.entries.order_by('day', 'pk').values_list('recipe_id', flat=True))
+
+    def test_form_is_filled_in_with_the_plans_settings(self):
+        response = self.client.get(self.url)
+        self.assertContains(response, '<h1 class="page-title page-title-lg">Edit plan</h1>', html=True)
+        self.assertContains(response, 'picks new meals for this plan')
+        self.assertContains(response, 'value="Green week"')
+        self.assertContains(response, 'value="2026-10-26"')
+        self.assertContains(response, 'value="vegetarian" class="mealplan-chip-input" data-plan-diet data-name="Vegetarian" checked')
+        self.assertContains(response, 'value="gluten" class="mealplan-chip-input" data-plan-allergy data-name="Gluten" checked')
+        self.assertContains(response, 'value="1800"')
+        self.assertContains(response, 'data-summary="duration">2 days · 26 Oct – 27 Oct<')
+        self.assertContains(response, 'data-busy-label="Saving…">Save changes</button>')
+        self.assertContains(response, f'<a href="{self.detail_url}" class="back-link">← Back to plan</a>', html=True)
+        self.assertContains(response, f'<a href="{self.detail_url}" class="btn btn-secondary mealplan-action">Cancel</a>', html=True)
+        self.assertNotContains(response, 'Create plan')
+        self.assertEqual(self.api.calls, [])
+
+    def test_changing_only_the_name_and_date_keeps_the_meals(self):
+        before = self.recipe_ids()
+        response = self.client.post(self.url, self.edit_data(name='Busy week', start_date='2026-11-02'), follow=True)
+        self.assertRedirects(response, self.detail_url)
+        self.plan.refresh_from_db()
+        self.assertEqual(self.plan.name, 'Busy week')
+        self.assertEqual(self.plan.date, date(2026, 11, 2))
+        self.assertEqual(self.recipe_ids(), before)
+        self.assertContains(response, '“Busy week” was updated.')
+        self.assertContains(response, 'Yogurt Parfait')
+        self.assertEqual(self.api.calls_to('/mealplanner/generate'), [])
+
+    def test_changing_the_diet_picks_new_meals(self):
+        response = self.client.post(self.url, self.edit_data(diet=['vegan', 'halal']), follow=True)
+        self.plan.refresh_from_db()
+        self.assertEqual(self.plan.diets, ['vegan', 'halal'])
+        self.assertEqual(self.plan.diet, 'vegan')
+        generate = self.api.calls_to('/mealplanner/generate')
+        self.assertEqual(len(generate), 1)
+        self.assertEqual(generate[0].params['diet'], 'vegan')
+        self.assertEqual(generate[0].params['exclude'], 'gluten,pork,bacon,ham,wine,beer')
+        self.assertEqual(self.recipe_ids(), [101, 201, 202, 102, 203, 204])
+        self.assertContains(response, '“Green week” was updated with new meals.')
+
+    def test_fewer_days_gives_a_shorter_plan(self):
+        self.client.post(self.url, self.edit_data(days='1'))
+        self.plan.refresh_from_db()
+        self.assertEqual(self.plan.days, 1)
+        self.assertEqual(self.plan.timeframe, 'day')
+        self.assertEqual(self.recipe_ids(), [101, 201, 202])
+
+    def test_turning_on_snacks_adds_one_to_every_day(self):
+        self.api.search_results = self.snacks
+        self.client.post(self.url, self.edit_data(include_snack='on'))
+        self.plan.refresh_from_db()
+        self.assertTrue(self.plan.include_snack)
+        self.assertEqual(self.plan.entries.count(), 8)
+        self.assertEqual(self.plan.entries.filter(slot='snack').count(), 2)
+        self.assertEqual(self.api.calls_to('/mealplanner/generate')[0].params['targetCalories'], 1620)
+
+    def test_empty_calorie_goal_uses_the_profile_target(self):
+        self.set_profile(calorie_target=2200)
+        self.client.post(self.url, self.edit_data(calorie_goal=''))
+        self.plan.refresh_from_db()
+        self.assertEqual(self.plan.calorie_goal, 2200)
+        self.assertEqual(self.api.calls_to('/mealplanner/generate')[0].params['targetCalories'], 2200)
+
+    def test_spoonacular_problems_keep_the_old_plan(self):
+        self.api.failures = {'/mealplanner/generate': 402}
+        before = self.recipe_ids()
+        with self.assertLogs('meal_plan.services.spoonacular', 'WARNING'):
+            response = self.client.post(self.url, self.edit_data(name='Busy week', diet=['vegan']))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'daily limit has been reached')
+        self.assertContains(response, 'value="Busy week"')
+        self.plan.refresh_from_db()
+        self.assertEqual(self.plan.name, 'Green week')
+        self.assertEqual(self.plan.diet_keys, ['vegetarian'])
+        self.assertEqual(self.recipe_ids(), before)
+
+    def test_invalid_form_shows_errors_and_changes_nothing(self):
+        response = self.client.post(self.url, self.edit_data(name='  ', diet=['ketogenic', 'vegan']))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Give your plan a name.')
+        self.assertContains(response, 'Ketogenic can&#x27;t be combined with vegetarian, vegan or pescatarian in one plan.')
+        self.plan.refresh_from_db()
+        self.assertEqual(self.plan.name, 'Green week')
+        self.assertEqual(self.api.calls, [])
+
+    def test_you_cannot_edit_someone_elses_plan(self):
+        plan = self.make_plan(user=self.other, name='Someone else')
+        url = reverse('meal_plan:plan_edit', args=[plan.pk])
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.assertEqual(self.client.post(url, self.edit_data(name='Mine now')).status_code, 404)
+        plan.refresh_from_db()
+        self.assertEqual(plan.name, 'Someone else')
 
 
 class ReplaceMealViewTests(MealPlanTestCase):
