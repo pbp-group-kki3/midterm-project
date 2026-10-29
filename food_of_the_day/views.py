@@ -13,6 +13,7 @@ from food_of_the_day.models import MealOfTheDay, MealComment, SavedMeal
 from food_of_the_day.forms import MealCommentForm
 from food_of_the_day.services import (
     get_recipe,
+    build_recipe_snapshot,
     extract_calories,
     extract_key_nutrients,
     get_did_you_know,
@@ -43,6 +44,15 @@ def _prepare_meal_context(meal, request):
         return {'meal': None, 'recipe': None}
 
     recipe = get_recipe(meal.recipe_id)
+    if not recipe or not isinstance(recipe, dict):
+        # Graceful fallback: check if a saved snapshot exists in DB (e.g. Spoonacular offline/rate-limited)
+        saved_snap = (
+            SavedMeal.objects.filter(meal=meal).exclude(snapshot_data={}).values_list('snapshot_data', flat=True).first()
+            or SavedMeal.objects.filter(recipe_id=meal.recipe_id).exclude(snapshot_data={}).values_list('snapshot_data', flat=True).first()
+        )
+        if saved_snap and isinstance(saved_snap, dict):
+            recipe = saved_snap
+
     if not recipe or not isinstance(recipe, dict):
         return {
             'meal': meal,
@@ -205,7 +215,7 @@ def add_comment(request, meal_id):
 def toggle_save_meal(request, meal_id):
     """
     Toggle saving/bookmarking a Meal of the Day for the current user.
-    Integrates directly with the user profile's Saved collection.
+    Integrates directly with the user profile's Saved collection using immutable snapshots.
     """
     meal = get_object_or_404(MealOfTheDay, id=meal_id)
     saved_record = SavedMeal.objects.filter(user=request.user, meal=meal).first()
@@ -215,15 +225,21 @@ def toggle_save_meal(request, meal_id):
         saved = False
         msg = "Meal removed from your Saved collection."
     else:
+        recipe = get_recipe(meal.recipe_id)
+        snapshot = build_recipe_snapshot(recipe)
+
         recipe_title = request.POST.get('recipe_title', '').strip()[:255]
-        if not recipe_title:
-            recipe = get_recipe(meal.recipe_id)
-            if recipe and isinstance(recipe, dict):
-                recipe_title = str(recipe.get('title') or '')[:255]
+        if not recipe_title and snapshot.get('title'):
+            recipe_title = snapshot['title'][:255]
+        elif not recipe_title and recipe and isinstance(recipe, dict):
+            recipe_title = str(recipe.get('title') or '')[:255]
+
         SavedMeal.objects.create(
             user=request.user,
             meal=meal,
+            recipe_id=meal.recipe_id,
             recipe_title=recipe_title,
+            snapshot_data=snapshot,
         )
         saved = True
         msg = "Meal saved to your profile!"

@@ -424,6 +424,88 @@ class FoodOfTheDayViewsTest(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertFalse(SavedMeal.objects.filter(pk=saved.pk).exists())
 
+    @patch('food_of_the_day.views.get_recipe')
+    def test_toggle_save_meal_creates_snapshot(self, mock_get_recipe):
+        mock_get_recipe.return_value = self.sample_recipe
+        self.client.login(username='dineder', password='password123')
+
+        response = self.client.post(
+            reverse('food_of_the_day:toggle_save_meal', args=[self.meal.id]),
+            {'recipe_title': 'Healthy Green Bowl'}
+        )
+        self.assertEqual(response.status_code, 302)
+        saved = SavedMeal.objects.get(user=self.user, meal=self.meal)
+        self.assertEqual(saved.recipe_id, self.meal.recipe_id)
+        self.assertEqual(saved.recipe_title, 'Healthy Green Bowl')
+        self.assertIsInstance(saved.snapshot_data, dict)
+        self.assertEqual(saved.snapshot_data.get('title'), 'Healthy Green Bowl')
+        self.assertEqual(saved.snapshot_data.get('calories'), 350)
+        self.assertIn('1 cup spinach', saved.snapshot_data.get('ingredients', []))
+
+    def test_saved_meal_persists_when_mealoftheday_deleted(self):
+        saved = SavedMeal.objects.create(
+            user=self.user,
+            meal=self.meal,
+            recipe_id=self.meal.recipe_id,
+            recipe_title="Healthy Green Bowl",
+            snapshot_data={'title': 'Healthy Green Bowl', 'calories': 350}
+        )
+        # Delete MealOfTheDay
+        self.meal.delete()
+
+        # SavedMeal must NOT be deleted (on_delete=models.SET_NULL)
+        saved.refresh_from_db()
+        self.assertIsNone(saved.meal)
+        self.assertEqual(saved.recipe_title, "Healthy Green Bowl")
+        self.assertEqual(saved.recipe_id, 716429)
+        self.assertEqual(saved.snapshot_data.get('calories'), 350)
+
+    @patch('food_of_the_day.views.get_recipe')
+    def test_detail_view_snapshot_fallback(self, mock_get_recipe):
+        from food_of_the_day.models import MealOfTheDay
+        past_date = self.today - datetime.timedelta(days=1)
+        meal = MealOfTheDay.objects.create(date=past_date, recipe_id=888888)
+
+        # Create saved meal with snapshot
+        SavedMeal.objects.create(
+            user=self.user,
+            meal=meal,
+            recipe_id=888888,
+            recipe_title="Fallback Snapshot Salad",
+            snapshot_data={
+                'id': 888888,
+                'title': 'Fallback Snapshot Salad',
+                'calories': 320,
+                'servings': 2,
+                'readyInMinutes': 15,
+                'ingredients': ['1 head lettuce', 'Olive oil'],
+                'instructions': ['Chop lettuce', 'Drizzle olive oil'],
+                'sourceUrl': 'https://spoonacular.com',
+            }
+        )
+
+        # Simulate Spoonacular being offline / returning None
+        mock_get_recipe.return_value = None
+
+        response = self.client.get(reverse('food_of_the_day:detail', args=[meal.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Fallback Snapshot Salad")
+
+    def test_build_recipe_snapshot_function(self):
+        from food_of_the_day.services import build_recipe_snapshot
+        snapshot = build_recipe_snapshot(self.sample_recipe)
+        self.assertEqual(snapshot['title'], 'Healthy Green Bowl')
+        self.assertEqual(snapshot['calories'], 350)
+        self.assertEqual(snapshot['ready_in_minutes'], 30)
+        self.assertEqual(snapshot['servings'], 2)
+        self.assertEqual(len(snapshot['ingredients']), 1)
+        self.assertEqual(len(snapshot['instructions']), 1)
+
+    def test_build_recipe_snapshot_none_handling(self):
+        from food_of_the_day.services import build_recipe_snapshot
+        self.assertEqual(build_recipe_snapshot(None), {})
+        self.assertEqual(build_recipe_snapshot('not a dict'), {})
+
 
 
 class SeedMealsCommandTest(TestCase):

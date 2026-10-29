@@ -24,8 +24,14 @@ class MealCommentAdmin(admin.ModelAdmin):
 
 @admin.register(SavedMeal)
 class SavedMealAdmin(admin.ModelAdmin):
-    list_display = ('user', 'meal', 'recipe_title', 'created_at')
+    list_display = ('user', 'meal', 'recipe_id', 'recipe_title', 'has_snapshot', 'created_at')
     list_filter = ('created_at', 'meal__date')
-    search_fields = ('user__username', 'recipe_title', 'meal__recipe_id')
+    search_fields = ('user__username', 'recipe_title', 'recipe_id')
+    readonly_fields = ('created_at', 'snapshot_data')
     ordering = ('-created_at',)
+
+    def has_snapshot(self, obj):
+        return bool(obj.snapshot_data)
+    has_snapshot.boolean = True
+    has_snapshot.short_description = "Snapshot"
 
