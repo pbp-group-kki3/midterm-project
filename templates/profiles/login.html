@@ -6,6 +6,7 @@
 {% block title %}SpoonFeed — Log in{% endblock %}
 
 {% block content %}
+
 <!-- LAYOUT -->
 <div class="flex flex-col md:flex-row w-full max-w-6xl mx-auto rounded-xl shadow-lg overflow-hidden min-h-[550px] border border-default">
     
@@ -49,9 +50,11 @@
             <!-- FORM -->
             <form method="POST" action="{% url 'login' %}" class="form-stack">
                 {% csrf_token %}
+                <!-- Preserve the safe destination supplied by the login view. -->
+                <input type="hidden" name="next" value="{{ next }}">
                 <div class="field">
                     <label for="username" class="field-label type-label-md">Username</label>
-                    <input type="text" id="username" name="username" placeholder="username" required class="input {% if form.errors %}is-error{% endif %}"/>
+                    <input type="text" id="username" name="username" placeholder="username" required class="input {% if form.errors %}is-error{% endif %}" value="{{ form.username.value|default_if_none:'' }}"/>
                 </div>
                 <div class="field">
                     <label for="password" class="field-label type-label-md">Password</label>
@@ -66,9 +69,20 @@
 
             <!-- FOOTER -->
             <p class="type-body-sm text-center text-secondary mt-6">
-                No account yet? <a href="{% url 'register' %}" class="link font-semibold">Sign up</a>
+                No account yet? <a href="{% url 'register' %}{% if next %}?next={{ next|urlencode }}{% endif %}" class="link font-semibold">Sign up</a>
             </p>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Revalidate a login page restored from the browser's back-forward cache.
+    window.addEventListener("pageshow", (event) => {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
+</script>
 {% endblock %}

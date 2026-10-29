@@ -18,17 +18,12 @@
             {% endif %}
         </span>
         <div class="min-w-0">
-            <!-- Using type-serif from styleguide for the hero title -->
-            <h1 class="type-serif truncate">{{ request.user.username }}</h1>
+            <!-- Use SpoonFeed's existing large sans-serif heading for the username. -->
+            <h1 class="type-heading-l break-words">{{ request.user.username }}</h1>
             <p class="type-body-sm text-secondary truncate">{{ request.user.email }}</p>
         </div>
     </div>
-    <div class="page-actions">
-        <button type="button" onclick="toggleEditMode()" id="edit-profile-btn" class="btn btn-secondary min-w-[160px]">
-            Edit profile
-            <span class="icon icon-edit" aria-hidden="true"></span>
-        </button>
-    </div>
+
 </header>
 
 <!-- LAYOUT -->
@@ -36,47 +31,83 @@
 
     <!-- SIDEBAR WITH LOGOUT -->
     <aside class="md:shrink-0 w-full md:w-56 flex flex-col gap-6">
+        <!-- Use real section URLs so navigation survives refresh and login. -->
         <nav class="side-nav" aria-label="Profile sections">
-            <button type="button" onclick="showSection('account')" id="nav-account" class="side-nav-link is-active" aria-current="page">
+            <a
+                href="{% url 'profile' %}"
+                id="nav-account"
+                class="side-nav-link{% if active_section == 'account' %} is-active{% endif %}"
+                {% if active_section == "account" %}aria-current="page"{% endif %}
+            >
                 <span class="icon icon-user" aria-hidden="true"></span>
                 Account
-            </button>
-            <button type="button" onclick="showSection('preferences')" id="nav-preferences" class="side-nav-link">
+            </a>
+
+            <a
+                href="{% url 'profile' %}?section=preferences"
+                id="nav-preferences"
+                class="side-nav-link{% if active_section == 'preferences' %} is-active{% endif %}"
+                {% if active_section == "preferences" %}aria-current="page"{% endif %}
+            >
                 <span class="icon icon-preferences" aria-hidden="true"></span>
                 Preferences
-            </button>
-            <button type="button" onclick="showSection('saved')" id="nav-saved" class="side-nav-link">
+            </a>
+
+            <a
+                href="{% url 'profile_saved' %}"
+                id="nav-saved"
+                class="side-nav-link{% if active_section == 'saved' %} is-active{% endif %}"
+                {% if active_section == "saved" %}aria-current="page"{% endif %}
+            >
                 <span class="icon icon-saved" aria-hidden="true"></span>
                 Saved
-            </button>
-            <button type="button" onclick="showSection('history')" id="nav-history" class="side-nav-link">
+            </a>
+
+            <a
+                href="{% url 'profile' %}?section=history"
+                id="nav-history"
+                class="side-nav-link{% if active_section == 'history' %} is-active{% endif %}"
+                {% if active_section == "history" %}aria-current="page"{% endif %}
+            >
                 <span class="icon icon-history" aria-hidden="true"></span>
                 History
-            </button>
+            </a>
         </nav>
-        
+
         <div class="border-t border-subtle pt-6">
-            <form method="POST" action="{% url 'logout' %}">
+            <!-- Ask for confirmation before submitting the protected logout request. -->
+            <form
+                method="POST"
+                action="{% url 'logout' %}"
+                data-confirm-title="Log out?"
+                data-confirm-text="You can log in again whenever you need."
+                data-confirm-label="Log out"
+            >
                 {% csrf_token %}
-                <button type="submit" class="btn btn-secondary btn-block">
-                    Log out
-                </button>
+                <button type="submit" class="btn btn-secondary btn-block">Log out</button>
             </form>
         </div>
     </aside>
 
     <!-- MAIN CONTENT -->
     <div class="min-w-0 flex-1">
-
-<!-- ACCOUNT SECTION -->
-        <section id="sec-account" class="profile-section space-y-6">
-            <div class="flex flex-col gap-2">
-                <h2 class="type-heading-m text-primary">Profile</h2>
-                <p class="type-body-sm text-secondary">Your personal information and account settings.</p>
+        <!-- ACCOUNT SECTION -->
+        <!-- Display the Account section when selected by the server. -->
+        <section id="sec-account" class="profile-section space-y-6{% if active_section != 'account' %} hidden{% endif %}">
+            <!-- Keep the section's Edit action beside its own heading. -->
+            <div class="profile-section-header">
+                <div>
+                    <h2 class="type-heading-m text-primary">Profile</h2>
+                    <p class="type-body-sm text-secondary">Your personal information and account settings.</p>
+                </div>
+                <button type="button" onclick="toggleEditMode()" id="edit-profile-btn" class="btn btn-secondary" {% if account_editing %}hidden{% endif %}>
+            Edit profile
+            <span class="icon icon-edit" aria-hidden="true"></span>
+        </button>
             </div>
 
             <!-- ENTIRE ACCOUNT TAB IS A FORM -->
-            <form method="POST" action="{% url 'profile_edit' %}" enctype="multipart/form-data" class="space-y-6">
+            <form method="POST" action="{% url 'profile_edit' %}" enctype="multipart/form-data" class="space-y-6" id="profile-account-form" data-editing="{% if account_editing %}true{% else %}false{% endif %}">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="update_account">
                 
@@ -99,34 +130,63 @@
                             </span>
                             
                             <!-- Hidden until Edit Mode -->
-                            <label class="btn btn-secondary btn-sm btn-block cursor-pointer edit-mode-field hidden mt-2" for="profile_picture_input">Change photo</label>
+                            <label class="btn btn-secondary btn-sm btn-block cursor-pointer edit-mode-field{% if not account_editing %} hidden{% endif %} mt-2" for="profile_picture_input">Change photo</label>
                             <input type="file" name="profile_picture" id="profile_picture_input" accept="image/*" class="hidden" onchange="previewProfilePicture(event)">
+
+                            <!-- Display errors for an invalid uploaded profile picture. -->
+                            {% for error in account_form.profile_picture.errors %}
+                                <p class="field-error" role="alert">{{ error }}</p>
+                            {% endfor %}
                             
                             {% if profile.profile_picture %}
-                                <button type="submit" formaction="{% url 'profile_picture_delete' %}" formnovalidate class="btn btn-danger-subtle btn-sm btn-block edit-mode-field hidden mt-2">Remove</button>
+                                <button type="button" data-confirm-form="remove-picture-form" class="btn btn-danger-subtle btn-sm btn-block edit-mode-field{% if not account_editing %} hidden{% endif %} mt-2" aria-haspopup="dialog" aria-controls="profile-confirm-dialog">Remove</button>
                             {% endif %}
                         </div>
 
                         <!-- Form Inputs (Right) -->
                         <div class="form-stack flex-1 w-full">
                             <div class="field">
-                                <label class="field-label type-label-md">Full name</label>
-                                <input type="text" name="full_name" value="{{ profile.full_name }}" placeholder="Enter your full name" disabled class="input profile-input">
+                                <label class="field-label" for="{{ account_form.full_name.id_for_label }}">Full name</label>
+                                {{ account_form.full_name }}
+
+                                {% for error in account_form.full_name.errors %}
+                                    <p class="field-error" role="alert">{{ error }}</p>
+                                {% endfor %}
                             </div>
                             <div class="field">
-                                <label class="field-label type-label-md">Date of birth</label>
-                                <input type="text" name="date_of_birth" value="{{ profile.date_of_birth }}" placeholder="DD/MM/YYYY" disabled class="input profile-input">
+                                <label class="field-label" for="{{ account_form.date_of_birth.id_for_label }}">Date of birth</label>
+                                {{ account_form.date_of_birth }}
+
+                                {% if account_form.legacy_birth_date %}
+                                    <p class="field-helper">
+                                        Existing value: {{ account_form.legacy_birth_date }}.
+                                        Choose a valid date or explicitly clear this value.
+                                    </p>
+
+                                    <label class="checkbox edit-mode-field{% if not account_editing %} hidden{% endif %}">
+                                        {{ account_form.clear_birth_date }}
+                                        {{ account_form.clear_birth_date.label }}
+                                    </label>
+                                {% endif %}
+
+                                {% for error in account_form.date_of_birth.errors %}
+                                    <p class="field-error" role="alert">{{ error }}</p>
+                                {% endfor %}
                             </div>
                             <div class="field">
-                                <label class="field-label type-label-md">Domicile</label>
-                                <input type="text" name="domicile" value="{{ profile.domicile }}" placeholder="Enter your city or region" disabled class="input profile-input">
+                                <label class="field-label" for="{{ account_form.domicile.id_for_label }}">Domicile</label>
+                                {{ account_form.domicile }}
+
+                                {% for error in account_form.domicile.errors %}
+                                    <p class="field-error" role="alert">{{ error }}</p>
+                                {% endfor %}
                             </div>
                         </div>
                     </div>
 
                     <!-- SAVE / CANCEL ACTIONS (Hidden until Edit Mode) -->
-                    <div id="edit-actions" class="edit-mode-field hidden flex justify-end gap-3 mt-8 pt-4 border-t border-subtle">
-                        <button type="button" onclick="toggleEditMode()" class="btn btn-secondary">Cancel</button>
+                    <div id="edit-actions" class="profile-section-actions edit-mode-field{% if not account_editing %} hidden{% endif %} mt-4">
+                        <a href="{% url 'profile' %}" class="btn btn-secondary">Cancel</a>
                         <button type="submit" class="btn btn-primary">Save changes</button>
                     </div>
                 </div>
@@ -147,7 +207,7 @@
                             <label class="field-label type-label-md">Password</label>
                             <div class="input-group flex items-center justify-between">
                                 <input class="input" type="password" value="••••••••••••" readonly>
-                                <button type="button" onclick="document.getElementById('password-dialog').showModal()" class="link">Change password</button>
+                                <button type="button" data-profile-dialog="password-dialog" class="link" aria-haspopup="dialog" aria-controls="password-dialog">Change password</button>
                             </div>
                         </div>
                     </div>
@@ -158,76 +218,64 @@
             <div class="card border-danger">
                 <h3 class="type-card-title text-danger">Account Deletion</h3>
                 <p class="type-body-sm text-secondary mb-4">This action cannot be undone.</p>
-                <button type="button" onclick="document.getElementById('delete-dialog').showModal()" class="btn btn-danger">
+                <button type="button" data-profile-dialog="delete-dialog" class="btn btn-danger" aria-haspopup="dialog" aria-controls="delete-dialog">
                     Delete account
                 </button>
             </div>
         </section>
 
         <!-- PREFERENCES SECTION -->
-        <section id="sec-preferences" class="profile-section space-y-6 hidden">
-            <div class="flex flex-col gap-2">
-                <h2 class="type-heading-m text-primary">Preferences</h2>
-                <p class="type-body-sm text-secondary">Filter products and build personalized meal plans.</p>
+        <!-- Display the Preferences section when selected by the server. -->
+        <section id="sec-preferences" class="profile-section space-y-6{% if active_section != 'preferences' %} hidden{% endif %}">
+            <div class="profile-section-header">
+                <div>
+                    <h2 class="type-heading-m text-primary">Preferences</h2>
+                    <p class="type-body-sm text-secondary">Filter products and build personalized meal plans.</p>
+                </div>
+                <button type="button" onclick="toggleEditMode('preferences')" id="edit-preferences-btn" class="btn btn-secondary" {% if preferences_editing %}hidden{% endif %}>
+                    Edit preferences
+                    <span class="icon icon-edit" aria-hidden="true"></span>
+                </button>
             </div>
-            <form method="POST" action="{% url 'profile_edit' %}" class="card form-stack max-w-lg">
+            <form method="POST" action="{% url 'profile_edit' %}" class="space-y-6" id="profile-preferences-form" data-editing="{% if preferences_editing %}true{% else %}false{% endif %}">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="update_preferences">
-                <div class="field">
-                    <label class="field-label type-label-md" for="pref-diet">Diet</label>
-                    <select name="diet" id="pref-diet" class="input pr-8">
-                        <option value="none" {% if profile.diet == 'none' %}selected{% endif %}>None</option>
-                        <option value="halal" {% if profile.diet == 'halal' %}selected{% endif %}>Halal</option>
-                        <option value="vegetarian" {% if profile.diet == 'vegetarian' %}selected{% endif %}>Vegetarian</option>
-                        <option value="vegan" {% if profile.diet == 'vegan' %}selected{% endif %}>Vegan</option>
-                        <option value="pescatarian" {% if profile.diet == 'pescatarian' %}selected{% endif %}>Pescatarian</option>
-                    </select>
-                </div>
-                <div class="field">
-                    <label class="field-label type-label-md" for="pref-allergies">Allergies (comma separated)</label>
-                    <input type="text" id="pref-allergies" name="allergies" value="{{ profile.allergies|join:',' }}" class="input" placeholder="Milk, Peanuts">
-                </div>
-                <div class="field">
-                    <label class="field-label type-label-md" for="pref-calories">Daily Calorie Target</label>
-                    <input type="number" id="pref-calories" name="calorie_target" value="{{ profile.calorie_target|default:'' }}" min="0" class="input" placeholder="e.g. 2000">
-                    <p class="field-helper text-tertiary">Leave empty to use 2,000 kcal, the general reference on nutrition labels.</p>
-                </div>
-                <div class="pt-4 flex justify-end gap-3 border-t border-subtle mt-4">
-                    <button type="button" onclick="location.reload()" class="btn btn-secondary">Cancel</button>
+                <fieldset id="preferences-fields" class="space-y-6" {% if not preferences_editing %}disabled{% endif %}>
+                    {% include "profiles/components/preference_fields.html" with form=preferences_form panels=True %}
+                    <div class="card form-stack">
+                        <h3 class="type-h3">Daily calories</h3>
+                        <p class="type-body-sm text-secondary">Used to pick recipes for your meal plan.</p>
+                        <div class="field">
+                            <label class="field-label" for="{{ preferences_form.calorie_target.id_for_label }}">Daily Calorie Target</label>
+                            {{ preferences_form.calorie_target }}
+                            {% for error in preferences_form.calorie_target.errors %}
+                                <p class="field-error" role="alert">{{ error }}</p>
+                            {% endfor %}
+                            <p class="field-helper text-tertiary">Leave empty to use 2,000 kcal, the general reference on nutrition labels.</p>
+                        </div>
+                    </div>
+                </fieldset>
+                <div class="profile-section-actions preferences-edit-field{% if not preferences_editing %} hidden{% endif %}">
+                    <a href="{% url 'profile' %}?section=preferences" class="btn btn-secondary">Cancel</a>
                     <button type="submit" class="btn btn-primary">Save changes</button>
                 </div>
             </form>
         </section>
 
         <!-- SAVED SECTION -->
-        <section id="sec-saved" class="profile-section space-y-6 hidden">
+        <!-- Display the Saved section when selected by the server. -->
+        <section id="sec-saved" class="profile-section space-y-6{% if active_section != 'saved' %} hidden{% endif %}">
             <div class="flex flex-col gap-2">
                 <h2 class="type-heading-m text-primary">Saved</h2>
                 <p class="type-body-sm text-secondary">Everything you've saved, all in one place.</p>
             </div>
 
-            <div class="card flex flex-col gap-4">
-                <div class="chip-row" role="group" aria-label="Filter saved items">
-                    <button type="button" class="chip is-selected" data-saved-filter="all" aria-pressed="true">All</button>
-                    <button type="button" class="chip" data-saved-filter="product" aria-pressed="false">Products</button>
-                    <button type="button" class="chip" data-saved-filter="comparison" aria-pressed="false">Comparisons</button>
-                    <button type="button" class="chip" data-saved-filter="article" aria-pressed="false">Articles</button>
-                    <button type="button" class="chip" data-saved-filter="meal-plan" aria-pressed="false">Meal plans</button>
-                    <button type="button" class="chip" data-saved-filter="meal" aria-pressed="false">Meals</button>
-                </div>
-
-                <div id="saved-empty">
-                    <div class="empty-state">
-                        <span class="icon icon-bookmark text-tertiary text-4xl mb-2" aria-hidden="true"></span>
-                        <h3 class="empty-state-title type-card-title text-primary">Nothing saved here yet</h3>
-                        <p class="empty-state-text type-body-sm text-secondary">Items you save will show up here.</p>
-                    </div>
-                </div>
-            </div>
+            {% include "profiles/components/saved_collection.html" %}
         </section>
 
         <!-- HISTORY SECTION -->
-        <section id="sec-history" class="profile-section space-y-6 hidden">
+        <!-- Display the History section when selected by the server. -->
+        <section id="sec-history" class="profile-section space-y-6{% if active_section != 'history' %} hidden{% endif %}">
             <div class="flex flex-col gap-2">
                 <h2 class="type-heading-m text-primary">History</h2>
                 <p class="type-body-sm text-secondary">Products you've viewed recently.</p>
@@ -243,9 +291,14 @@
     </div>
 </div>
 
+<!-- Keep photo removal separate from the account-information form. -->
+<form id="remove-picture-form" method="post" action="{% url 'profile_picture_delete' %}" data-confirm-title="Remove your profile picture?" data-confirm-text="Your account and other profile information will stay unchanged." data-confirm-label="Remove" hidden>
+    {% csrf_token %}
+</form>
+
 <!-- CHANGE PASSWORD DIALOG -->
-<dialog class="dialog dialog-form" id="password-dialog">
-    <h2 class="type-title text-primary">Change password</h2>
+<dialog class="dialog dialog-form profile-confirm-dialog" id="password-dialog" aria-labelledby="password-dialog-title">
+    <h2 class="type-title text-primary" id="password-dialog-title">Change password</h2>
     <p class="type-body-sm text-secondary mb-4">Enter your current password and choose a new one.</p>
     <form method="POST" action="{% url 'change_password' %}">
         {% csrf_token %}
@@ -271,20 +324,33 @@
 </dialog>
 
 <!-- DELETE DIALOG -->
-<dialog class="dialog" id="delete-dialog">
+<dialog class="dialog profile-confirm-dialog" id="delete-dialog" aria-labelledby="delete-account-title" aria-describedby="delete-account-description">
     <div class="dialog-header flex justify-between items-center mb-2">
-        <h2 class="type-title text-primary">Delete your account?</h2>
+        <h2 class="type-title text-primary" id="delete-account-title">Delete your account?</h2>
         <button class="icon-btn icon-btn-plain" aria-label="Close" onclick="this.closest('dialog').close()">
             <span class="icon icon-x" aria-hidden="true"></span>
         </button>
     </div>
-    <p class="type-body-sm text-secondary mb-6">This removes your profile, saved items, history and meal plans. It cannot be undone.</p>
+    <p class="type-body-sm text-secondary mb-6" id="delete-account-description">This removes your profile, saved items, history and meal plans. It cannot be undone.</p>
     <div class="dialog-actions flex justify-end gap-3">
         <button type="button" class="btn btn-secondary" onclick="this.closest('dialog').close()">Cancel</button>
         <form method="POST" action="{% url 'profile_delete' %}">
             {% csrf_token %}
             <button class="btn btn-danger">Delete account</button>
         </form>
+    </div>
+</dialog>
+
+<!-- Confirm protected actions without duplicating their POST forms. -->
+<dialog class="dialog profile-confirm-dialog" id="profile-confirm-dialog" aria-labelledby="profile-confirm-title" aria-describedby="profile-confirm-description">
+    <div class="dialog-header">
+        <h2 class="dialog-title" id="profile-confirm-title"></h2>
+        {% include 'components/dialog_close.html' %}
+    </div>
+    <p class="dialog-text" id="profile-confirm-description"></p>
+    <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary" onclick="this.closest('dialog').close()">Cancel</button>
+        <button type="button" class="btn btn-danger" id="profile-confirm-submit">Confirm</button>
     </div>
 </dialog>
 {% endblock %}
@@ -309,29 +375,24 @@
         });
     }
     
-    showSection(location.hash.slice(1));
+    // Preserve the server-selected section unless an older hash link is used.
+    if (location.hash) showSection(location.hash.slice(1));
 
-    function toggleEditMode() {
-        showSection('account');
-
-        const inputs = document.querySelectorAll('.profile-input');
-        const editFields = document.querySelectorAll('.edit-mode-field');
-        const btn = document.getElementById('edit-profile-btn');
-
-        inputs.forEach(input => {
-            input.disabled = !input.disabled;
-        });
-
-        editFields.forEach(el => {
-            el.classList.toggle('hidden');
-        });
-
-        if (btn) btn.classList.toggle('hidden');
-        
-        if (inputs.length > 0 && !inputs[0].disabled) {
-            inputs[0].focus();
-            inputs[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Enable the selected section without changing its saved values.
+    function toggleEditMode(sectionId = 'account') {
+        showSection(sectionId);
+        const account = sectionId === 'account';
+        const form = document.getElementById(account ? 'profile-account-form' : 'profile-preferences-form');
+        form.dataset.editing = 'true';
+        if (account) {
+            form.querySelectorAll('.profile-input').forEach(input => input.disabled = false);
+            form.querySelectorAll('.edit-mode-field').forEach(el => el.classList.remove('hidden'));
+        } else {
+            document.getElementById('preferences-fields').disabled = false;
+            form.querySelector('.preferences-edit-field').classList.remove('hidden');
         }
+        document.getElementById(account ? 'edit-profile-btn' : 'edit-preferences-btn').hidden = true;
+        form.querySelector(account ? '.profile-input' : 'input[name="diet"]')?.focus();
     }
 
     function previewProfilePicture(event) {
@@ -345,6 +406,67 @@
             reader.readAsDataURL(file);
         }
     }
+
+    // Reuse native dialogs and return focus to the control that opened them.
+    const confirmation = document.getElementById('profile-confirm-dialog');
+    const returnTargets = new WeakMap();
+    let pendingForm = null;
+    let confirmedForm = null;
+
+    function openDialog(dialog, trigger) {
+        if (dialog.open) return;
+        returnTargets.set(dialog, trigger);
+        dialog.showModal();
+        dialog.querySelector('.dialog-actions .btn-secondary')?.focus();
+    }
+
+    function requestConfirmation(form, trigger) {
+        if (confirmation.open) return;
+        pendingForm = form;
+        document.getElementById('profile-confirm-title').textContent = form.dataset.confirmTitle;
+        document.getElementById('profile-confirm-description').textContent = form.dataset.confirmText;
+        document.getElementById('profile-confirm-submit').textContent = form.dataset.confirmLabel;
+        openDialog(confirmation, trigger);
+    }
+
+    document.addEventListener('submit', event => {
+        const form = event.target;
+        // Read-only sections must not submit through an implicit Enter key action.
+        if (form.dataset.editing === 'false') {
+            event.preventDefault();
+            return;
+        }
+        if (!form.dataset.confirmTitle || form === confirmedForm) return;
+        event.preventDefault();
+        requestConfirmation(form, event.submitter || document.activeElement);
+    });
+
+    document.addEventListener('click', event => {
+        const trigger = event.target.closest('[data-profile-dialog], [data-confirm-form]');
+        if (!trigger) return;
+        if (trigger.dataset.confirmForm) {
+            requestConfirmation(document.getElementById(trigger.dataset.confirmForm), trigger);
+        } else {
+            openDialog(document.getElementById(trigger.dataset.profileDialog), trigger);
+        }
+    });
+
+    document.getElementById('profile-confirm-submit').addEventListener('click', () => {
+        if (!pendingForm) return;
+        const form = pendingForm;
+        confirmation.close();
+        confirmedForm = form;
+        form.requestSubmit();
+        confirmedForm = null;
+    });
+
+    document.querySelectorAll('dialog').forEach(dialog => {
+        dialog.addEventListener('close', () => {
+            if (dialog === confirmation) pendingForm = null;
+            const target = returnTargets.get(dialog);
+            if (target?.isConnected) target.focus({preventScroll: true});
+        });
+    });
 
 </script>
 {% endblock %}
