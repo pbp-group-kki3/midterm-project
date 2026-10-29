@@ -259,6 +259,11 @@ class PreferenceFitTests(TestCase):
         fit = preference_fit({"labels_tags": []}, {"diet": "halal", "off_tags": []})
         self.assertEqual(fit["text"], "? Can't verify halal")
 
+    def test_list_diets(self):
+        self.assertIsNone(preference_fit(self.HALAL_MILK, {"diet": [], "off_tags": []}))
+        self.assertEqual(preference_fit(self.HALAL_MILK, {"diet": ["halal"], "off_tags": []})["status"],"fits")
+        self.assertEqual(preference_fit(self.HALAL_MILK,{"diet": ["halal", "vegan"], "off_tags": []}),{"status": "conflict", "text": "Not vegan"})
+
 
 # Detail page panels (details.py), checked with the real Open Food Facts data of Ultra Milk Low Fat
 class DetailPanelTests(TestCase):
