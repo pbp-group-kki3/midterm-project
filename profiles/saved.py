@@ -74,6 +74,29 @@ def saved_items(user, category):
                 "remove_url": None,
             })
 
+    # Saved Meal of the Day records.
+    if category in ("all", "meal"):
+        try:
+            from food_of_the_day.models import SavedMeal
+            for record in SavedMeal.objects.filter(user=user).select_related("meal"):
+                meal_date = record.meal.date.strftime("%B %d, %Y") if record.meal else "Featured"
+                items.append({
+                    "title": record.recipe_title or f"Meal of the Day ({meal_date})",
+                    "type": "Meal",
+                    "metadata": f"Featured {meal_date}" if record.meal else "Meal of the Day",
+                    "created_at": record.created_at,
+                    "open_url": reverse(
+                        "food_of_the_day:detail",
+                        args=[record.meal.pk],
+                    ) if record.meal else reverse("food_of_the_day:index"),
+                    "remove_url": reverse(
+                        "profile_saved_remove",
+                        args=["meal", record.pk],
+                    ),
+                })
+        except Exception:
+            pass
+
     # Display the newest persisted records first.
     return sorted(
         items,

@@ -1,4 +1,4 @@
-<div class="card card-elevated mt-6">
+<div id="recipe-panel" class="card card-elevated mt-6">
 
   <!-- Header with Title & Action Buttons matching Figma -->
   <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4">
@@ -9,13 +9,14 @@
       <button 
         type="button" 
         id="save-recipe-btn"
-        data-saved="false"
+        data-save-meal-id="{{ meal.id }}"
+        data-saved="{% if is_saved %}true{% else %}false{% endif %}"
         onclick="toggleSaveRecipe('{{ meal.id }}')"
-        class="btn btn-outline btn-pill btn-sm transition-all duration-200"
+        class="save-recipe-btn btn btn-outline btn-pill btn-sm transition-all duration-200{% if is_saved %} is-saved{% endif %}"
         aria-label="Save recipe"
       >
-        <span id="save-recipe-icon" class="text-sm transition-colors duration-200">♡</span>
-        <span id="save-recipe-label">Save</span>
+        <span id="save-recipe-icon" class="save-recipe-icon text-sm transition-colors duration-200">{% if is_saved %}♥{% else %}♡{% endif %}</span>
+        <span id="save-recipe-label" class="save-recipe-label">{% if is_saved %}Saved{% else %}Save{% endif %}</span>
       </button>
       <button 
         type="button" 
@@ -241,55 +242,89 @@
   </div>
 
   <style>
+    .save-recipe-btn.is-saved,
     #save-recipe-btn.is-saved {
       background-color: var(--color-bg-danger-subtle) !important;
       border-color: var(--color-border-danger) !important;
       color: var(--color-text-danger) !important;
     }
+    .save-recipe-btn.is-saved .save-recipe-icon,
     #save-recipe-btn.is-saved #save-recipe-icon {
       color: var(--red-500) !important;
     }
   </style>
 
   <script>
-    function toggleSaveRecipe(mealId) {
-      const btn = document.getElementById('save-recipe-btn');
-      const icon = document.getElementById('save-recipe-icon');
-      const label = document.getElementById('save-recipe-label');
-      if (!btn || !icon || !label) return;
-
-      const isSaved = btn.getAttribute('data-saved') === 'true';
-      const nextState = !isSaved;
-
-      btn.setAttribute('data-saved', nextState ? 'true' : 'false');
-      if (nextState) {
-        btn.classList.add('is-saved');
-        icon.textContent = '♥';
-        label.textContent = 'Saved';
-        try {
-          localStorage.setItem('saved_meal_' + mealId, 'true');
-        } catch (e) {}
-      } else {
-        btn.classList.remove('is-saved');
-        icon.textContent = '♡';
-        label.textContent = 'Save';
-        try {
-          localStorage.removeItem('saved_meal_' + mealId);
-        } catch (e) {}
-      }
+    function updateSaveButtons(mealId, isSaved) {
+      const selector = `[data-save-meal-id="${mealId}"], .save-recipe-btn, #save-recipe-btn`;
+      const buttons = document.querySelectorAll(selector);
+      buttons.forEach(btn => {
+        btn.setAttribute('data-saved', isSaved ? 'true' : 'false');
+        const icon = btn.querySelector('.save-recipe-icon') || btn.querySelector('#save-recipe-icon');
+        const label = btn.querySelector('.save-recipe-label') || btn.querySelector('#save-recipe-label');
+        if (isSaved) {
+          btn.classList.add('is-saved');
+          if (icon) icon.textContent = '♥';
+          if (label) label.textContent = 'Saved';
+        } else {
+          btn.classList.remove('is-saved');
+          if (icon) icon.textContent = '♡';
+          if (label) label.textContent = 'Save';
+        }
+      });
     }
 
-    // Restore saved state from localStorage
-    (function() {
-      const mealId = '{{ meal.id }}';
-      if (mealId) {
-        try {
-          if (localStorage.getItem('saved_meal_' + mealId) === 'true') {
-            toggleSaveRecipe(mealId);
+    async function toggleSaveRecipe(mealId) {
+      {% if not user.is_authenticated %}
+        window.location.href = "{% url 'login' %}?next={{ request.path }}";
+        return;
+      {% endif %}
+
+      const btn = document.querySelector(`[data-save-meal-id="${mealId}"]`) || document.getElementById('save-recipe-btn');
+      const currentSaved = btn ? (btn.getAttribute('data-saved') === 'true') : false;
+      const nextSaved = !currentSaved;
+
+      // Optimistic UI update across all buttons
+      updateSaveButtons(mealId, nextSaved);
+
+      try {
+        const formData = new FormData();
+        formData.append('recipe_title', '{{ recipe.title|escapejs }}');
+        const response = await fetch(`/food-of-the-day/${mealId}/toggle-save/`, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: formData
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const serverSaved = Boolean(data.saved);
+          updateSaveButtons(mealId, serverSaved);
+          if (window.showToast) {
+            if (serverSaved) {
+              window.showToast('Saved', data.message || 'Saved to your profile under Meals', 'success');
+            } else {
+              window.showToast('Removed', data.message || 'Removed from Saved meals', 'normal');
+            }
           }
-        } catch (e) {}
+        } else {
+          // Revert on HTTP error
+          updateSaveButtons(mealId, currentSaved);
+          if (window.showToast) {
+            window.showToast('Error', 'Could not update bookmark. Please try again.', 'danger');
+          }
+        }
+      } catch (e) {
+        // Revert on network exception
+        updateSaveButtons(mealId, currentSaved);
+        if (window.showToast) {
+          window.showToast('Error', 'Network error. Please try again.', 'danger');
+        }
       }
-    })();
+    }
   </script>
 
 </div>

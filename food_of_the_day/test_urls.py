@@ -1,5 +1,2 @@
-from django.urls import path, include
+from midterm_project.urls import urlpatterns
 
-urlpatterns = [
-    path('food-of-the-day/', include('food_of_the_day.urls')),
-]
