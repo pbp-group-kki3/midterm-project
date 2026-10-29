@@ -347,7 +347,7 @@ def history_item_delete(request, item_id):
     # Filter by both id and user to prevent unauthorized deletions
     ViewHistory.objects.filter(id=item_id, user=request.user).delete()
     messages.success(request, "Item removed from history.")
-    return redirect(reverse('profile') + "?section=history#sec-history")
+    return redirect(reverse('profile') + "?section=history")
 
 # CLEAR ALL HISTORY VIEW
 @login_required
@@ -355,4 +355,4 @@ def history_item_delete(request, item_id):
 def history_clear(request):
     ViewHistory.objects.filter(user=request.user).delete()
     messages.success(request, "History cleared successfully.")
-    return redirect(reverse('profile') + "?section=history#sec-history")
+    return redirect(reverse('profile') + "?section=history")

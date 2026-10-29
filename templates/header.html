@@ -20,9 +20,12 @@
 
         <div class="navbar-actions">
             {% if user.is_authenticated %}
-                {# TODO (Profile): add photo=<profile photo url> once the Profile model has a photo field #}
                 <a href="/profiles/" class="user-chip">
-                    {% include 'components/avatar.html' with name=user.username size='sm' %}
+                    {% if user.profile.profile_picture %}
+                        {% include 'components/avatar.html' with name=user.username photo=user.profile.profile_picture.url size='sm' %}
+                    {% else %}
+                        {% include 'components/avatar.html' with name=user.username size='sm' %}
+                    {% endif %}
                     {{ user.username }}
                 </a>
             {% else %}
