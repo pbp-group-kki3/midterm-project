@@ -45,3 +45,33 @@ class MealComment(models.Model):
     def __str__(self):
         meal_date = getattr(self.meal, 'date', 'unknown')
         return f"Comment by {self.user} on {meal_date}: {self.text[:30]}"
+
+
+class SavedMeal(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='saved_meals',
+    )
+    meal = models.ForeignKey(
+        MealOfTheDay,
+        on_delete=models.CASCADE,
+        related_name='saved_by_users',
+    )
+    recipe_title = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Saved Meal"
+        verbose_name_plural = "Saved Meals"
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'meal'],
+                name='unique_saved_meal_per_user',
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} saved {self.recipe_title or self.meal}"
+

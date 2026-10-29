@@ -68,18 +68,25 @@
 
   </section>
 
-  <!-- Expandable Recipe Details Panel for Authenticated Users -->
-  {% if user.is_authenticated %}
+  <!-- Expandable Recipe Details Panel for Authenticated Users (Index/embed only) -->
+  {% if user.is_authenticated and not is_detail %}
     <div id="recipe-expanded-panel" class="hidden transition-all duration-300">
       {% include 'food_of_the_day/components/recipe_panel.html' %}
     </div>
+  {% endif %}
 
+  {% if user.is_authenticated %}
     <script>
       function toggleRecipePanel() {
         const panel = document.getElementById('recipe-expanded-panel');
+        if (!panel) {
+          const detailPanel = document.getElementById('recipe-panel');
+          if (detailPanel) detailPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          return;
+        }
+
         const text = document.getElementById('recipe-toggle-text');
         const arrow = document.getElementById('recipe-toggle-arrow');
-        if (!panel) return;
 
         if (panel.classList.contains('hidden')) {
           panel.classList.remove('hidden');
