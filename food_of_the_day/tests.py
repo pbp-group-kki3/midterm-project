@@ -144,6 +144,7 @@ class FoodOfTheDayServicesTest(TestCase):
         facts = get_did_you_know(empty_recipe)
         self.assertEqual(facts, [])
 
+    @patch('food_of_the_day.services._get_recipe_from_meal_plan', None)
     @patch('food_of_the_day.services._fallback_get')
     def test_get_recipe_caching(self, mock_fallback_get):
         mock_fallback_get.return_value = self.sample_recipe

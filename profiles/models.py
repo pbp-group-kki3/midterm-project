@@ -18,7 +18,14 @@ class Profile(models.Model):
     # FIELDS
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
-    diet = models.CharField(max_length=20, choices=DIET_CHOICES, default='none')
+    
+    # PERSONAL INFO FIELDS
+    full_name = models.CharField(max_length=150, blank=True)
+    date_of_birth = models.CharField(max_length=20, blank=True)
+    domicile = models.CharField(max_length=100, blank=True)
+    
+    # PREFERENCES 
+    diet = models.JSONField(default=list, blank=True)
     allergies = models.JSONField(default=list, blank=True)
     calorie_target = models.IntegerField(null=True, blank=True)
     meals_per_day = models.IntegerField(default=3)

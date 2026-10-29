@@ -1,0 +1,1143 @@
+/* Meal Plan module styles
+
+   Only for the pages in the meal_plan app. Shared pieces (buttons, cards, chips,
+   badges, inputs, dialogs) come from static/css/components.css. Everything here
+   starts with .mealplan- so it can't clash with other modules. */
+
+
+/* 1. Page layout */
+
+/* Stacks the blocks of every Meal Plan page with the 32px gap from Figma */
+.mealplan-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xl);
+    padding-top: var(--space-sm);
+}
+
+/* Page header: title block on the left, buttons on the right, both pinned to the top */
+.mealplan-header {
+    align-items: flex-start;
+    margin-bottom: 0;
+}
+
+/* Back link, title, subtitle and badges stacked 12px apart */
+.mealplan-heading {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-md);
+    max-width: 700px;
+    min-width: 0;
+}
+
+.mealplan-heading .page-title {
+    overflow-wrap: anywhere;
+}
+
+.mealplan-heading .page-subtitle {
+    margin: 0;
+}
+
+/* 16px gray line under the title, e.g. "Plans built from your diet and goals..." */
+.mealplan-subtitle {
+    max-width: 680px;
+    margin: 0;
+    font: 400 16px/24px var(--font-sans);
+    color: var(--color-text-secondary);
+}
+
+/* The buttons next to the title, 12px apart */
+.mealplan-actions {
+    gap: var(--space-md);
+}
+
+/* Header and form buttons are 160px wide in Figma */
+.mealplan-action {
+    min-width: 160px;
+}
+
+/* Django messages above the content */
+.mealplan-alerts {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+/* Small credit line at the bottom of every page */
+.mealplan-credit {
+    margin: 0;
+    font: 500 12px/16px var(--font-sans);
+    color: var(--color-text-tertiary);
+}
+
+/* The "Spoonacular" link inside the credit line */
+.mealplan-credit-link {
+    color: inherit;
+    text-decoration: underline;
+}
+
+.mealplan-credit-link:hover {
+    color: var(--color-text-secondary);
+}
+
+/* Gray info box, e.g. the "Halal not verified" note on a plan */
+.mealplan-note {
+    margin: 0;
+    padding: var(--space-md) var(--space-lg);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-subtle);
+    font: 400 14px/20px var(--font-sans);
+    color: var(--color-text-secondary);
+}
+
+/* Row of badges, 8px apart */
+.mealplan-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+}
+
+/* Green badges are rounded rectangles in the Figma Badge component, gray ones stay pills */
+.mealplan-page .badge-success,
+.mealplan-dialog .badge-success {
+    border-radius: var(--radius-sm);
+}
+
+/* Green text link with an arrow: "Open plan →", "Edit preferences →" */
+.mealplan-card-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    color: var(--color-text-brand);
+    font: 600 14px/20px var(--font-sans);
+    text-decoration: none;
+}
+
+a.mealplan-card-link:hover {
+    text-decoration: underline;
+}
+
+/* Things Figma only shows on phones */
+.mealplan-mobile-only {
+    display: none;
+}
+
+
+/* 2. My plans */
+
+/* One saved plan. The whole card is a link to the plan */
+.mealplan-plan-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    color: inherit;
+    text-decoration: none;
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+
+.mealplan-plan-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-border-brand);
+}
+
+.mealplan-plan-card h2,
+.mealplan-plan-card p {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+/* Keeps "Open plan →" at the bottom when cards in a row have different heights */
+.mealplan-plan-card .mealplan-card-link {
+    margin-top: auto;
+}
+
+/* The dashed "+ Create meal plan" tile at the end of the plan list */
+.mealplan-new-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    padding: var(--space-xl);
+    border: 1.5px dashed var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-canvas);
+    color: inherit;
+    text-align: center;
+    text-decoration: none;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.mealplan-new-tile:hover {
+    border-color: var(--color-border-brand);
+    background: var(--color-bg-brand-subtle);
+}
+
+/* "+ Create meal plan" inside the dashed tile */
+.mealplan-new-tile-title {
+    font: 700 20px/28px var(--font-sans);
+    color: var(--color-text-brand);
+}
+
+/* White strip that shows which profile settings new plans will use */
+.mealplan-profile-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+}
+
+/* The big white "You don't have a plan yet" card */
+.mealplan-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-lg);
+    padding: var(--space-4xl);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-surface);
+    text-align: center;
+}
+
+.mealplan-empty h2 {
+    margin: 0;
+}
+
+/* Light green circle with the serif "+" */
+.mealplan-empty-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-full);
+    background: var(--color-bg-brand-subtle);
+    color: var(--color-text-brand);
+    font: 400 28px/36px var(--font-display);
+}
+
+/* The sentence under "You don't have a plan yet" */
+.mealplan-empty-text {
+    max-width: 520px;
+    margin: 0;
+}
+
+/* The two buttons under the empty state sentence */
+.mealplan-empty-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-md);
+    padding-top: var(--space-sm);
+}
+
+
+/* 3. Create a meal plan */
+
+/* Form on the left (760px in Figma), plan summary on the right */
+.mealplan-create {
+    display: grid;
+    grid-template-columns: minmax(0, 760px) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-xl);
+}
+
+/* The white form card */
+.mealplan-form-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+    margin: 0;
+    padding: var(--space-2xl);
+}
+
+/* Start date and Number of days side by side */
+.mealplan-field-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-lg);
+}
+
+/* Removes the browser's default box around the allergy chips */
+.mealplan-fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+/* "Allergies and intolerances" above the chips */
+.mealplan-legend {
+    margin-bottom: var(--space-sm);
+    padding: 0;
+}
+
+/* An allergy chip. It's a label around a hidden checkbox */
+.mealplan-chip {
+    position: relative;
+    user-select: none;
+}
+
+/* Turns the chip green when its checkbox is ticked, even before meal_plan.js runs */
+.mealplan-chip:has(.mealplan-chip-input:checked) {
+    border-color: var(--color-border-brand);
+    background: var(--color-bg-brand-subtle);
+    color: var(--color-text-brand);
+}
+
+/* Keyboard focus ring around a chip */
+.mealplan-chip:has(.mealplan-chip-input:focus-visible) {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+}
+
+/* The real checkbox inside a chip, hidden but still usable with the keyboard */
+.mealplan-chip-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Create plan and Cancel */
+.mealplan-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+}
+
+/* Right-hand "Plan summary" card. It stays in view while you scroll the form */
+.mealplan-summary {
+    position: sticky;
+    top: 112px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+    padding: var(--space-2xl);
+}
+
+.mealplan-summary h2 {
+    margin: 0;
+}
+
+/* The list of summary rows */
+.mealplan-summary-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+    margin: 0;
+}
+
+/* One summary row: thin line on top, small gray name, value under it */
+.mealplan-summary-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--color-border-subtle);
+}
+
+.mealplan-summary-row dt {
+    font: 500 12px/16px var(--font-sans);
+    color: var(--color-text-secondary);
+}
+
+.mealplan-summary-row dd {
+    margin: 0;
+    font: 600 14px/20px var(--font-sans);
+    color: var(--color-text-primary);
+}
+
+/* Small gray note at the bottom of the summary */
+.mealplan-summary-note {
+    margin: 0;
+    font: 500 12px/16px var(--font-sans);
+    color: var(--color-text-tertiary);
+}
+
+
+/* 4. Dropdowns (Diet, Meal)
+
+   A normal <select> that meal_plan.js swaps for the Figma dropdown.
+   Without JavaScript the plain <select> still works. */
+
+/* Wrapper around one dropdown */
+.mealplan-select {
+    position: relative;
+}
+
+/* The closed dropdown box: value, then a small arrow */
+.mealplan-select-button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    text-align: left;
+    cursor: pointer;
+}
+
+/* Focus and open state: 2px green border like the Figma "Open" state */
+.mealplan-select-button[aria-expanded="true"] {
+    border-color: var(--color-border-focus);
+    box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+/* Gray text while the dropdown still shows its first option, e.g. "No preference" */
+.mealplan-select-button.is-placeholder {
+    color: var(--color-text-tertiary);
+}
+
+.mealplan-select-button[aria-expanded="true"].is-placeholder {
+    color: var(--color-text-primary);
+}
+
+/* The chosen option's name */
+.mealplan-select-value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The small ▾ after the value */
+.mealplan-select-arrow {
+    flex-shrink: 0;
+    font-size: 10px;
+    line-height: 1;
+}
+
+/* The open menu, right under the box */
+.mealplan-select-menu {
+    position: absolute;
+    top: calc(100% + var(--space-sm));
+    left: 0;
+    right: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 360px;
+    overflow-y: auto;
+    padding: var(--space-sm);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+    box-shadow: var(--shadow-lg);
+}
+
+.mealplan-select-menu[hidden] {
+    display: none;
+}
+
+/* One option in the menu */
+.mealplan-select-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    padding: 10px var(--space-md);
+    border-radius: var(--radius-sm);
+    font: 400 14px/20px var(--font-sans);
+    color: var(--color-text-primary);
+    cursor: pointer;
+}
+
+/* The option under the mouse or the arrow keys */
+.mealplan-select-option.is-active {
+    background: var(--color-bg-subtle);
+}
+
+/* The chosen option: light green, green bold text and a ✓ */
+.mealplan-select-option[aria-selected="true"] {
+    background: var(--color-bg-brand-subtle);
+    color: var(--color-text-brand);
+    font-weight: 600;
+}
+
+/* Name and helper text of an option */
+.mealplan-select-label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+
+/* Small gray line under an option, e.g. "Skips pork and alcohol" under Halal */
+.mealplan-select-helper {
+    font: 500 12px/16px var(--font-sans);
+    color: var(--color-text-secondary);
+}
+
+/* The ✓ on the chosen option */
+.mealplan-select-check {
+    visibility: hidden;
+    font-weight: 600;
+}
+
+.mealplan-select-option[aria-selected="true"] .mealplan-select-check {
+    visibility: visible;
+}
+
+/* Radio circle, only used in the phone sheet */
+.mealplan-select-radio {
+    display: none;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    box-sizing: border-box;
+    border: 1.5px solid var(--color-border-strong);
+    border-radius: var(--radius-full);
+    background: var(--color-bg-surface);
+}
+
+.mealplan-select-option[aria-selected="true"] .mealplan-select-radio {
+    border-color: var(--color-bg-brand);
+    background: var(--color-bg-brand);
+}
+
+/* Title, sentence and Done button of the phone sheet. Hidden on bigger screens */
+.mealplan-select-sheet-head,
+.mealplan-select-sheet-foot {
+    display: none;
+}
+
+/* Dark layer behind the phone sheet */
+.mealplan-select-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(11, 12, 16, 0.45);
+}
+
+.mealplan-select-backdrop[hidden] {
+    display: none;
+}
+
+
+/* 5. Plan detail */
+
+/* "Jump to  Day 1  Day 2 ..." row */
+.mealplan-jump {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    min-width: 0;
+}
+
+/* Keeps "Jump to" on one line next to the chips */
+.mealplan-jump-label {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* The day chips. They scroll sideways when they don't fit */
+.mealplan-jump-chips {
+    display: flex;
+    gap: var(--space-sm);
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.mealplan-jump-chips::-webkit-scrollbar {
+    display: none;
+}
+
+/* One "Day 1" chip, 90px wide in Figma */
+.mealplan-day-chip {
+    flex-shrink: 0;
+    justify-content: center;
+    min-width: 90px;
+    box-sizing: border-box;
+}
+
+/* One day of the plan. scroll-margin keeps it below the sticky navbar after "Jump to" */
+.mealplan-day {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+    scroll-margin-top: 112px;
+}
+
+/* "Day 1  Mon, 26 Oct" on the left, the calories badge on the right */
+.mealplan-day-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+}
+
+/* "Day 1" */
+.mealplan-day-title {
+    margin: 0;
+    font: 600 16px/24px var(--font-sans);
+    color: var(--color-text-primary);
+}
+
+/* "Mon, 26 Oct" next to the day */
+.mealplan-day-date {
+    margin-left: var(--space-sm);
+    font: 400 14px/20px var(--font-sans);
+    color: var(--color-text-secondary);
+}
+
+/* Calories for the whole day */
+.mealplan-kcal-badge {
+    flex-shrink: 0;
+}
+
+/* The meals of one day: 4 (or 3) in a row on desktop */
+.mealplan-meals {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: var(--space-lg);
+}
+
+/* One meal card */
+.mealplan-meal {
+    min-width: 0;
+}
+
+/* Text and buttons of a meal card */
+.mealplan-meal-content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+/* Slot name, recipe name and numbers, 8px apart */
+.mealplan-meal-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding: var(--space-lg) var(--space-lg) var(--space-sm);
+}
+
+.mealplan-meal-body p {
+    margin: 0;
+}
+
+.mealplan-meal-body .media-card-title {
+    overflow-wrap: anywhere;
+}
+
+/* "P 20.5 g · C 8.7 g · F 8.0 g" */
+.mealplan-meal-macros {
+    font: 500 12px/16px var(--font-sans);
+    color: var(--color-text-tertiary);
+}
+
+/* Replace and View */
+.mealplan-meal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    padding: 0 var(--space-lg) var(--space-lg);
+}
+
+/* Replace is a gray button with the 12px horizontal padding from Figma */
+.mealplan-meal-actions .btn {
+    padding: 0 var(--space-md);
+}
+
+/* A meal whose recipe details couldn't be loaded */
+.mealplan-meal.is-unavailable .media-card-title {
+    color: var(--color-text-secondary);
+}
+
+
+/* 6. Dialogs (Replace meal, Delete plan) */
+
+/* Figma dialogs have 32px padding and 20px between their parts */
+.mealplan-dialog {
+    padding: var(--space-2xl);
+    border-color: var(--color-border-default);
+}
+
+.mealplan-dialog[open] {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Gray sentence under a dialog title */
+.mealplan-dialog-text {
+    margin: 0;
+    font: 400 14px/20px var(--font-sans);
+    color: var(--color-text-secondary);
+}
+
+/* Cancel and Delete plan, on the right */
+.mealplan-dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-md);
+}
+
+.mealplan-dialog-actions form {
+    margin: 0;
+}
+
+/* Dialog buttons are 160px wide in Figma */
+.mealplan-dialog-button {
+    min-width: 160px;
+}
+
+/* "Finding recipes…" while the Replace dialog loads */
+.mealplan-replace-loading p {
+    margin: 0;
+}
+
+/* Everything inside the Replace dialog (or the Replace page) */
+.mealplan-replace {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* "Replace breakfast" and the sentence under it */
+.mealplan-replace-heading {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+/* Gray box with the meal you're replacing */
+.mealplan-current {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-subtle);
+}
+
+.mealplan-current p {
+    margin: 0;
+}
+
+/* The list of recipes you can pick */
+.mealplan-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* One recipe you can pick: photo, text, Choose */
+.mealplan-option {
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+    padding: var(--space-md);
+    border: 1px solid var(--color-border-default);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-surface);
+}
+
+/* 96 × 72 photo on the left */
+.mealplan-option-thumb {
+    flex-shrink: 0;
+    width: 96px;
+    height: 72px;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-subtle);
+}
+
+.mealplan-option-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Recipe name, numbers and the "Fits your diet" badge */
+.mealplan-option-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--space-xs);
+    min-width: 0;
+}
+
+.mealplan-option-text p {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+/* Small gap above the "Fits your diet" badge */
+.mealplan-option-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    padding-top: var(--space-xs);
+}
+
+.mealplan-option-form {
+    flex-shrink: 0;
+    margin: 0;
+}
+
+/* Shown when no recipe fits */
+.mealplan-replace-empty {
+    margin: 0;
+    padding: var(--space-lg);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-subtle);
+    font: 400 14px/20px var(--font-sans);
+    color: var(--color-text-secondary);
+}
+
+/* "Show other options ↻" on the left, Cancel on the right */
+.mealplan-replace-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+}
+
+/* Lighter look while new options load */
+.mealplan-replace.is-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* The Replace page, used when JavaScript is off */
+.mealplan-replace-card {
+    max-width: 640px;
+    padding: var(--space-2xl);
+}
+
+
+/* 7. Recipes */
+
+/* The white filter card */
+.mealplan-filters {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+/* Search, Meal, Diet, Max kcal, Max minutes in one row */
+.mealplan-filter-fields {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: start;
+    gap: var(--space-lg);
+}
+
+/* Gluten free, Dairy free, Sustainable */
+.mealplan-filter-toggles {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-xl);
+}
+
+/* Apply filters and Reset */
+.mealplan-filter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+}
+
+/* The count and the grid of recipes */
+.mealplan-results {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+/* "8 of 1,200 recipes match your filters." */
+.mealplan-count {
+    margin: 0;
+    font: 500 12px/16px var(--font-sans);
+    color: var(--color-text-secondary);
+}
+
+/* "240 kcal · P 6 g" under a recipe name */
+.mealplan-recipe-nutrition {
+    margin: 0;
+    font: 500 12px/16px var(--font-sans);
+    color: var(--color-text-tertiary);
+}
+
+.mealplan-recipe .media-card-title {
+    overflow-wrap: anywhere;
+}
+
+/* The chevron on "Load more recipes" points down */
+.mealplan-load-more-icon {
+    transform: rotate(90deg);
+}
+
+/* Lighter look while more recipes load */
+.mealplan-load-more.is-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+
+/* 8. Tablets */
+
+@media (max-width: 1023px) {
+    .mealplan-create {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .mealplan-summary {
+        position: static;
+    }
+
+    .mealplan-meals {
+        grid-auto-flow: row;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .mealplan-filter-fields {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .mealplan-filter-search {
+        grid-column: 1 / -1;
+    }
+}
+
+
+/* 9. Phones (matches the 390px Figma frames) */
+
+@media (max-width: 767px) {
+    .mealplan-page {
+        gap: var(--space-xl);
+        padding-top: 0;
+    }
+
+    .mealplan-mobile-only {
+        display: block;
+    }
+
+    .mealplan-desktop-only {
+        display: none;
+    }
+
+    .mealplan-actions,
+    .mealplan-form-actions,
+    .mealplan-filter-actions {
+        width: 100%;
+    }
+
+    .mealplan-actions .mealplan-action,
+    .mealplan-filter-actions .mealplan-action {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .mealplan-form-actions {
+        flex-direction: column;
+    }
+
+    .mealplan-form-actions .mealplan-action {
+        width: 100%;
+    }
+
+    .mealplan-empty {
+        padding: var(--space-3xl) var(--space-xl);
+    }
+
+    .mealplan-empty-actions {
+        flex-direction: column;
+        align-self: stretch;
+    }
+
+    .mealplan-empty-actions .mealplan-action {
+        width: 100%;
+    }
+
+    .mealplan-form-card {
+        padding: var(--space-xl);
+    }
+
+    .mealplan-field-row {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .mealplan-summary {
+        display: none;
+    }
+
+    .mealplan-day {
+        padding: var(--space-lg);
+    }
+
+    .mealplan-meals {
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--space-md);
+    }
+
+    .mealplan-filter-toggles {
+        gap: var(--space-md) var(--space-xl);
+    }
+}
+
+@media (max-width: 639px) {
+    .mealplan-meal {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: var(--space-md);
+        padding: var(--space-md);
+    }
+
+    .mealplan-meal-photo {
+        flex-shrink: 0;
+        width: 96px;
+        aspect-ratio: 4 / 3;
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+    }
+
+    .mealplan-meal-body {
+        padding: 0 0 var(--space-sm);
+        gap: var(--space-xs);
+    }
+
+    .mealplan-meal-actions {
+        padding: 0;
+    }
+
+    .mealplan-option {
+        align-items: center;
+    }
+
+    .mealplan-dialog-actions .mealplan-dialog-button,
+    .mealplan-dialog-actions form {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .mealplan-dialog-actions form .btn {
+        width: 100%;
+    }
+
+    .mealplan-dialog {
+        padding: var(--space-xl);
+    }
+
+    /* The Replace dialog turns into a sheet that slides up from the bottom */
+    .mealplan-sheet {
+        width: 100%;
+        max-width: 100%;
+        max-height: 88vh;
+        margin: auto 0 0;
+        padding-top: var(--space-2xl);
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        overflow-y: auto;
+    }
+
+    /* Gray handle at the top of the sheet */
+    .mealplan-sheet::before {
+        content: "";
+        position: absolute;
+        top: var(--space-md);
+        left: 50%;
+        width: 40px;
+        height: 4px;
+        border-radius: var(--radius-full);
+        background: var(--color-border-strong);
+        transform: translateX(-50%);
+    }
+
+    .mealplan-replace-footer {
+        flex-wrap: nowrap;
+    }
+
+    .mealplan-replace-footer .btn-ghost {
+        padding: 0 var(--space-sm);
+    }
+
+    .mealplan-replace-footer .btn-secondary {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .mealplan-select-button {
+        padding-right: var(--space-md);
+        padding-left: var(--space-md);
+    }
+
+    /* The dropdown menu turns into a sheet at the bottom of the screen */
+    .mealplan-select-menu {
+        position: fixed;
+        top: auto;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 60;
+        max-height: 85vh;
+        padding: var(--space-2xl) var(--space-xl) var(--space-xl);
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        gap: var(--space-xs);
+    }
+
+    .mealplan-select-menu::before {
+        content: "";
+        position: absolute;
+        top: var(--space-md);
+        left: 50%;
+        width: 40px;
+        height: 4px;
+        border-radius: var(--radius-full);
+        background: var(--color-border-strong);
+        transform: translateX(-50%);
+    }
+
+    .mealplan-select-sheet-head {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+        margin-bottom: var(--space-md);
+    }
+
+    .mealplan-select-sheet-head p {
+        margin: 0;
+    }
+
+    .mealplan-select-sheet-foot {
+        display: block;
+        margin-top: var(--space-md);
+    }
+
+    .mealplan-select-option {
+        justify-content: flex-start;
+        padding: var(--space-md);
+        font-size: 16px;
+        line-height: 24px;
+    }
+
+    .mealplan-select-radio {
+        display: block;
+    }
+
+    .mealplan-select-check {
+        display: none;
+    }
+}
+
+@media (min-width: 640px) {
+    .mealplan-select-backdrop {
+        display: none;
+    }
+}

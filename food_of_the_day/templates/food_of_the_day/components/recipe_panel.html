@@ -1,4 +1,4 @@
-<div class="card card-elevated" style="margin-top: var(--space-xl);">
+<div class="card card-elevated mt-6">
 
   <!-- Header with Title & Action Buttons matching Figma -->
   <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4">
@@ -8,11 +8,14 @@
     <div class="flex items-center gap-2.5 shrink-0">
       <button 
         type="button" 
-        class="btn btn-outline btn-pill btn-sm"
+        id="save-recipe-btn"
+        data-saved="false"
+        onclick="toggleSaveRecipe('{{ meal.id }}')"
+        class="btn btn-outline btn-pill btn-sm transition-all duration-200"
         aria-label="Save recipe"
       >
-        <span>♡</span>
-        <span>Save</span>
+        <span id="save-recipe-icon" class="text-sm transition-colors duration-200">♡</span>
+        <span id="save-recipe-label">Save</span>
       </button>
       <button 
         type="button" 
@@ -25,7 +28,7 @@
 
   <!-- Did you know? Callout Banner (Moved above metrics per new Figma wireframe) -->
   {% if did_you_know %}
-    <div class="p-4 rounded-xl border border-brand-subtle my-2" style="background: var(--color-bg-brand-subtle);">
+    <div class="p-4 rounded-xl border border-default bg-brand-subtle my-2">
       <h4 class="font-bold text-brand" style="margin: 0 0 4px 0; font-size: 13px; letter-spacing: 0.02em;">
         Did you know?
       </h4>
@@ -220,9 +223,7 @@
         {% for c in comments %}
           <div class="p-3.5 bg-subtle rounded-xl space-y-1.5">
             <div class="flex items-center gap-2.5">
-              <div class="w-6 h-6 rounded-full bg-muted text-secondary font-bold text-[11px] flex items-center justify-center uppercase shrink-0">
-                {{ c.user.username|slice:":1" }}
-              </div>
+              {% include 'components/avatar.html' with name=c.user.username size='sm' %}
               <span class="font-semibold type-body-sm text-primary">@{{ c.user.username }}</span>
               <span class="type-caption text-tertiary">({{ c.created_at|timesince }} ago)</span>
             </div>
@@ -238,5 +239,57 @@
       {% endif %}
     </div>
   </div>
+
+  <style>
+    #save-recipe-btn.is-saved {
+      background-color: var(--color-bg-danger-subtle) !important;
+      border-color: var(--color-border-danger) !important;
+      color: var(--color-text-danger) !important;
+    }
+    #save-recipe-btn.is-saved #save-recipe-icon {
+      color: var(--red-500) !important;
+    }
+  </style>
+
+  <script>
+    function toggleSaveRecipe(mealId) {
+      const btn = document.getElementById('save-recipe-btn');
+      const icon = document.getElementById('save-recipe-icon');
+      const label = document.getElementById('save-recipe-label');
+      if (!btn || !icon || !label) return;
+
+      const isSaved = btn.getAttribute('data-saved') === 'true';
+      const nextState = !isSaved;
+
+      btn.setAttribute('data-saved', nextState ? 'true' : 'false');
+      if (nextState) {
+        btn.classList.add('is-saved');
+        icon.textContent = '♥';
+        label.textContent = 'Saved';
+        try {
+          localStorage.setItem('saved_meal_' + mealId, 'true');
+        } catch (e) {}
+      } else {
+        btn.classList.remove('is-saved');
+        icon.textContent = '♡';
+        label.textContent = 'Save';
+        try {
+          localStorage.removeItem('saved_meal_' + mealId);
+        } catch (e) {}
+      }
+    }
+
+    // Restore saved state from localStorage
+    (function() {
+      const mealId = '{{ meal.id }}';
+      if (mealId) {
+        try {
+          if (localStorage.getItem('saved_meal_' + mealId) === 'true') {
+            toggleSaveRecipe(mealId);
+          }
+        } catch (e) {}
+      }
+    })();
+  </script>
 
 </div>

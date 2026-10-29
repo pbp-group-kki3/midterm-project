@@ -5,8 +5,10 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib import messages
+from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth import update_session_auth_hash
+from django.core.exceptions import ValidationError
 
-# REGISTER VIEW
 # REGISTER VIEW
 def register_view(request):
     errors = {}
@@ -36,7 +38,14 @@ def register_view(request):
             user = User.objects.create_user(username=username, email=email, password=password)
             profile = user.profile
             
-            profile.diet = request.POST.get('diet', 'none')
+            # PARSE MULTI-SELECT DIET
+            diet_str = request.POST.get('diet', '')
+            if diet_str and diet_str != 'none':
+                profile.diet = [d.strip() for d in diet_str.split(',') if d.strip()]
+            else:
+                profile.diet = []
+
+            # PARSE ALLERGIES
             allergies_str = request.POST.get('allergies', '')
             if allergies_str:
                 profile.allergies = [a.strip() for a in allergies_str.split(',') if a.strip()]
@@ -64,24 +73,37 @@ def profile_edit(request):
     profile = request.user.profile
 
     if request.method == 'POST':
-        profile.diet = request.POST.get('diet', 'none')
-        
-        calorie_target = request.POST.get('calorie_target')
-        profile.calorie_target = int(calorie_target) if calorie_target else None
-        
-        meals_per_day = request.POST.get('meals_per_day')
-        if meals_per_day:
-            profile.meals_per_day = int(meals_per_day)
+        action = request.POST.get('action')
 
-        allergies_str = request.POST.get('allergies', '')
-        profile.allergies = [a.strip() for a in allergies_str.split(',') if a.strip()]
+        # 1. SAVE ACCOUNT INFO ONLY
+        if action == 'update_account':
+            profile.full_name = request.POST.get('full_name', '')
+            profile.date_of_birth = request.POST.get('date_of_birth', '')
+            profile.domicile = request.POST.get('domicile', '')
 
-        if 'profile_picture' in request.FILES:
-            profile.profile_picture = request.FILES['profile_picture']
+            if 'profile_picture' in request.FILES:
+                profile.profile_picture = request.FILES['profile_picture']
 
-        profile.save()
-        messages.success(request, "Preferences updated successfully.")
-        return redirect('profile')
+            profile.save()
+            messages.success(request, "Account information updated successfully.")
+
+        # 2. SAVE PREFERENCES ONLY
+        elif action == 'update_preferences':
+            # PARSE MULTI-SELECT DIET
+            diet_str = request.POST.get('diet', '')
+            if diet_str and diet_str != 'none':
+                profile.diet = [d.strip() for d in diet_str.split(',') if d.strip()]
+            else:
+                profile.diet = []
+            
+            calorie_target = request.POST.get('calorie_target')
+            profile.calorie_target = int(calorie_target) if calorie_target else None
+
+            allergies_str = request.POST.get('allergies', '')
+            profile.allergies = [a.strip() for a in allergies_str.split(',') if a.strip()]
+
+            profile.save()
+            messages.success(request, "Preferences updated successfully.")
 
     return redirect('profile')
 
@@ -103,4 +125,35 @@ def profile_delete(request):
         logout(request)
         user.delete()
         return redirect('/')
+    return redirect('profile')
+
+# CHANGE PASSWORD VIEW
+@login_required
+def change_password_view(request):
+    if request.method == 'POST':
+        current_password = request.POST.get('current_password')
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+
+        if not request.user.check_password(current_password):
+            messages.error(request, "Current password is incorrect.")
+            return redirect('profile')
+
+        if new_password != confirm_password:
+            messages.error(request, "New passwords do not match.")
+            return redirect('profile')
+
+        try:
+            validate_password(new_password, request.user)
+        except ValidationError as e:
+            for error in e.messages:
+                messages.error(request, error)
+            return redirect('profile')
+
+        request.user.set_password(new_password)
+        request.user.save()
+        update_session_auth_hash(request, request.user)
+        
+        messages.success(request, "Password changed successfully.")
+        
     return redirect('profile')

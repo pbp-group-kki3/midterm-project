@@ -7,98 +7,189 @@
 
 {% block content %}
 
-<!-- ALERTS -->
+<!-- TOAST NOTIFICATIONS -->
 {% if messages %}
-    <div class="mb-6 flex flex-col gap-2 max-w-6xl mx-auto">
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 w-full max-w-sm pointer-events-none">
         {% for message in messages %}
-            <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %}">
-                {{ message }}
+            <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %} shadow-lg pointer-events-auto flex justify-between items-center toast-message transition-opacity duration-300" role="alert">
+                <span class="type-body-sm font-medium">{{ message }}</span>
+                <button type="button" class="icon-btn icon-btn-plain ml-3 text-current" onclick="this.closest('.alert').remove()" aria-label="Close">
+                    <span class="icon icon-x" aria-hidden="true"></span>
+                </button>
             </div>
         {% endfor %}
     </div>
 {% endif %}
 
-<!-- LAYOUT -->
-<div class="flex flex-col md:flex-row max-w-6xl mx-auto bg-surface rounded-xl shadow-card overflow-hidden min-h-[600px] border border-default">
-    
-    <!-- SIDEBAR -->
-    <aside class="w-full md:w-64 bg-canvas border-r border-default p-6 flex flex-col justify-between shrink-0">
-        <div class="flex flex-col gap-6">
-            
-            <!-- USER INFO -->
-            <div class="flex items-center gap-4 pb-4 border-b border-subtle">
-                <span class="avatar avatar-md">
-                    {% if profile.profile_picture %}
-                        <img src="{{ profile.profile_picture.url }}" alt="Profile">
-                    {% else %}
-                        {{ request.user.username|slice:":1"|upper }}
-                    {% endif %}
-                </span>
-                <div class="truncate">
-                    <p class="type-label-md truncate">{{ request.user.username }}</p>
-                    <p class="type-caption text-secondary truncate">{{ request.user.email }}</p>
-                </div>
-            </div>
-
-            <!-- NAVIGATION -->
-            <nav class="side-nav">
-                <button onclick="showSection('account')" id="nav-account" class="side-nav-link is-active w-full text-left">
-                    Account Info
-                </button>
-                <button onclick="showSection('diet')" id="nav-diet" class="side-nav-link w-full text-left">
-                    Diet &amp; Allergies
-                </button>
-                <button onclick="showSection('security')" id="nav-security" class="side-nav-link w-full text-left">
-                    Security &amp; Avatar
-                </button>
-            </nav>
+<!-- PROFILE HEADER -->
+<header class="page-header max-w-6xl mx-auto">
+    <div class="page-header-user min-w-0">
+        <span class="avatar avatar-lg">
+            {% if profile.profile_picture %}
+                <img src="{{ profile.profile_picture.url }}" alt="{{ request.user.username }}">
+            {% else %}
+                {{ request.user.username|slice:":1"|upper }}
+            {% endif %}
+        </span>
+        <div class="min-w-0">
+            <!-- Using type-serif from styleguide for the hero title -->
+            <h1 class="type-serif truncate">{{ request.user.username }}</h1>
+            <p class="type-body-sm text-secondary truncate">{{ request.user.email }}</p>
         </div>
+    </div>
+    <div class="page-actions">
+        <button type="button" onclick="toggleEditMode()" id="edit-profile-btn" class="btn btn-secondary min-w-[160px]">
+            Edit profile
+            <span class="icon icon-edit" aria-hidden="true"></span>
+        </button>
+    </div>
+</header>
 
-        <!-- ACTIONS -->
-        <div class="pt-6 border-t border-subtle mt-6 flex flex-col gap-2">
-            <button onclick="document.getElementById('delete-dialog').showModal()" class="btn btn-danger-subtle btn-block">
-                Delete Account
+<!-- LAYOUT -->
+<div class="mt-8 flex flex-col gap-8 md:flex-row md:items-start max-w-6xl mx-auto">
+
+    <!-- SIDEBAR WITH LOGOUT -->
+    <aside class="md:shrink-0 w-full md:w-56 flex flex-col gap-6">
+        <nav class="side-nav" aria-label="Profile sections">
+            <button type="button" onclick="showSection('account')" id="nav-account" class="side-nav-link is-active" aria-current="page">
+                <span class="icon icon-user" aria-hidden="true"></span>
+                Account
             </button>
+            <button type="button" onclick="showSection('preferences')" id="nav-preferences" class="side-nav-link">
+                <span class="icon icon-preferences" aria-hidden="true"></span>
+                Preferences
+            </button>
+            <button type="button" onclick="showSection('saved')" id="nav-saved" class="side-nav-link">
+                <span class="icon icon-saved" aria-hidden="true"></span>
+                Saved
+            </button>
+            <button type="button" onclick="showSection('history')" id="nav-history" class="side-nav-link">
+                <span class="icon icon-history" aria-hidden="true"></span>
+                History
+            </button>
+        </nav>
+        
+        <div class="border-t border-subtle pt-6">
             <form method="POST" action="{% url 'logout' %}">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-secondary btn-block">Log Out</button>
+                <button type="submit" class="btn btn-secondary btn-block">
+                    Log out
+                </button>
             </form>
         </div>
     </aside>
 
     <!-- MAIN CONTENT -->
-    <main class="flex-1 p-6 md:p-10">
-        
-        <!-- ACCOUNT SECTION -->
-        <section id="sec-account" class="profile-section">
-            <div class="mb-6">
-                <h2 class="type-h2">Account Information</h2>
-                <p class="type-body-sm text-secondary">Manage your basic public information.</p>
+    <div class="min-w-0 flex-1">
+
+<!-- ACCOUNT SECTION -->
+        <section id="sec-account" class="profile-section space-y-6">
+            <div class="flex flex-col gap-2">
+                <h2 class="type-heading-m text-primary">Profile</h2>
+                <p class="type-body-sm text-secondary">Your personal information and account settings.</p>
             </div>
-            <form method="POST" action="{% url 'profile_edit' %}" class="form-stack max-w-lg">
+
+            <!-- ENTIRE ACCOUNT TAB IS A FORM -->
+            <form method="POST" action="{% url 'profile_edit' %}" enctype="multipart/form-data" class="space-y-6">
                 {% csrf_token %}
-                <div class="field">
-                    <label class="field-label">Username</label>
-                    <input type="text" name="username" value="{{ request.user.username }}" disabled class="input">
+                <input type="hidden" name="action" value="update_account">
+                
+                <!-- CARD 1: PERSONAL INFORMATION -->
+                <div class="card relative">
+                    <h3 class="type-card-title flex items-center gap-2">
+                        Personal Information
+                        <span class="badge">Optional</span>
+                    </h3>
+                    
+                    <div class="flex flex-col md:flex-row gap-8 items-start mt-4">
+                        <!-- Photo Picker (Left) -->
+                        <div class="photo-picker shrink-0">
+                            <span class="avatar avatar-xl" id="avatar-preview-container">
+                                {% if profile.profile_picture %}
+                                    <img src="{{ profile.profile_picture.url }}" alt="{{ request.user.username }}" class="w-full h-full object-cover">
+                                {% else %}
+                                    {{ request.user.username|slice:":1"|upper }}
+                                {% endif %}
+                            </span>
+                            
+                            <!-- Hidden until Edit Mode -->
+                            <label class="btn btn-secondary btn-sm btn-block cursor-pointer edit-mode-field hidden mt-2" for="profile_picture_input">Change photo</label>
+                            <input type="file" name="profile_picture" id="profile_picture_input" accept="image/*" class="hidden" onchange="previewProfilePicture(event)">
+                            
+                            {% if profile.profile_picture %}
+                                <button type="submit" formaction="{% url 'profile_picture_delete' %}" formnovalidate class="btn btn-danger-subtle btn-sm btn-block edit-mode-field hidden mt-2">Remove</button>
+                            {% endif %}
+                        </div>
+
+                        <!-- Form Inputs (Right) -->
+                        <div class="form-stack flex-1 w-full">
+                            <div class="field">
+                                <label class="field-label type-label-md">Full name</label>
+                                <input type="text" name="full_name" value="{{ profile.full_name }}" placeholder="Enter your full name" disabled class="input profile-input">
+                            </div>
+                            <div class="field">
+                                <label class="field-label type-label-md">Date of birth</label>
+                                <input type="text" name="date_of_birth" value="{{ profile.date_of_birth }}" placeholder="DD/MM/YYYY" disabled class="input profile-input">
+                            </div>
+                            <div class="field">
+                                <label class="field-label type-label-md">Domicile</label>
+                                <input type="text" name="domicile" value="{{ profile.domicile }}" placeholder="Enter your city or region" disabled class="input profile-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SAVE / CANCEL ACTIONS (Hidden until Edit Mode) -->
+                    <div id="edit-actions" class="edit-mode-field hidden flex justify-end gap-3 mt-8 pt-4 border-t border-subtle">
+                        <button type="button" onclick="toggleEditMode()" class="btn btn-secondary">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save changes</button>
+                    </div>
                 </div>
-                <div class="field">
-                    <label class="field-label">Email Address</label>
-                    <input type="email" name="email" value="{{ request.user.email }}" disabled class="input">
+                
+                <!-- CARD 2: ACCOUNT SETTINGS -->
+                <div class="card">
+                    <h3 class="type-card-title">Account settings</h3>
+                    <div class="form-stack mt-4">
+                        <div class="field">
+                            <label class="field-label type-label-md">Username</label>
+                            <input type="text" name="username" value="{{ request.user.username }}" disabled class="input">
+                        </div>
+                        <div class="field">
+                            <label class="field-label type-label-md">Email</label>
+                            <input type="email" name="email" value="{{ request.user.email }}" disabled class="input">
+                        </div>
+                        <div class="field">
+                            <label class="field-label type-label-md">Password</label>
+                            <div class="input-group flex items-center justify-between">
+                                <input class="input" type="password" value="••••••••••••" readonly>
+                                <button type="button" onclick="document.getElementById('password-dialog').showModal()" class="link">Change password</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </form>
+
+            <!-- CARD 3: ACCOUNT DELETION (Standalone Block) -->
+            <div class="card border-danger">
+                <h3 class="type-card-title text-danger">Account Deletion</h3>
+                <p class="type-body-sm text-secondary mb-4">This action cannot be undone.</p>
+                <button type="button" onclick="document.getElementById('delete-dialog').showModal()" class="btn btn-danger">
+                    Delete account
+                </button>
+            </div>
         </section>
 
-        <!-- DIET SECTION -->
-        <section id="sec-diet" class="profile-section hidden">
-            <div class="mb-6">
-                <h2 class="type-h2">Dietary Preferences</h2>
+        <!-- PREFERENCES SECTION -->
+        <section id="sec-preferences" class="profile-section space-y-6 hidden">
+            <div class="flex flex-col gap-2">
+                <h2 class="type-heading-m text-primary">Preferences</h2>
                 <p class="type-body-sm text-secondary">Filter products and build personalized meal plans.</p>
             </div>
-            <form method="POST" action="{% url 'profile_edit' %}" class="form-stack max-w-lg">
+            <form method="POST" action="{% url 'profile_edit' %}" class="card form-stack max-w-lg">
                 {% csrf_token %}
+                <input type="hidden" name="action" value="update_preferences">
                 <div class="field">
-                    <label class="field-label">Diet</label>
-                    <select name="diet" class="input">
+                    <label class="field-label type-label-md" for="pref-diet">Diet</label>
+                    <select name="diet" id="pref-diet" class="input pr-8">
                         <option value="none" {% if profile.diet == 'none' %}selected{% endif %}>None</option>
                         <option value="halal" {% if profile.diet == 'halal' %}selected{% endif %}>Halal</option>
                         <option value="vegetarian" {% if profile.diet == 'vegetarian' %}selected{% endif %}>Vegetarian</option>
@@ -107,70 +198,103 @@
                     </select>
                 </div>
                 <div class="field">
-                    <label class="field-label">Allergies (comma separated)</label>
-                    <input type="text" name="allergies" value="{{ profile.allergies|join:',' }}" class="input" placeholder="Milk, Peanuts">
+                    <label class="field-label type-label-md" for="pref-allergies">Allergies (comma separated)</label>
+                    <input type="text" id="pref-allergies" name="allergies" value="{{ profile.allergies|join:',' }}" class="input" placeholder="Milk, Peanuts">
                 </div>
                 <div class="field">
-                    <label class="field-label">Daily Calorie Target</label>
-                    <input type="number" name="calorie_target" value="{{ profile.calorie_target|default:'' }}" class="input" placeholder="e.g. 2000">
+                    <label class="field-label type-label-md" for="pref-calories">Daily Calorie Target</label>
+                    <input type="number" id="pref-calories" name="calorie_target" value="{{ profile.calorie_target|default:'' }}" min="0" class="input" placeholder="e.g. 2000">
+                    <p class="field-helper text-tertiary">Leave empty to use 2,000 kcal, the general reference on nutrition labels.</p>
                 </div>
-                <div class="field">
-                    <label class="field-label">Meals Per Day</label>
-                    <input type="number" name="meals_per_day" value="{{ profile.meals_per_day|default:3 }}" class="input">
-                </div>
-                <div class="pt-4">
-                    <button type="submit" class="btn btn-primary">Save Preferences</button>
+                <div class="pt-4 flex justify-end gap-3 border-t border-subtle mt-4">
+                    <button type="button" onclick="location.reload()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save changes</button>
                 </div>
             </form>
         </section>
 
-        <!-- SECURITY SECTION -->
-        <section id="sec-security" class="profile-section hidden">
-            <div class="mb-6">
-                <h2 class="type-h2">Security &amp; Avatar</h2>
-                <p class="type-body-sm text-secondary">Update your password and profile picture.</p>
+        <!-- SAVED SECTION -->
+        <section id="sec-saved" class="profile-section space-y-6 hidden">
+            <div class="flex flex-col gap-2">
+                <h2 class="type-heading-m text-primary">Saved</h2>
+                <p class="type-body-sm text-secondary">Everything you've saved, all in one place.</p>
             </div>
-            <div class="form-stack max-w-lg pb-6 border-b border-subtle">
-                <form method="POST" action="{% url 'profile_edit' %}" enctype="multipart/form-data" class="flex items-center gap-4">
-                    {% csrf_token %}
-                    <span class="avatar avatar-lg">
-                        {% if profile.profile_picture %}
-                            <img src="{{ profile.profile_picture.url }}">
-                        {% else %}
-                            {{ request.user.username|slice:":1"|upper }}
-                        {% endif %}
-                    </span>
-                    <div class="flex flex-col gap-2">
-                        <input type="file" name="profile_picture" accept="image/*" class="type-body-sm">
-                        <button type="submit" class="btn btn-secondary btn-sm">Upload Avatar</button>
+
+            <div class="card flex flex-col gap-4">
+                <div class="chip-row" role="group" aria-label="Filter saved items">
+                    <button type="button" class="chip is-selected" data-saved-filter="all" aria-pressed="true">All</button>
+                    <button type="button" class="chip" data-saved-filter="product" aria-pressed="false">Products</button>
+                    <button type="button" class="chip" data-saved-filter="comparison" aria-pressed="false">Comparisons</button>
+                    <button type="button" class="chip" data-saved-filter="article" aria-pressed="false">Articles</button>
+                    <button type="button" class="chip" data-saved-filter="meal-plan" aria-pressed="false">Meal plans</button>
+                    <button type="button" class="chip" data-saved-filter="meal" aria-pressed="false">Meals</button>
+                </div>
+
+                <div id="saved-empty">
+                    <div class="empty-state">
+                        <span class="icon icon-bookmark text-tertiary text-4xl mb-2" aria-hidden="true"></span>
+                        <h3 class="empty-state-title type-card-title text-primary">Nothing saved here yet</h3>
+                        <p class="empty-state-text type-body-sm text-secondary">Items you save will show up here.</p>
                     </div>
-                </form>
-                {% if profile.profile_picture %}
-                <form method="POST" action="{% url 'profile_picture_delete' %}">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger-subtle btn-sm mt-2">Remove current picture</button>
-                </form>
-                {% endif %}
+                </div>
             </div>
         </section>
-    </main>
+
+        <!-- HISTORY SECTION -->
+        <section id="sec-history" class="profile-section space-y-6 hidden">
+            <div class="flex flex-col gap-2">
+                <h2 class="type-heading-m text-primary">History</h2>
+                <p class="type-body-sm text-secondary">Products you've viewed recently.</p>
+            </div>
+            <div class="card flex flex-col items-center justify-center py-12 text-center">
+                <div class="empty-state max-w-sm">
+                    <span class="icon icon-history text-tertiary text-4xl mb-2" aria-hidden="true"></span>
+                    <h3 class="empty-state-title type-card-title text-primary">No history yet</h3>
+                    <p class="empty-state-text type-body-sm text-secondary">Products you view will show up here.</p>
+                </div>
+            </div>
+        </section>
+    </div>
 </div>
+
+<!-- CHANGE PASSWORD DIALOG -->
+<dialog class="dialog dialog-form" id="password-dialog">
+    <h2 class="type-title text-primary">Change password</h2>
+    <p class="type-body-sm text-secondary mb-4">Enter your current password and choose a new one.</p>
+    <form method="POST" action="{% url 'change_password' %}">
+        {% csrf_token %}
+        <div class="dialog-body form-stack">
+            <div class="field">
+                <label class="field-label type-label-md" for="current_password">Current password</label>
+                <input class="input" type="password" id="current_password" name="current_password" placeholder="Password" required>
+            </div>
+            <div class="field">
+                <label class="field-label type-label-md" for="new_password">New password</label>
+                <input class="input" type="password" id="new_password" name="new_password" placeholder="Password" required>
+            </div>
+            <div class="field">
+                <label class="field-label type-label-md" for="confirm_password">Confirm new password</label>
+                <input class="input" type="password" id="confirm_password" name="confirm_password" placeholder="Password" required>
+            </div>
+        </div>
+        <div class="dialog-actions flex justify-end gap-3 mt-6">
+            <button type="button" class="btn btn-secondary" onclick="this.closest('dialog').close()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save changes</button>
+        </div>
+    </form>
+</dialog>
 
 <!-- DELETE DIALOG -->
 <dialog class="dialog" id="delete-dialog">
-    <div class="dialog-header">
-        <h2 class="dialog-title">Delete your account?</h2>
-        <form method="dialog">
-            <button class="dialog-close" aria-label="Close">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"></path></svg>
-            </button>
-        </form>
+    <div class="dialog-header flex justify-between items-center mb-2">
+        <h2 class="type-title text-primary">Delete your account?</h2>
+        <button class="icon-btn icon-btn-plain" aria-label="Close" onclick="this.closest('dialog').close()">
+            <span class="icon icon-x" aria-hidden="true"></span>
+        </button>
     </div>
-    <p class="dialog-text">This removes your profile, saved items, history and meal plans. It cannot be undone.</p>
-    <div class="dialog-actions">
-        <form method="dialog">
-            <button type="button" class="btn btn-secondary" onclick="this.closest('dialog').close()">Cancel</button>
-        </form>
+    <p class="type-body-sm text-secondary mb-6">This removes your profile, saved items, history and meal plans. It cannot be undone.</p>
+    <div class="dialog-actions flex justify-end gap-3">
+        <button type="button" class="btn btn-secondary" onclick="this.closest('dialog').close()">Cancel</button>
         <form method="POST" action="{% url 'profile_delete' %}">
             {% csrf_token %}
             <button class="btn btn-danger">Delete account</button>
@@ -182,11 +306,100 @@
 <!-- SCRIPTS -->
 {% block extra_js %}
 <script>
+    const PROFILE_SECTIONS = ['account', 'preferences', 'saved', 'history'];
+
     function showSection(sectionId) {
-        document.querySelectorAll('.profile-section').forEach(el => el.classList.add('hidden'));
-        document.querySelectorAll('.side-nav-link').forEach(btn => btn.classList.remove('is-active'));
-        document.getElementById(`sec-${sectionId}`).classList.remove('hidden');
-        document.getElementById(`nav-${sectionId}`).classList.add('is-active');
+        if (!PROFILE_SECTIONS.includes(sectionId)) sectionId = 'account';
+        PROFILE_SECTIONS.forEach(name => {
+            const isActive = name === sectionId;
+            const link = document.getElementById(`nav-${name}`);
+            document.getElementById(`sec-${name}`).classList.toggle('hidden', !isActive);
+            link.classList.toggle('is-active', isActive);
+            if (isActive) {
+                link.setAttribute('aria-current', 'page');
+            } else {
+                link.removeAttribute('aria-current');
+            }
+        });
     }
+    
+    showSection(location.hash.slice(1));
+
+    function toggleEditMode() {
+        showSection('account');
+
+        const inputs = document.querySelectorAll('.profile-input');
+        const editFields = document.querySelectorAll('.edit-mode-field');
+        const btn = document.getElementById('edit-profile-btn');
+
+        inputs.forEach(input => {
+            input.disabled = !input.disabled;
+        });
+
+        editFields.forEach(el => {
+            el.classList.toggle('hidden');
+        });
+
+        if (btn) btn.classList.toggle('hidden');
+        
+        if (inputs.length > 0 && !inputs[0].disabled) {
+            inputs[0].focus();
+            inputs[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    function previewProfilePicture(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const container = document.getElementById('avatar-preview-container');
+                container.innerHTML = `<img src="${e.target.result}" alt="Preview" class="w-full h-full object-cover">`;
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+
+    // Helper function to dynamically trigger a toast notification on any action
+    function showToast(message, type = 'success') {
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'fixed bottom-6 right-6 z-50 flex flex-col gap-3 w-full max-w-sm pointer-events-none';
+            document.body.appendChild(container);
+        }
+
+        const alertClass = type === 'error' ? 'alert-danger' : 'alert-success';
+        
+        const toast = document.createElement('div');
+        toast.className = `alert ${alertClass} shadow-lg pointer-events-auto flex justify-between items-center toast-message transition-opacity duration-300`;
+        toast.setAttribute('role', 'alert');
+        
+        toast.innerHTML = `
+            <span class="type-body-sm font-medium">${message}</span>
+            <button type="button" class="icon-btn icon-btn-plain ml-3 text-current" onclick="this.closest('.alert').remove()" aria-label="Close">
+                <span class="icon icon-x" aria-hidden="true"></span>
+            </button>
+        `;
+
+        container.appendChild(toast);
+
+    // Auto dismiss after 4 seconds
+    setTimeout(() => {
+        toast.classList.add('opacity-0');
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+    // Toast auto-dismiss logic
+    document.addEventListener("DOMContentLoaded", () => {
+        const toasts = document.querySelectorAll(".toast-message");
+        toasts.forEach(toast => {
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300); // Wait for transition before removing from DOM
+            }, 4000); // 4 seconds visible
+        });
+    });
 </script>
 {% endblock %}

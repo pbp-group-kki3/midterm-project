@@ -1,13 +1,13 @@
 {% if meal and recipe %}
 <div class="w-full">
-  <!-- Dark Green Hero Card matching SpoonFeed Design System -->
-  <section class="feature-card">
+  <!-- Dark Green Hero Card matching SpoonFeed Design System & Figma Wireframe -->
+  <section class="feature-card motd-hero">
 
     <!-- Left Content Column -->
     <div class="feature-card-text">
-      <div>
+      <div class="motd-header-group">
         <span class="feature-card-overline">Meal of the day</span>
-        <span class="type-caption block opacity-80 mt-0.5" style="color: var(--color-text-on-feature-muted);">
+        <span class="type-caption block text-on-feature-muted opacity-80 mt-1">
           {{ meal.date|date:"l, j F" }}
         </span>
       </div>
@@ -28,7 +28,7 @@
         </div>
       {% endif %}
 
-      <div class="pt-2 flex items-center gap-3">
+      <div>
         {% if user.is_authenticated %}
           <button 
             type="button" 
@@ -39,12 +39,6 @@
             <span id="recipe-toggle-text">See recipe</span>
             <span id="recipe-toggle-arrow">&darr;</span>
           </button>
-          <a 
-            href="{% url 'food_of_the_day:detail' meal.id %}" 
-            class="type-body-sm underline text-white opacity-80 hover:opacity-100 hidden sm:inline-block"
-          >
-            Direct link &rarr;
-          </a>
         {% else %}
           <a 
             href="/profiles/login/" 
@@ -65,7 +59,7 @@
           loading="lazy"
         />
       {% else %}
-        <div class="w-full h-full flex flex-col items-center justify-center p-6 text-center" style="background: var(--color-bg-brand-subtle); color: var(--color-text-brand);">
+        <div class="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-brand-subtle text-brand">
           <span class="text-4xl block mb-2">🍲</span>
           <span class="type-body-sm">Recipe photo from Spoonacular</span>
         </div>
@@ -100,5 +94,51 @@
       }
     </script>
   {% endif %}
+
+  <style>
+    /* Margins aligned with Figma Wireframe (Hero slide 2 / 1216x480) */
+    .feature-card.motd-hero {
+      padding: var(--space-xl);
+      gap: var(--space-xl);
+    }
+    @media (min-width: 768px) {
+      .feature-card.motd-hero {
+        padding: 44px 48px;
+        gap: 48px;
+      }
+    }
+    @media (min-width: 1024px) {
+      .feature-card.motd-hero {
+        padding: 48px 56px;
+        gap: 56px;
+      }
+    }
+    .motd-hero .feature-card-text {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 0;
+    }
+    .motd-hero .motd-header-group {
+      margin-bottom: 22px;
+    }
+    .motd-hero .feature-card-title {
+      margin-top: 0;
+      margin-bottom: 18px;
+      line-height: 1.22;
+    }
+    .motd-hero .feature-card-meta {
+      margin-top: 0;
+      margin-bottom: 22px;
+    }
+    .motd-hero .badge-row {
+      margin-top: 0;
+      margin-bottom: 22px;
+    }
+    .motd-hero .feature-card-img {
+      border-radius: var(--radius-xl);
+    }
+  </style>
 </div>
 {% endif %}

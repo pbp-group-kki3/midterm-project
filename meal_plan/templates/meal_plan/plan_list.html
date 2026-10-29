@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My plans | SpoonFeed{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'meal_plan/meal_plan.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="mealplan-page">
+        <header class="page-header mealplan-header">
+            <div class="mealplan-heading">
+                <h1 class="page-title page-title-lg">My plans</h1>
+                <p class="page-subtitle mealplan-subtitle">Plans built from your diet and goals. Open one to see each day, or swap any meal you don't like.</p>
+            </div>
+            <div class="page-actions mealplan-actions">
+                <a href="{% url 'meal_plan:recipes' %}" class="btn btn-secondary mealplan-action">Browse recipes</a>
+                <a href="{% url 'meal_plan:plan_create' %}" class="btn btn-primary mealplan-action">Create meal plan</a>
+            </div>
+        </header>
+
+        {% include 'meal_plan/includes/messages.html' %}
+
+        {% if plans %}
+            <div class="card-grid">
+                {% for plan in plans %}
+                    <a href="{% url 'meal_plan:plan_detail' plan.pk %}" class="card mealplan-plan-card">
+                        <h2 class="type-h3">{{ plan.name }}</h2>
+                        <p class="type-caption text-secondary">{{ plan.date|date:"j M Y" }}{% if plan.days > 1 %} – {{ plan.end_date|date:"j M Y" }}{% endif %} · {{ plan.days_label }}</p>
+                        <div class="mealplan-badges">
+                            <span class="badge">{{ plan.diet_label }}</span>
+                            <span class="badge">{{ plan.calorie_label }}</span>
+                        </div>
+                        <span class="mealplan-card-link">Open plan <span aria-hidden="true">→</span></span>
+                    </a>
+                {% endfor %}
+                <a href="{% url 'meal_plan:plan_create' %}" class="mealplan-new-tile">
+                    <span class="mealplan-new-tile-title">+ Create meal plan</span>
+                    <span class="type-caption text-secondary">Pick a diet, number of days and a calorie goal.</span>
+                </a>
+            </div>
+        {% else %}
+            <div class="mealplan-profile-strip">
+                <span class="type-caption text-secondary">Plans use your profile</span>
+                {% for label in profile.diet_labels %}
+                    <span class="badge badge-success mealplan-diet-badge">{{ label }}</span>
+                {% empty %}
+                    <span class="badge">No preference</span>
+                {% endfor %}
+                <span class="type-caption text-tertiary">{% if profile.allergies %}Allergies: {{ profile.allergies|join:", " }}{% else %}No allergies set{% endif %}</span>
+                <a href="{% url 'profile' %}" class="mealplan-card-link">Edit preferences <span aria-hidden="true">→</span></a>
+            </div>
+
+            <section class="mealplan-empty" aria-labelledby="empty-title">
+                <span class="mealplan-empty-icon" aria-hidden="true">+</span>
+                <h2 class="type-h3" id="empty-title">You don't have a plan yet</h2>
+                <p class="type-body-lg text-secondary mealplan-empty-text">Create one in under a minute. We'll pick meals that fit your diet and allergies, and you can swap any meal you don't like.</p>
+                <div class="mealplan-empty-actions">
+                    <a href="{% url 'meal_plan:plan_create' %}" class="btn btn-primary mealplan-action">Create your first plan</a>
+                    <a href="{% url 'meal_plan:recipes' %}" class="btn btn-secondary mealplan-action">Browse recipes</a>
+                </div>
+            </section>
+        {% endif %}
+
+        {% include 'meal_plan/includes/credit.html' %}
+    </div>
+{% endblock %}
