@@ -17,10 +17,18 @@
 
 {% block content %}
     <header class="page-header compare-header">
-        <a href="/" class="back-link mb-3">
-            <span class="icon icon-arrow-left" aria-hidden="true"></span>
-            Back to Discover
-        </a>
+        {# change: a comparison opened from Saved goes back to Saved, a normal one stays Back to Discover #}
+        {% if viewing_saved %}
+            <a href="{% url 'profile_saved' %}?category=comparison" class="back-link mb-3">
+                <span class="icon icon-arrow-left" aria-hidden="true"></span>
+                Back to Saved
+            </a>
+        {% else %}
+            <a href="/" class="back-link mb-3">
+                <span class="icon icon-arrow-left" aria-hidden="true"></span>
+                Back to Discover
+            </a>
+        {% endif %}
 
         <div class="compare-header-row">
             <h1 class="page-title page-title-lg">Compare</h1>
