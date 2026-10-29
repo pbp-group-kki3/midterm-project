@@ -90,6 +90,10 @@ def remove_product(request, barcode):
             if selected_barcode != barcode
         ]
 
+        compare_info = request.session.get("compare_info", {}).copy()
+        compare_info.pop(barcode, None)
+        request.session["compare_info"] = compare_info
+
         request.session["compare_has_removed"] = True
 
         # Toast notification implementation:
