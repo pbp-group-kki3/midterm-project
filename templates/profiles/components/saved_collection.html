@@ -37,32 +37,7 @@
                         Open
                     </a>
 
-                    {% if item.remove_url %}
-                        <!-- Confirm removal of the saved record before sending POST. -->
-                        <form
-                            method="post"
-                            action="{{ item.remove_url }}"
-                            data-confirm-title="Remove from Saved?"
-                            data-confirm-text="This removes the saved record only. It does not delete the original product or other source content."
-                            data-confirm-label="Remove"
-                        >
-                            {% csrf_token %}
-                            <input
-                                type="hidden"
-                                name="category"
-                                value="{{ saved_category }}"
-                            >
-                            <button
-                                type="submit"
-                                class="btn btn-danger-subtle profile-saved-remove"
-                                aria-label="Remove {{ item.title }} from Saved"
-                                aria-haspopup="dialog"
-                                aria-controls="profile-confirm-dialog"
-                            >
-                                <span class="icon icon-x" aria-hidden="true"></span>
-                            </button>
-                        </form>
-                    {% endif %}
+                    {# change: removed the x (remove) button, unsaving happens from the item's own page #}
                 </div>
             </article>
         {% empty %}
