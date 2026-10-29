@@ -18,12 +18,12 @@
         <span id="save-recipe-icon" class="save-recipe-icon text-sm transition-colors duration-200">{% if is_saved %}♥{% else %}♡{% endif %}</span>
         <span id="save-recipe-label" class="save-recipe-label">{% if is_saved %}Saved{% else %}Save{% endif %}</span>
       </button>
-      <button 
-        type="button" 
+      <a 
+        href="{% url 'meal_plan:plan_list' %}"
         class="btn btn-primary btn-pill btn-sm"
       >
         <span>Add to my meal plan</span>
-      </button>
+      </a>
     </div>
   </div>
 
@@ -196,15 +196,22 @@
   <!-- Comments Section matching new Figma Wireframe -->
   <div class="pt-6 border-t border-default space-y-4" id="comments">
     <h3 class="type-h4 font-bold text-primary" style="margin: 0;">
-      Comments ({{ comments|length }})
+      Comments (<span id="comments-count-{{ meal.id }}">{{ comments|length }}</span>)
     </h3>
 
     <!-- Comment Form with inline input & Post button -->
-    <form action="{% url 'food_of_the_day:add_comment' meal.id %}" method="POST" class="flex items-center gap-2.5">
+    <form 
+      id="comment-form-{{ meal.id }}"
+      action="{% url 'food_of_the_day:add_comment' meal.id %}" 
+      method="POST" 
+      class="flex items-center gap-2.5"
+      onsubmit="submitComment(event, '{{ meal.id }}')"
+    >
       {% csrf_token %}
       <input 
         type="text"
         name="text" 
+        id="comment-input-{{ meal.id }}"
         placeholder="Share your thoughts..."
         class="input flex-1"
         maxlength="1000"
@@ -212,14 +219,15 @@
       />
       <button 
         type="submit" 
-        class="btn btn-primary"
+        id="comment-submit-btn-{{ meal.id }}"
+        class="btn btn-primary shrink-0"
       >
-        Post
+        <span>Post</span>
       </button>
     </form>
 
     <!-- Comments List -->
-    <div class="space-y-3 pt-2">
+    <div id="comments-list-{{ meal.id }}" class="space-y-3 pt-2">
       {% if comments %}
         {% for c in comments %}
           <div class="p-3.5 bg-subtle rounded-xl space-y-1.5">
@@ -234,7 +242,7 @@
           </div>
         {% endfor %}
       {% else %}
-        <p class="type-body-sm text-tertiary italic py-2">
+        <p id="comments-empty-{{ meal.id }}" class="type-body-sm text-tertiary italic py-2">
           No comments yet. Share the first thought!
         </p>
       {% endif %}
@@ -251,6 +259,13 @@
     .save-recipe-btn.is-saved .save-recipe-icon,
     #save-recipe-btn.is-saved #save-recipe-icon {
       color: var(--red-500) !important;
+    }
+    @keyframes commentFadeIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .comment-item-new {
+      animation: commentFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
   </style>
 
@@ -322,6 +337,114 @@
         updateSaveButtons(mealId, currentSaved);
         if (window.showToast) {
           window.showToast('Error', 'Network error. Please try again.', 'danger');
+        }
+      }
+    }
+
+    async function submitComment(event, mealId) {
+      event.preventDefault();
+      const form = document.getElementById(`comment-form-${mealId}`) || event.target.closest('form');
+      if (!form) return;
+
+      const input = document.getElementById(`comment-input-${mealId}`) || form.querySelector('input[name="text"]');
+      const submitBtn = document.getElementById(`comment-submit-btn-${mealId}`) || form.querySelector('button[type="submit"]');
+      if (!input) return;
+
+      const text = input.value.trim();
+      if (!text) return;
+
+      // Loading UI state
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>Posting...</span>';
+      }
+
+      try {
+        const formData = new FormData(form);
+        const response = await fetch(form.action, {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          body: formData,
+        });
+
+        if (response.status === 401) {
+          window.location.href = "{% url 'login' %}?next={{ request.path }}";
+          return;
+        }
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          input.value = '';
+
+          // Remove empty placeholder if this was the first comment
+          const emptyPlaceholder = document.getElementById(`comments-empty-${mealId}`);
+          if (emptyPlaceholder) {
+            emptyPlaceholder.remove();
+          }
+
+          // Increment comment count badge in heading
+          const countEl = document.getElementById(`comments-count-${mealId}`);
+          if (countEl) {
+            const currentCount = parseInt(countEl.textContent, 10) || 0;
+            countEl.textContent = currentCount + 1;
+          }
+
+          // HTML sanitization helper to guard against XSS injection
+          const escapeHTML = str => String(str).replace(/[&<>'"]/g, 
+            tag => ({
+              '&': '&amp;',
+              '<': '&lt;',
+              '>': '&gt;',
+              "'": '&#39;',
+              '"': '&quot;'
+            }[tag] || tag)
+          );
+
+          const safeText = escapeHTML(data.comment.text);
+          const username = escapeHTML(data.comment.user);
+          const initial = username.charAt(0).toUpperCase();
+
+          // Prepend new comment element with animation
+          const newCommentHTML = `
+            <div class="comment-item-new p-3.5 bg-subtle rounded-xl space-y-1.5">
+              <div class="flex items-center gap-2.5">
+                <span class="avatar avatar-sm">${initial}</span>
+                <span class="font-semibold type-body-sm text-primary">@${username}</span>
+                <span class="type-caption text-tertiary">(just now)</span>
+              </div>
+              <p class="type-body-sm text-secondary leading-relaxed pl-8" style="margin: 0;">
+                ${safeText}
+              </p>
+            </div>
+          `;
+
+          const list = document.getElementById(`comments-list-${mealId}`);
+          if (list) {
+            list.insertAdjacentHTML('afterbegin', newCommentHTML);
+          }
+
+          if (window.showToast) {
+            window.showToast('Comment Posted', 'Your thoughts were shared with the community!', 'success');
+          }
+        } else {
+          const errMsg = (data && data.error) ? data.error : 'Could not post comment. Please try again.';
+          if (window.showToast) {
+            window.showToast('Notice', errMsg, 'warning');
+          } else {
+            alert(errMsg);
+          }
+        }
+      } catch (err) {
+        if (window.showToast) {
+          window.showToast('Error', 'Network error. Please try again.', 'danger');
+        }
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>Post</span>';
         }
       }
     }
