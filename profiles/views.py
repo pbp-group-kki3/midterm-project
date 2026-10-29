@@ -258,6 +258,11 @@ def profile_saved_remove(request, kind, pk):
         "product": FavoriteProduct,
         "comparison": SavedComparison,
     }
+    try:
+        from food_of_the_day.models import SavedMeal
+        models["meal"] = SavedMeal
+    except ImportError:
+        pass
     model = models.get(kind)
 
     if model is None:

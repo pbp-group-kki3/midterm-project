@@ -6,11 +6,14 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from django.views.decorators.cache import never_cache
+from django.contrib.auth.decorators import login_required
 
-from food_of_the_day.models import MealOfTheDay, MealComment
+from food_of_the_day.models import MealOfTheDay, MealComment, SavedMeal
 from food_of_the_day.forms import MealCommentForm
 from food_of_the_day.services import (
     get_recipe,
+    build_recipe_snapshot,
     extract_calories,
     extract_key_nutrients,
     get_did_you_know,
@@ -42,6 +45,15 @@ def _prepare_meal_context(meal, request):
 
     recipe = get_recipe(meal.recipe_id)
     if not recipe or not isinstance(recipe, dict):
+        # Graceful fallback: check if a saved snapshot exists in DB (e.g. Spoonacular offline/rate-limited)
+        saved_snap = (
+            SavedMeal.objects.filter(meal=meal).exclude(snapshot_data={}).values_list('snapshot_data', flat=True).first()
+            or SavedMeal.objects.filter(recipe_id=meal.recipe_id).exclude(snapshot_data={}).values_list('snapshot_data', flat=True).first()
+        )
+        if saved_snap and isinstance(saved_snap, dict):
+            recipe = saved_snap
+
+    if not recipe or not isinstance(recipe, dict):
         return {
             'meal': meal,
             'recipe': None,
@@ -68,6 +80,10 @@ def _prepare_meal_context(meal, request):
     instructions = extract_instructions(recipe)
     comments = meal.comments.select_related('user').all()
 
+    is_saved = False
+    if request and hasattr(request, 'user') and request.user.is_authenticated:
+        is_saved = SavedMeal.objects.filter(user=request.user, meal=meal).exists()
+
     return {
         'meal': meal,
         'recipe': safe_recipe,
@@ -84,9 +100,11 @@ def _prepare_meal_context(meal, request):
         'ready_in_minutes': recipe.get('readyInMinutes'),
         'source_name': str(recipe.get('sourceName') or 'Spoonacular')[:100],
         'source_url': source_url,
+        'is_saved': is_saved,
     }
 
 
+@never_cache
 def index(request):
     """
     Main page for the Meal of the Day module.
@@ -104,6 +122,7 @@ def index(request):
     return render(request, 'food_of_the_day/index.html', context)
 
 
+@never_cache
 def detail(request, meal_id):
     """
     Detailed view for any featured meal by its database ID.
@@ -111,10 +130,12 @@ def detail(request, meal_id):
     meal = get_object_or_404(MealOfTheDay, id=meal_id)
     context = _prepare_meal_context(meal, request)
     context['is_today'] = (meal.date == timezone.localdate())
+    context['is_detail'] = True
 
     return render(request, 'food_of_the_day/detail.html', context)
 
 
+@never_cache
 def slide_partial(request):
     """
     Renders only the home page slide component.
@@ -187,3 +208,52 @@ def add_comment(request, meal_id):
 
     messages.error(request, f'Failed to post comment: {first_error}')
     return redirect(_get_safe_redirect_url(request, fallback_url))
+
+
+@login_required(login_url='login')
+@require_POST
+def toggle_save_meal(request, meal_id):
+    """
+    Toggle saving/bookmarking a Meal of the Day for the current user.
+    Integrates directly with the user profile's Saved collection using immutable snapshots.
+    """
+    meal = get_object_or_404(MealOfTheDay, id=meal_id)
+    saved_record = SavedMeal.objects.filter(user=request.user, meal=meal).first()
+
+    if saved_record:
+        saved_record.delete()
+        saved = False
+        msg = "Meal removed from your Saved collection."
+    else:
+        recipe = get_recipe(meal.recipe_id)
+        snapshot = build_recipe_snapshot(recipe)
+
+        recipe_title = request.POST.get('recipe_title', '').strip()[:255]
+        if not recipe_title and snapshot.get('title'):
+            recipe_title = snapshot['title'][:255]
+        elif not recipe_title and recipe and isinstance(recipe, dict):
+            recipe_title = str(recipe.get('title') or '')[:255]
+
+        SavedMeal.objects.create(
+            user=request.user,
+            meal=meal,
+            recipe_id=meal.recipe_id,
+            recipe_title=recipe_title,
+            snapshot_data=snapshot,
+        )
+        saved = True
+        msg = "Meal saved to your profile!"
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
+        return JsonResponse({
+            'saved': saved,
+            'meal_id': meal.id,
+            'message': msg,
+        })
+
+    messages.success(request, msg)
+    next_url = request.POST.get('next', '')
+    if next_url and url_has_allowed_host_and_scheme(url=next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        return redirect(next_url)
+    return redirect('food_of_the_day:detail', meal_id=meal.id)
+

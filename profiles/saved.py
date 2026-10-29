@@ -74,6 +74,49 @@ def saved_items(user, category):
                 "remove_url": None,
             })
 
+    # Saved Meal of the Day records (with snapshot metadata fallback).
+    if category in ("all", "meal"):
+        try:
+            from food_of_the_day.models import SavedMeal
+            for record in SavedMeal.objects.filter(user=user).select_related("meal"):
+                snapshot = record.snapshot_data or {}
+                meal_date = record.meal.date.strftime("%B %d, %Y") if record.meal else None
+
+                title = record.recipe_title or snapshot.get("title")
+                if not title and meal_date:
+                    title = f"Meal of the Day ({meal_date})"
+                elif not title:
+                    title = "Saved Meal"
+
+                meta_parts = []
+                if meal_date:
+                    meta_parts.append(f"Featured {meal_date}")
+                calories = snapshot.get("calories")
+                if calories:
+                    meta_parts.append(f"{calories} kcal")
+                ready_in = snapshot.get("ready_in_minutes") or snapshot.get("readyInMinutes")
+                if ready_in:
+                    meta_parts.append(f"{ready_in} min")
+
+                metadata = " · ".join(meta_parts) if meta_parts else "Meal of the Day"
+
+                items.append({
+                    "title": title,
+                    "type": "Meal",
+                    "metadata": metadata,
+                    "created_at": record.created_at,
+                    "open_url": reverse(
+                        "food_of_the_day:detail",
+                        args=[record.meal.pk],
+                    ) if record.meal else reverse("food_of_the_day:index"),
+                    "remove_url": reverse(
+                        "profile_saved_remove",
+                        args=["meal", record.pk],
+                    ),
+                })
+        except Exception:
+            pass
+
     # Display the newest persisted records first.
     return sorted(
         items,
