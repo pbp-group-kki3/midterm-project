@@ -7,6 +7,7 @@ from profiles.services import get_preferences
 from profiles.forms import AccountForm
 from comparison.models import SavedComparison
 from main.models import FavoriteProduct
+from meal_plan.models import MealPlan
 from unittest.mock import patch
 from datetime import timedelta
 from django.utils import timezone
@@ -308,7 +309,7 @@ class ProfileIntegrationTests(TestCase):
         FavoriteProduct.objects.create(user=self.user, barcode='111', product_name='Owned product')
         FavoriteProduct.objects.create(user=self.other, barcode='222', product_name='Private product')
         SavedComparison.objects.create(user=self.user, name='Owned comparison', barcodes=['111', '222'])
-        for category in ['all', 'product', 'comparison', 'article', 'meal-plan', 'meal']:
+        for category in ['all', 'product', 'comparison', 'article', 'meal']:
             response = self.client.get(reverse('profile_saved'), {'category': category})
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.context['active_section'], 'saved')
@@ -316,6 +317,17 @@ class ProfileIntegrationTests(TestCase):
         response = self.client.get(reverse('profile_saved'), {'category': 'comparison'})
         self.assertContains(response, 'Owned comparison')
         self.assertNotContains(response, 'Owned product')
+
+    def test_saved_has_no_meal_plans_category(self):
+        MealPlan.objects.create(
+            user=self.user, name='Green week', date=timezone.localdate(),
+            timeframe='week', days=7, calorie_goal=2000,
+        )
+        response = self.client.get(reverse('profile_saved'), {'category': 'all'})
+        self.assertNotContains(response, 'category=meal-plan')
+        self.assertNotContains(response, 'Green week')
+        response = self.client.get(reverse('profile_saved'), {'category': 'meal-plan'})
+        self.assertEqual(response.status_code, 404)
 
     def test_saved_comparison_opens_without_changing_selection(self):
         saved = SavedComparison.objects.create(user=self.user, name='Saved lineup', barcodes=['111', '222'])
