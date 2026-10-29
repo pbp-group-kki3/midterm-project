@@ -43,6 +43,12 @@
             Green highlights better available values.
             Equal or incomplete rows are not highlighted.
         </p>
+        {% if is_saved %}
+            <p class="type-body-sm text-secondary mt-3">
+                Comparison saved. Find it in your profile's
+                <a class="link" href="{% url 'profile_saved' %}?category=comparison">Saved</a> section.
+            </p>
+        {% endif %}
     </header>
 
     {% if show_compare_panel %}
@@ -173,6 +179,7 @@
                                 </div>
 
                                 <div class="btn-group mt-3">
+                                    {% if not viewing_saved %}
                                     <button
                                         type="button"
                                         class="btn btn-danger-subtle btn-sm flex-1 min-w-0 compare-remove-trigger"
@@ -184,6 +191,7 @@
                                     >
                                         Remove
                                     </button>
+                                    {% endif %}
 
                                     <button
                                         type="button"

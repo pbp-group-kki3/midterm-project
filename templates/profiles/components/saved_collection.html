@@ -1,0 +1,115 @@
+<!-- Display directly addressable Saved filters and persisted records. -->
+<div class="profile-saved-collection">
+    <nav class="chip-row profile-saved-filters" aria-label="Filter saved items">
+        {% for value, label in saved_categories %}
+            <a
+                href="{% url 'profile_saved' %}?category={{ value|urlencode }}"
+                class="chip{% if saved_category == value %} is-selected{% endif %}"
+                {% if saved_category == value %}aria-current="page"{% endif %}
+            >
+                {{ label }}
+            </a>
+        {% endfor %}
+    </nav>
+
+    <div class="profile-saved-list">
+        {% for item in saved_page %}
+            <article class="profile-saved-row">
+                <div class="profile-saved-thumbnail">
+                    <span class="icon icon-saved" aria-hidden="true"></span>
+                </div>
+
+                <div class="profile-saved-copy">
+                    <h3 class="type-label-md">{{ item.title }}</h3>
+                    <p class="type-caption text-brand">{{ item.type }}</p>
+                    <p class="type-body-sm text-secondary">{{ item.metadata }}</p>
+                    <p class="type-caption text-secondary">
+                        Saved {{ item.created_at|date:"j M Y" }}
+                    </p>
+                </div>
+
+                <div class="profile-saved-actions">
+                    <a
+                        class="btn btn-secondary profile-saved-open"
+                        href="{{ item.open_url }}"
+                        aria-label="Open {{ item.title }}"
+                    >
+                        Open
+                    </a>
+
+                    {% if item.remove_url %}
+                        <!-- Confirm removal of the saved record before sending POST. -->
+                        <form
+                            method="post"
+                            action="{{ item.remove_url }}"
+                            data-confirm-title="Remove from Saved?"
+                            data-confirm-text="This removes the saved record only. It does not delete the original product or other source content."
+                            data-confirm-label="Remove"
+                        >
+                            {% csrf_token %}
+                            <input
+                                type="hidden"
+                                name="category"
+                                value="{{ saved_category }}"
+                            >
+                            <button
+                                type="submit"
+                                class="btn btn-danger-subtle profile-saved-remove"
+                                aria-label="Remove {{ item.title }} from Saved"
+                                aria-haspopup="dialog"
+                                aria-controls="profile-confirm-dialog"
+                            >
+                                <span class="icon icon-x" aria-hidden="true"></span>
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </article>
+        {% empty %}
+            <!-- Show an honest empty state instead of prototype records. -->
+            <div class="empty-state">
+                <span class="icon icon-saved" aria-hidden="true"></span>
+                <h3 class="empty-state-title">Nothing saved here yet</h3>
+                <p class="empty-state-text">
+                    {% if saved_category == "article" %}
+                        Article bookmarks are not available yet.
+                    {% elif saved_category == "meal" %}
+                        Meal bookmarks are not available yet.
+                    {% else %}
+                        Items you save in this category will appear here.
+                    {% endif %}
+                </p>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if saved_page.has_other_pages %}
+        <!-- Keep pagination within the selected Saved category. -->
+        <nav
+            class="flex flex-wrap items-center justify-end gap-3"
+            aria-label="Saved pages"
+        >
+            {% if saved_page.has_previous %}
+                <a
+                    class="btn btn-secondary"
+                    href="?category={{ saved_category|urlencode }}&amp;page={{ saved_page.previous_page_number }}"
+                >
+                    Previous
+                </a>
+            {% endif %}
+
+            <span class="type-body-sm">
+                Page {{ saved_page.number }} of {{ saved_page.paginator.num_pages }}
+            </span>
+
+            {% if saved_page.has_next %}
+                <a
+                    class="btn btn-secondary"
+                    href="?category={{ saved_category|urlencode }}&amp;page={{ saved_page.next_page_number }}"
+                >
+                    Next
+                </a>
+            {% endif %}
+        </nav>
+    {% endif %}
+</div>
