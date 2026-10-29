@@ -10,6 +10,8 @@ DIETS = [
 ]
 
 DIET_CHOICES = [(key, label) for key, label, _, _ in DIETS]
+DIET_CHIP_CHOICES = [(key, label) for key, label in DIET_CHOICES if key != DEFAULT_DIET]
+PLANT_BASED_DIETS = ['vegetarian', 'vegan', 'pescatarian']
 DIET_LABELS = {key: label for key, label, _, _ in DIETS}
 DIET_HELPERS = {key: helper for key, _, _, helper in DIETS if helper}
 SPOONACULAR_DIETS = {key: word for key, _, word, _ in DIETS}

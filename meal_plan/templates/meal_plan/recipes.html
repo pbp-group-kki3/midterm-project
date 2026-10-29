@@ -32,10 +32,6 @@
                     {% include 'meal_plan/includes/select.html' with name=form.meal.html_name id=form.meal.id_for_label options=meal_options title='Meal' text='Choose which meal to show.' %}
                 </div>
                 <div class="field">
-                    <label class="field-label" for="{{ form.diet.id_for_label }}">{{ form.diet.label }}</label>
-                    {% include 'meal_plan/includes/select.html' with name=form.diet.html_name id=form.diet.id_for_label options=diet_options title='Diet' text='Choose one. You can change it later.' %}
-                </div>
-                <div class="field">
                     <label class="field-label" for="{{ form.max_calories.id_for_label }}">{{ form.max_calories.label }}</label>
                     <input type="number" name="{{ form.max_calories.html_name }}" id="{{ form.max_calories.id_for_label }}" class="input{% if form.max_calories.errors %} is-error{% endif %}" value="{{ form.max_calories.value|default_if_none:'' }}" min="50" max="3000" inputmode="numeric" placeholder="e.g. 600">
                     {% for error in form.max_calories.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
@@ -46,6 +42,18 @@
                     {% for error in form.max_minutes.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
                 </div>
             </div>
+
+            <fieldset class="mealplan-fieldset">
+                <legend class="field-label mealplan-legend">{{ form.diet.label }}</legend>
+                <div class="chip-row">
+                    {% for chip in diet_chips %}
+                        <label class="chip mealplan-chip{% if chip.checked %} is-selected{% endif %}">
+                            <input type="checkbox" name="{{ form.diet.html_name }}" value="{{ chip.key }}" class="mealplan-chip-input"{% if chip.checked %} checked{% endif %}>
+                            {{ chip.label }}
+                        </label>
+                    {% endfor %}
+                </div>
+            </fieldset>
 
             <div class="mealplan-filter-toggles">
                 <label class="checkbox">
