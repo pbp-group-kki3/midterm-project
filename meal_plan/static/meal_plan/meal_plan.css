@@ -57,13 +57,6 @@
     min-width: 160px;
 }
 
-/* Django messages above the content */
-.mealplan-alerts {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
-}
-
 /* Small credit line at the bottom of every page */
 .mealplan-credit {
     margin: 0;

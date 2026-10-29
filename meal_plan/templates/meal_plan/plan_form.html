@@ -15,7 +15,6 @@
             <p class="page-subtitle mealplan-mobile-only">Spoonacular picks the recipes. Allergy filters use Spoonacular's labels, so always check the recipe too.</p>
         </header>
 
-        {% include 'meal_plan/includes/messages.html' %}
 
         <div class="mealplan-create">
             <form method="post" class="card mealplan-form-card" novalidate data-plan-form data-profile-target="{{ profile_target }}" data-default-calories="{{ default_calories }}">
@@ -49,6 +48,9 @@
 
                 <div class="field">
                     <label class="field-label" for="{{ form.diet.id_for_label }}">{{ form.diet.label }}</label>
+                    {% if profile_multiple_diets %}
+                        <p class="field-helper">Your profile contains multiple diets. This planner supports one diet per plan, so choose it explicitly. Other profile diets are not automatically combined.</p>
+                    {% endif %}
                     {% include 'meal_plan/includes/select.html' with name=form.diet.html_name id=form.diet.id_for_label options=diet_options title='Diet' text='Choose one. You can change it later.' error=form.diet.errors %}
                     {% for error in form.diet.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
                 </div>

@@ -46,6 +46,8 @@
 
     {% include 'footer.html' %}
 
+    {% include 'components/toasts.html' %}
+    <script src="{% static 'js/toast.js' %}" defer></script>
     <script src="{% static 'js/navbar.js' %}" defer></script>
     {% block extra_js %}{% endblock %}
 </body>

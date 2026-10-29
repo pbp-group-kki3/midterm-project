@@ -676,12 +676,28 @@ class PlanCreateViewTests(MealPlanTestCase):
         self.assertContains(response, 'Skips pork and alcohol')
         self.assertEqual(self.api.calls, [])
 
-    def test_form_picks_the_main_diet_when_the_profile_has_several(self):
+    # Multiple profile diets require a deliberate choice for each plan.
+    def test_form_requires_a_diet_when_the_profile_has_several(self):
         self.set_profile(diet=['halal', 'vegetarian'])
         self.login()
         response = self.client.get(reverse('meal_plan:plan_create'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, '<option value="vegetarian" selected>Vegetarian</option>', html=True)
+        self.assertEqual(response.context['form']['diet'].value(), '')
+        self.assertTrue(response.context['profile_multiple_diets'])
+        self.assertContains(response, 'Choose a diet for this plan')
+        self.assertEqual(self.api.calls, [])
+
+        data = self.valid_data()
+        data['diet'] = ''
+        response = self.client.post(reverse('meal_plan:plan_create'), data)
+        self.assertIn('diet', response.context['form'].errors)
+        self.assertFalse(MealPlan.objects.exists())
+        self.assertEqual(self.api.calls, [])
+
+        data['diet'] = 'vegetarian'
+        response = self.client.post(reverse('meal_plan:plan_create'), data)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(MealPlan.objects.get().diet, 'vegetarian')
 
     def test_back_and_cancel_go_to_the_meal_plan_page(self):
         self.login()

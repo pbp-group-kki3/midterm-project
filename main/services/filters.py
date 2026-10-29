@@ -69,9 +69,26 @@ DIET_RULES = {
 def preference_fit(product, prefs):
     if not prefs:
         return None
-    diet = prefs.get("diet") or "none"
+
+    # Support current list values and older single-string values.
+    raw_diets = prefs.get("diet") or []
+
+    if isinstance(raw_diets, str):
+        raw_diets = [raw_diets]
+
+    if not isinstance(raw_diets, list):
+        raw_diets = []
+
+    diets = list(dict.fromkeys(
+        value.strip().lower()
+        for value in raw_diets
+        if isinstance(value, str)
+        and value.strip()
+        and value.strip().lower() != "none"
+    ))
+
     allergy_tags = prefs.get("off_tags") or []              # e.g. ["en:milk"]
-    if diet == "none" and not allergy_tags:
+    if not diets and not allergy_tags:
         return None                                         # no preferences set: nothing to compare
 
     # 1. Allergens: a listed allergen is a clear conflict
@@ -81,17 +98,24 @@ def preference_fit(product, prefs):
             return {"status": "conflict", "text": "Contains " + tag.split(":")[-1]}   # "en:milk" -> "milk"
 
     # 2. Diet
-    if diet != "none":
+    unverified_diets = []
+    for diet in diets:
         rule = DIET_RULES.get(diet)
         if rule is None:                                    # pescatarian: Open Food Facts has no tag for it
-            return {"status": "unknown", "text": f"? Can't verify {diet}"}
+            unverified_diets.append(diet)
+            continue
         field, yes_tag, no_tag = rule
         tags = product.get(field) or []
         if no_tag and no_tag in tags:
             return {"status": "conflict", "text": f"Not {diet}"}
         if yes_tag not in tags:
-            return {"status": "unknown", "text": f"? Can't verify {diet}"}
+            unverified_diets.append(diet)
 
+    if unverified_diets:
+        return {
+            "status": "unknown",
+            "text": "? Can't verify " + ", ".join(unverified_diets),
+        }
     # 3. Allergies set but the product lists no allergens at all: that means unknown, not allergen-free
     if allergy_tags and not allergens:
         return {"status": "unknown", "text": "? Can't verify allergens"}

@@ -1,0 +1,47 @@
+<!-- Render validated diet choices as accessible checkbox chips. -->
+{% if panels %}<div class="card">{% endif %}
+<fieldset class="field">
+    <legend class="{% if panels %}type-h3{% else %}field-label{% endif %}">Dietary preferences</legend>
+
+    <p class="field-helper" id="{{ form.diet.auto_id }}-help">
+        Select all that apply. Leave everything unchecked for no preference.
+    </p>
+
+    <div class="chip-row" aria-describedby="{{ form.diet.auto_id }}-help">
+        {% for checkbox in form.diet %}
+            <label class="chip profile-chip">
+                {{ checkbox.tag }}
+                <span>{{ checkbox.choice_label }}</span>
+            </label>
+        {% endfor %}
+    </div>
+
+    {% for error in form.diet.errors %}
+        <p class="field-error" role="alert">{{ error }}</p>
+    {% endfor %}
+</fieldset>
+{% if panels %}</div>{% endif %}
+
+<!-- Render validated allergy choices as accessible checkbox chips. -->
+{% if panels %}<div class="card">{% endif %}
+<fieldset class="field">
+    <legend class="{% if panels %}type-h3{% else %}field-label{% endif %}">Allergies</legend>
+
+    <p class="field-helper" id="{{ form.allergies.auto_id }}-help">
+        Select all that apply. Leave everything unchecked if none apply.
+    </p>
+
+    <div class="chip-row" aria-describedby="{{ form.allergies.auto_id }}-help">
+        {% for checkbox in form.allergies %}
+            <label class="chip profile-chip">
+                {{ checkbox.tag }}
+                <span>{{ checkbox.choice_label }}</span>
+            </label>
+        {% endfor %}
+    </div>
+
+    {% for error in form.allergies.errors %}
+        <p class="field-error" role="alert">{{ error }}</p>
+    {% endfor %}
+</fieldset>
+{% if panels %}</div>{% endif %}
