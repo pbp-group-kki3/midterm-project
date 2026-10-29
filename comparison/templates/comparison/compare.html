@@ -16,7 +16,6 @@
 {% endblock %}
 
 {% block content %}
-    {% include "comparison/components/toasts.html" %}
     <header class="page-header compare-header">
         <a href="/" class="back-link mb-3">
             <span class="icon icon-arrow-left" aria-hidden="true"></span>
@@ -55,16 +54,9 @@
             {% if not is_saved %}hidden{% endif %}
         >
             Comparison saved. Find it in your profile's
-            <span class="compare-saved-link">Saved</span> section.
+            <a class="compare-saved-link" href="{% url 'profile_saved' %}?category=comparison">Saved</a> section.
         </p>
     </header>
-
-    {% if unavailable_barcodes %}
-        <div class="alert alert-warning mb-6" role="status">
-            Some selected products could not be loaded.
-            Please try again later.
-        </div>
-    {% endif %}
 
     {% if show_compare_panel %}
         <div
@@ -200,6 +192,7 @@
                                 </div>
 
                                 <div class="btn-group mt-3">
+                                    {% if not viewing_saved %}
                                     <button
                                         type="button"
                                         class="btn btn-danger-subtle btn-sm flex-1 min-w-0 compare-remove-trigger"
@@ -211,6 +204,7 @@
                                     >
                                         Remove
                                     </button>
+                                    {% endif %}
 
                                     <a
                                         href="{% url 'main:product_detail' product.compare_barcode %}?source=comparison"
@@ -312,11 +306,6 @@
 
     <script
         src="{% static 'comparison/js/comparison.js' %}"
-        defer
-    ></script>
-
-    <script
-        src="{% static 'comparison/js/toast.js' %}"
         defer
     ></script>
 
