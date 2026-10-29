@@ -14,11 +14,6 @@
         Discover
     </a>
 
-    {# One-time notes, e.g. "Remove one to add another" (shared .alert, Django messages) #}
-    {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} mt-6">{{ message }}</div>
-    {% endfor %}
-
     {% if not product %}
         <div class="alert alert-warning mt-6">Product data is not available right now. Please try again in a moment.</div>
     {% else %}
