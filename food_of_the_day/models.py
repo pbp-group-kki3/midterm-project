@@ -53,12 +53,19 @@ class SavedMeal(models.Model):
         on_delete=models.CASCADE,
         related_name='saved_meals',
     )
+    # SET_NULL preserves user bookmarks even if an admin clears or changes the meal schedule
     meal = models.ForeignKey(
         MealOfTheDay,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='saved_by_users',
     )
+    recipe_id = models.IntegerField(null=True, blank=True)
     recipe_title = models.CharField(max_length=255, blank=True)
+
+    # Immutable point-in-time snapshot of the recipe at bookmark time
+    snapshot_data = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -68,6 +75,7 @@ class SavedMeal(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'meal'],
+                condition=models.Q(meal__isnull=False),
                 name='unique_saved_meal_per_user',
             ),
         ]
