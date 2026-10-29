@@ -683,6 +683,12 @@ class PlanCreateViewTests(MealPlanTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '<option value="vegetarian" selected>Vegetarian</option>', html=True)
 
+    def test_back_and_cancel_go_to_the_meal_plan_page(self):
+        self.login()
+        response = self.client.get(reverse('meal_plan:plan_create'))
+        self.assertContains(response, '<a href="/meal-plan/" class="back-link">← Back to Meal Plan</a>', html=True)
+        self.assertContains(response, '<a href="/meal-plan/" class="btn btn-secondary mealplan-action">Cancel</a>', html=True)
+
     def test_form_shows_the_seven_figma_chips_by_default(self):
         self.login()
         response = self.client.get(reverse('meal_plan:plan_create'))
@@ -900,6 +906,17 @@ class RecipesViewTests(MealPlanTestCase):
             for number in range(20)
         ]
         self.login()
+
+    def test_meal_plan_opens_on_the_recipes_page(self):
+        response = self.client.get('/meal-plan/')
+        self.assertTemplateUsed(response, 'meal_plan/recipes.html')
+        self.assertEqual(reverse('meal_plan:plan_list'), '/meal-plan/plans/')
+        self.assertContains(response, '<a href="/meal-plan/plans/" class="btn btn-secondary mealplan-action">My plans</a>', html=True)
+        self.assertContains(response, '<a href="/meal-plan/plans/new/" class="btn btn-primary mealplan-action">Create meal plan</a>', html=True)
+
+    def test_old_recipes_address_redirects_and_keeps_filters(self):
+        response = self.client.get('/meal-plan/recipes/', {'diet': 'vegan', 'page': '2'})
+        self.assertRedirects(response, '/meal-plan/?diet=vegan&page=2', fetch_redirect_response=False)
 
     def test_recipes_page_shows_cards_filters_and_load_more(self):
         response = self.client.get(reverse('meal_plan:recipes'))
