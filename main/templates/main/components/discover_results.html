@@ -4,7 +4,8 @@
 {# Hidden until "Filters" is clicked (main.js), but kept visible while a filter is on #}
 <div id="quick-filters" class="chip-row discover-quick-filters mt-6 {% if not filter_count %}is-hidden{% endif %}">
     {% for chip in quick_chips %}
-        <a href="{{ chip.url }}" class="chip {% if chip.selected %}is-selected{% endif %}">{{ chip.text }}</a>
+        {# change: step 5. href stays (works without JavaScript); hx-get does the same request in the background and swaps only the results #}
+        <a href="{{ chip.url }}" hx-get="{{ chip.url }}" hx-target="#discover-results" hx-push-url="true" class="chip {% if chip.selected %}is-selected{% endif %}">{{ chip.text }}</a>
     {% endfor %}
 </div>
 
@@ -21,14 +22,14 @@
             <h3 class="empty-state-title">No products found</h3>
             <p class="empty-state-text">{% if q %}Nothing matched "{{ q }}"{% if filter_count %} with these filters{% endif %}. Try another product name.{% else %}No products match these filters.{% endif %}</p>
             {% if filter_count %}
-                <a href="{{ clear_url }}" class="btn btn-primary">Clear filters</a>
+                <a href="{{ clear_url }}" hx-get="{{ clear_url }}" hx-target="#discover-results" hx-push-url="true" class="btn btn-primary">Clear filters</a>
             {% endif %}
         </div>
 
     {% elif products %}
         <p class="type-label-md mb-6">
             {% if q %}{{ total }} result{{ total|pluralize }} for "{{ q }}"{% else %}{{ total }} product{{ total|pluralize }}{% endif %}
-            {% if filter_count %}<a href="{{ clear_url }}" class="link ml-4">Clear filters</a>{% endif %}
+            {% if filter_count %}<a href="{{ clear_url }}" hx-get="{{ clear_url }}" hx-target="#discover-results" hx-push-url="true" class="link ml-4">Clear filters</a>{% endif %}
         </p>
         {# change: id so main.js can add the next cards to the end of the grid #}
         <div class="card-grid" id="discover-grid">

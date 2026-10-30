@@ -6,7 +6,9 @@
         {% include 'components/dialog_close.html' %}
     </div>
     {# Its own GET form: ticking boxes and pressing Show products reloads the page with them in the URL #}
-    <form method="get" action="{% url 'main:show_main' %}">
+    {# change: step 5. hx-get sends the ticked boxes in the background. The answer redraws this dialog (hx-swap-oob), which closes it #}
+    <form method="get" action="{% url 'main:show_main' %}"
+          hx-get="{% url 'main:show_main' %}" hx-target="#discover-results" hx-push-url="true">
         <input type="hidden" name="q" value="{{ q }}">
         {% if sort %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
 
@@ -64,7 +66,7 @@
         </div>
 
         <div class="dialog-actions">
-            <a href="{{ clear_url }}" class="btn btn-secondary">Reset</a>
+            <a href="{{ clear_url }}" hx-get="{{ clear_url }}" hx-target="#discover-results" hx-push-url="true" class="btn btn-secondary">Reset</a>
             <button type="submit" class="btn btn-primary">Show products</button>
         </div>
     </form>
