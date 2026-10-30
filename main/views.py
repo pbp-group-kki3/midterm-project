@@ -346,20 +346,27 @@ def toggle_favorite(request, barcode):
     if not is_valid_barcode(barcode):   # change: never save a fake barcode
         raise Http404("Product not found")
     favorite = FavoriteProduct.objects.filter(user=request.user, barcode=barcode).first()
+    posted_name = clean_name(request.POST.get("product_name", ""))   # change: tags removed, max 255 (the field's max_length)
     if favorite:
+        name = favorite.product_name or posted_name
         favorite.delete() # if already saved -> remove
+        message = f"{name or 'This product'} was removed from your saved products."   # change: step 6, text for the toast
     else:
         FavoriteProduct.objects.create(
             user=request.user,
             barcode=barcode,
-            product_name=clean_name(request.POST.get("product_name", "")),   # change: tags removed, max 255 (the field's max_length)
+            product_name=posted_name,
         )
+        message = f"{posted_name or 'This product'} was added to your saved products."
 
 
     # Clicked with JavaScript (main.js): answer with JSON so the page doesn't reload and jump to the top
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
         saved_now = FavoriteProduct.objects.filter(user=request.user, barcode=barcode).exists()
-        return JsonResponse({"saved": saved_now})
+        return JsonResponse({"saved": saved_now, "message": message})   # change: main.js puts message in the shared toast
+
+    # change: step 6. Without JavaScript the page reloads, so Django messages shows the same toast (base.html)
+    messages.success(request, message)
 
     # Go back to the page the heart was clicked on, but only if it's on OUR site (blocks open redirects)
     next_url = request.POST.get("next", "")
