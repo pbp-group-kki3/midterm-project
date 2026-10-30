@@ -350,7 +350,6 @@
     );
 
     // Reopen the step selected by the server after a validation error.
-    displayStep({{ registration_step|default:1 }});
-
+    displayStep(parseInt("{{ registration_step|default:1 }}", 10));
 </script>
 {% endblock %}
