@@ -64,8 +64,9 @@ def register_view(request):
                 profile.save()
 
             messages.success(request, "Your account has been created. Please log in.")
-            login_url = reverse("login")
-            return redirect(login_url + ("?" + urlencode({"next": next_url}) if next_url else ""))
+            login_view = ProfileLoginView()
+            login_view.setup(request)
+            next_url = login_view.get_redirect_url()
     else:
         form = SignupForm()
 
