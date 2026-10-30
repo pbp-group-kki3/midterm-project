@@ -1360,3 +1360,94 @@ class CardHoverTests(TestCase):
         css = self.css()
         block = css[css.index("prefers-reduced-motion: reduce", css.index(".discover-card:hover")):]
         self.assertIn(".discover-card", block[:300])        # change: people who turned off animations get no movement
+
+
+# change: step 5. filters, quick chips and sort also work without reloading the page (HTMX)
+class LiveFilterTests(TestCase):
+    def setUp(self):
+        cache.clear()
+
+    def page(self):
+        with patch("main.views.search_products", return_value=[dict(ULTRA_MILK)]):
+            return self.client.get(reverse("main:show_main"), {"q": "susu", "grade": "A"})
+
+    def test_quick_chips_update_the_results_only(self):
+        self.assertRegex(self.page().content.decode(),
+            r'<a href="[^"]*" hx-get="[^"]*" hx-target="#discover-results" hx-push-url="true" class="chip')   # change: href stays, so it works without JavaScript
+
+    def test_sort_button_updates_the_results_only(self):
+        self.assertRegex(self.page().content.decode(),
+            r'<a href="[^"]*" hx-get="[^"]*" hx-target="#discover-results" hx-push-url="true" class="btn btn-white')
+
+    def test_clear_filters_link_updates_the_results_only(self):
+        self.assertRegex(self.page().content.decode(),
+            r'<a href="[^"]*" hx-get="[^"]*" hx-target="#discover-results" hx-push-url="true" class="(link ml-4|btn btn-primary)')   # change: small link above the results, or the button in the "No products found" box
+
+    def test_filter_form_is_sent_with_htmx(self):
+        html = self.page().content.decode()
+        form = html[html.index('id="filter-dialog"'):]
+        self.assertIn('hx-get="/"', form[:900].replace(reverse("main:show_main"), "/"))   # change: the Show products form asks the same view
+        self.assertIn('hx-target="#discover-results"', form[:900])
+        self.assertIn('hx-push-url="true"', form[:900])
+
+    def test_htmx_filter_answer_has_chips_tools_and_closed_dialog(self):
+        with patch("main.views.search_products", return_value=[dict(ULTRA_MILK)]):
+            response = self.client.get(reverse("main:show_main"), {"q": "susu", "grade": "A"}, **HTMX)
+        self.assertTemplateUsed(response, "main/components/discover_htmx.html")
+        self.assertContains(response, 'id="quick-filters"')                    # change: chips come back with the results
+        self.assertContains(response, 'hx-swap-oob="true"')                     # change: Filters (1) button + new dialog replace the old ones
+        self.assertContains(response, "Filters (1)")
+
+
+# change: logging in from Discover brings you back with the same search but the filters reset
+class LoginResetsFiltersTests(TestCase):
+    def setUp(self):
+        cache.clear()
+
+    @patch("main.views.search_products", return_value=[dict(ULTRA_MILK)])
+    def test_compare_login_link_keeps_search_but_drops_filters(self, fake_search):
+        response = self.client.get(reverse("main:show_main"), {"q": "susu", "processing": "any", "show": 12, "sort": "grade"})   # change: params that keep the product on screen
+        html = response.content.decode()
+        start = html.index("+ Compare")
+        link = html[html.rindex("<a ", 0, start):start]                       # the logged-out "+ Compare" link
+        self.assertIn("next=/%3Fq%3Dsusu", link)                               # change: same search after login
+        self.assertNotIn("processing", link)                                  # change: no filters ticked
+        self.assertNotIn("show", link)
+        self.assertNotIn("sort", link)
+
+    def test_product_page_login_link_still_comes_back_to_the_product(self):
+        product = dict(ULTRA_MILK)
+        with patch("main.views.get_product", return_value=product), patch("main.views.get_alternatives", return_value=[]):
+            response = self.client.get(reverse("main:product_detail", args=[product["code"]]))
+        self.assertContains(response, "next=/product/" + product["code"])     # change: only Discover resets, the product page doesn't
+
+
+# change: filters belong to one visit. A new session (server restarted, logged out, new browser) starts with no filters
+class FreshVisitResetsFiltersTests(TestCase):
+    def setUp(self):
+        cache.clear()
+
+    def test_new_visit_with_old_filters_goes_back_to_plain_search(self):
+        response = self.fresh_client().get(reverse("main:show_main"), {"q": "susu", "grade": "A", "label": "halal"})
+        self.assertRedirects(response, reverse("main:show_main") + "?q=susu", fetch_redirect_response=False)
+
+    def test_new_visit_without_search_goes_back_to_plain_discover(self):
+        response = self.fresh_client().get(reverse("main:show_main"), {"sort": "grade"})
+        self.assertRedirects(response, reverse("main:show_main"), fetch_redirect_response=False)
+
+    @patch("main.views.search_products", return_value=[dict(ULTRA_MILK)])
+    def test_same_visit_keeps_filters_on_refresh(self, fake_search):
+        client = self.fresh_client()
+        client.get(reverse("main:show_main"), {"q": "susu"})                       # first visit starts the session
+        response = client.get(reverse("main:show_main"), {"q": "susu", "grade": "A"})
+        self.assertEqual(response.status_code, 200)                               # change: refreshing mid-visit keeps them
+
+    @patch("main.views.search_products", return_value=[dict(ULTRA_MILK)])
+    def test_new_visit_with_only_a_search_is_not_redirected(self, fake_search):
+        response = self.fresh_client().get(reverse("main:show_main"), {"q": "susu"})
+        self.assertEqual(response.status_code, 200)
+
+    def fresh_client(self):
+        from django.test import Client
+        return Client(HTTP_HOST="localhost")   # change: a real-looking visitor, the reset is skipped for the shared test host
+
