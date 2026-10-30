@@ -54,6 +54,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 body: body,
                 headers: { "X-Requested-With": "XMLHttpRequest" },
             });
+            if (await handleBlockedResponse(response)) {               // change: 401 -> login page, 429 -> "slow down" toast
+                return;
+            }
             if (response.redirected || !response.ok) {                  // e.g. logged out -> login page
                 window.location.href = response.url;
                 return;
@@ -84,6 +87,11 @@ document.addEventListener("DOMContentLoaded", () => {
         link.textContent = "Loading...";
         try {
             const response = await fetch(link.href, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+            if (await handleBlockedResponse(response)) {               // change: too many requests -> toast, the button comes back
+                link.classList.remove("is-disabled");
+                link.textContent = "Load more products";
+                return;
+            }
             if (!response.ok) {
                 throw new Error("load more failed");
             }
@@ -213,6 +221,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     ),
                 },
             });
+
+            if (await handleBlockedResponse(response)) {               // change: 401 -> login page, 429 -> "slow down" toast
+                return;                                                // ("finally" below still re-enables the heart)
+            }
 
             if (response.redirected || !response.ok) {
                 if (!inOverlay) {
@@ -547,5 +559,30 @@ function setUpCarousel() {
     window.addEventListener("resize", measure);
     show(0);                                                             // change: start on slide 1 (also hides slide 2 from the Tab key)
     carousel.classList.remove("is-moving");                             // nothing is moving yet on page load
+}
+
+
+// change: step 2. Handles the two answers from our security decorators (main/decorators.py):
+// 401 = not logged in -> go to the login page (it brings you back afterwards)
+// 429 = too many requests -> the shared warning toast (static/js/toast.js), the page stays as it is
+// Returns true when it handled the response, so the caller stops there
+async function handleBlockedResponse(response) {
+    if (response.status !== 401 && response.status !== 429) {
+        return false;
+    }
+    let data = {};
+    try {
+        data = await response.json();                                 // {"message": "...", "login_url": "..."}
+    } catch (error) {
+        data = {};                                                     // no JSON: use the defaults below
+    }
+    if (response.status === 401) {
+        window.location.href = data.login_url || "/profiles/login/";
+        return true;
+    }
+    if (typeof window.showToast === "function") {
+        window.showToast("Slow down", data.message || "Please wait a minute and try again.", "warning");
+    }
+    return true;
 }
 

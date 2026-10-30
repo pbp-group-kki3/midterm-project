@@ -17,6 +17,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from main.models import FavoriteProduct, ViewHistory
+from main.decorators import login_required_json, rate_limit, wants_json, SEARCH_LIMIT, FAVORITE_LIMIT, COMPARE_LIMIT  # change: step 2
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
 
@@ -124,6 +125,7 @@ def compare_tray(request):
     }
 
 # main / product discovery page: search + filters + sort + load more
+@rate_limit("search", SEARCH_LIMIT)   # change: max 60 Discover loads/searches per minute per person
 def show_main(request):
     q = clean_query(request.GET.get("q", ""))   # change: no HTML tags, no extra spaces, max 100 characters
     grades = request.GET.getlist("grade")              # e.g. ["A", "B"]  (getlist: a key can repeat)
@@ -298,8 +300,9 @@ def product_detail(request, barcode):
     return render(request, "main/product_detail.html", context)
 
 # function : add to favorites action
-@login_required(login_url="login")   # login page by its URL name (Profile module), works even if settings.LOGIN_URL is outdated
+@login_required_json   # change: our decorator. Normal forms -> login page, JavaScript clicks -> 401 JSON
 @require_POST # GET (typing the URL) is refused
+@rate_limit("favorite", FAVORITE_LIMIT)   # change: max 30 heart clicks per minute
 def toggle_favorite(request, barcode):
     if not is_valid_barcode(barcode):   # change: never save a fake barcode
         raise Http404("Product not found")
@@ -330,7 +333,7 @@ def toggle_favorite(request, barcode):
 # and we send back the new tray HTML plus the new compare button for each of those cards.
 # It uses the same two templates as a normal page load, so the HTML is only written in one place
 def is_ajax(request):
-    return request.headers.get("x-requested-with") == "XMLHttpRequest"
+    return wants_json(request)   # change: one shared check (decorators.py), also true for HTMX requests
 
 
 def compare_json(request):
@@ -363,8 +366,9 @@ def back_to(request, fallback="main:show_main"):
 
 
 # "+ Compare": put a product in the compare tray (session). Logged out -> login page (team doc + Figma)
-@login_required(login_url="login")   # login page by its URL name (Profile module), works even if settings.LOGIN_URL is outdated
+@login_required_json   # change: same as the heart
 @require_POST
+@rate_limit("compare", COMPARE_LIMIT)   # change: add and remove share one counter
 def add_to_compare(request, barcode):
     if not is_valid_barcode(barcode):   # change: never put a fake barcode in the tray (Alyssa's page reads it)
         raise Http404("Product not found")
@@ -390,8 +394,9 @@ def add_to_compare(request, barcode):
 
 
 # The x on a tray item: take it out of the comparison and stay on this page
-@login_required(login_url="login")   # login page by its URL name (Profile module), works even if settings.LOGIN_URL is outdated
+@login_required_json
 @require_POST
+@rate_limit("compare", COMPARE_LIMIT)
 def remove_from_compare(request, barcode):
     if not is_valid_barcode(barcode):   # change: same check as adding
         raise Http404("Product not found")
