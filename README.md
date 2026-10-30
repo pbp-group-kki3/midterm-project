@@ -310,7 +310,7 @@ python manage.py test main.tests_functional
 
 The Profile module handles everything about a user's account: signing up, logging in, their details and preferences, and what they've saved or viewed.
 
-#### ✨ Highlights
+### ✨ Highlights
 
 The module is made up of six parts:
 
@@ -323,7 +323,7 @@ The module is made up of six parts:
 
 <!-- TODO (Serafin): a short description of each part and its key technical details -->
 
-#### 🤖 AI Disclosure
+### 🤖 AI Disclosure
 
 **Models used**
 
@@ -344,7 +344,7 @@ The module is made up of six parts:
 | HTML visuals | The AI struggled to produce a good-looking result and needed many iterations | Manual changes to the templates and styling |
 | Regressions | Random hallucinations and regressions, especially when context or specifications were missing | Most manual fixes reversed regressions and syntax conflicts, especially around file names, conventions and directories |
 
-#### 📌 Dev Note
+### 📌 Dev Note
 
 <details>
 <summary>Commit convention</summary>
@@ -379,7 +379,7 @@ Product Discovery is the main page of SpoonFeed (the `main` app): live product s
 <!-- TODO: GIFs, e.g. docs/readme/discover-search.gif, docs/readme/favorite-toast.gif, docs/readme/compare-tray.gif -->
 <!-- ![Live search and filters](docs/readme/discover-search.gif) -->
 
-#### ✨ Highlights
+### ✨ Highlights
 
 **API caching and resilience**
 
@@ -430,7 +430,7 @@ Open Food Facts is a free, community-run API that is sometimes slow or answers `
 
 The global CSS (`static/css/tokens.css`, `base.css`, `components.css`, `pages.css`) was built from the team's Figma design system, together with the local `/styleguide/` page that shows every token and component. This way all six members build pages with the same buttons, cards, chips, dialogs and toasts.
 
-#### 🤖 AI Disclosure
+### 🤖 AI Disclosure
 
 **Models used**
 
@@ -471,7 +471,7 @@ Meal Plan creates personalised meal plans from Spoonacular recipes and lets user
 
 <!-- TODO: GIF, e.g. docs/readme/meal-plan-create.gif -->
 
-#### ✨ Highlights
+### ✨ Highlights
 
 - The Recipes page is Meal Plan's landing page. It searches Spoonacular recipes with filters for meal, diet (several at once: vegetarian, vegan, pescatarian, ketogenic and halal), max kcal, max minutes, gluten free, dairy free and sustainable. "Load more recipes" adds the next page with AJAX, without reloading.
 - Creating a plan takes a name, start date, 1 to 14 days, diets, allergies, an optional daily snack and a calorie goal. The form is filled in from the user's Profile preferences, and the plan summary updates live. Spoonacular's meal planner picks breakfast, lunch and dinner for each day. Allergies are excluded, and halal skips pork and alcohol (labelled "Halal not verified", since Spoonacular can't confirm halal).
@@ -485,7 +485,7 @@ Meal Plan creates personalised meal plans from Spoonacular recipes and lets user
 - Layouts are responsive for desktop, tablet and phone, following the Figma (the replace dialog becomes a bottom sheet on phones), and the dropdowns work with the keyboard.
 - 102 automated tests, including security tests. They mock Spoonacular, so they never use API points.
 
-#### 🤖 AI Disclosure
+### 🤖 AI Disclosure
 
 **Models used**
 
@@ -523,7 +523,7 @@ The Product Comparison module lets users evaluate two or three food products sid
 
 <!-- TODO: GIF, e.g. docs/readme/comparison.gif -->
 
-#### ✨ Highlights
+### ✨ Highlights
 
 **Field-level comparison and highlighting**
 - Comparison logic lives in reusable service functions rather than in the templates.
@@ -580,7 +580,7 @@ The Product Comparison module lets users evaluate two or three food products sid
 - Reuses SpoonFeed's global button, icon, dialog and typography components.
 - Added the SpoonFeed SVG favicon through the shared base template, so every page shows the same browser tab icon.
 
-#### 🤖 AI Disclosure
+### 🤖 AI Disclosure
 
 **Models used**
 
@@ -618,7 +618,7 @@ The Meal of the Day module delivers a daily recipe recommendation that works bot
 
 <!-- TODO: GIF, e.g. docs/readme/meal-of-the-day.gif -->
 
-#### ✨ Highlights
+### ✨ Highlights
 
 **Immutable snapshot architecture**
 - Instead of storing a foreign key or remote ID that breaks if external recipes change or Spoonacular is unavailable, saving a meal stores an immutable snapshot (`snapshot_data = models.JSONField(...)`).
@@ -645,7 +645,7 @@ The Meal of the Day module delivers a daily recipe recommendation that works bot
 **Test coverage**
 - 50 unit and integration tests covering models, uniqueness constraints, sanitisation, open-redirect defences, negative caching, AJAX toggles and cross-module profile integration.
 
-#### 🤖 AI Disclosure
+### 🤖 AI Disclosure
 
 **Models used**
 
@@ -678,12 +678,12 @@ The Meal of the Day module delivers a daily recipe recommendation that works bot
 
 The Blog module provides educational content about sustainable food consumption and environmentally responsible lifestyles. It helps users understand the information shown elsewhere in the app and encourages more sustainable daily habits. Articles cover food waste, packaging, recycling, carbon footprints, sustainable shopping, nutrition labels, seasonal food and responsible consumption.
 
-#### ✨ Highlights
+### ✨ Highlights
 
 <!-- TODO (Qeela): what was added (security, interactivity, testing) -->
 Coming soon.
 
-#### 🤖 AI Disclosure
+### 🤖 AI Disclosure
 
 <!-- TODO (Qeela): models, prompt strategy, limitations and manual fixes -->
 Coming soon.
