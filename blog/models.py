@@ -1,7 +1,7 @@
-import math
 from django.db import models
 from django.contrib.auth.models import User
-from django.utils import timezone
+from django.urls import reverse
+from django.utils.text import slugify
 
 class Article(models.Model):
     TOPIC_CHOICES = [
@@ -14,37 +14,40 @@ class Article(models.Model):
         ('seasonal_food', 'Seasonal food'),
     ]
 
-    title = models.CharField(max_length=255)
-    slug = models.SlugField(unique=True)
-    summary = models.TextField()
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True, max_length=200)
+    summary = models.CharField(max_length=300)
     body = models.TextField()
-    topic = models.CharField(max_length=30, choices=TOPIC_CHOICES)
-    cover_url = models.URLField(max_length=500)
+    topic = models.CharField(max_length=50, choices=TOPIC_CHOICES)
+    cover_image = models.ImageField(upload_to='blog/covers/', blank=True, null=True)
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='articles')
-    published_at = models.DateTimeField(default=timezone.now)
-    is_published = models.BooleanField(default=True)
+    published_at = models.DateTimeField(auto_now_add=True)
+    is_published = models.BooleanField(default=False)
+    saved_by = models.ManyToManyField(User, related_name='saved_articles', blank=True)
 
-    class Meta:
-        ordering = ['-published_at']
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse('blog:article_detail', kwargs={'slug': self.slug})
+
+    def get_read_time(self):
+        # Calculates read time assuming an average reading speed of 200 words per minute
+        word_count = len(self.body.split())
+        return max(1, word_count // 200)
 
     def __str__(self):
         return self.title
 
-    @property
-    def read_time(self):
-        """Calculates estimated reading time in minutes (assumes ~200 wpm)."""
-        word_count = len(self.body.split())
-        return max(1, math.ceil(word_count / 200))
-
-
 class ArticleComment(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name='comments')
     text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['-created_at']
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
+    likes = models.ManyToManyField(User, related_name='liked_comments', blank=True)
 
     def __str__(self):
         return f"Comment by {self.user.username} on {self.article.title}"
