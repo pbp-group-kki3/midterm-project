@@ -1,4 +1,7 @@
-<img src="static/img/Header.svg" alt="SpoonFeed logo" width="88">
+<p>
+  <img src="static/img/Header.svg" alt="SpoonFeed logo" height="72">
+  <img src="docs/readme/wordmark.svg" alt="SpoonFeed" height="72">
+</p>
 
 # SpoonFeed
 
@@ -11,24 +14,7 @@ SpoonFeed is a Django web app that helps people choose healthier and more sustai
 <!-- TODO: hero screenshot of the landing page (Meal of the Day carousel) -->
 <!-- ![SpoonFeed landing page](docs/readme/hero.png) -->
 
-## Contents
-
-1. [About](#about)
-2. [Links](#links)
-3. [Team](#team)
-4. [External APIs](#external-apis)
-5. [User Roles](#user-roles)
-6. [Modules](#modules)
-7. [Running Locally](#running-locally)
-8. [Team Workflow](#team-workflow)
-9. [Contributors](#contributors)
-10. [Team AI Disclosure](#team-ai-disclosure)
-11. [Credits](#credits)
-
----
-
-<a id="about"></a>
-## 🌱 About
+## 🌱 About SpoonFeed
 
 Food production is one of the largest contributors to global environmental impact. Agriculture, packaging and transportation together make up a large share of a product's carbon footprint, yet this information is almost never visible to shoppers at the point of purchase.
 
@@ -36,12 +22,12 @@ Most people want to make greener choices, but nutrition labels don't show enviro
 
 SpoonFeed closes that gap. Users can:
 
-- search products and see one clear grade for each,
-- compare two or three products side by side,
-- get better alternatives from the same category,
-- plan meals around their diet, allergies and calorie goal,
-- discover a sustainable Meal of the Day and discuss it,
-- read and write blog articles about sustainable food.
+- 🔍 search products and see one clear grade for each,
+- ⚖️ compare two or three products side by side,
+- 💡 get better alternatives from the same category,
+- 🍽️ plan meals around their diet, allergies and calorie goal,
+- ⭐ discover a sustainable Meal of the Day and discuss it,
+- 📝 read and write blog articles about sustainable food.
 
 ### The SpoonFeed grade
 
@@ -54,6 +40,21 @@ Every product gets one overall grade from A to E, built from three public scores
 | Processing | NOVA group | 15% |
 
 Missing parts are left out and the remaining weights are rescaled, so a product with partial data still gets a fair grade. A product with no data at all shows `?` instead of a made-up grade.
+
+---
+
+## Contents
+
+1. [Links](#links)
+2. [Team](#team)
+3. [External APIs](#external-apis)
+4. [User Roles](#user-roles)
+5. [Modules](#modules)
+6. [Running Locally](#running-locally)
+7. [Team Workflow](#team-workflow)
+8. [Contributors](#contributors)
+9. [Team AI Disclosure](#team-ai-disclosure)
+10. [Credits](#credits)
 
 ---
 
@@ -141,7 +142,7 @@ Used for recipe search, the meal planner and the Meal of the Day. Following Spoo
 
 Each module has its own models, views, templates and forms, server-side permission checks, and at least one interaction that updates the page without a reload.
 
-### 👤 Profile
+## 👤 Profile
 By [Serafin](#serafin) ([2506637136](#serafin))
 
 Manages user accounts and personal preferences. Users register, log in, edit their profile and access their saved items. They can set dietary preferences, allergies and nutritional goals, which other modules use to personalise meal plans and product results.
@@ -153,7 +154,7 @@ Manages user accounts and personal preferences. Users register, log in, edit the
 | Update | Edit their profile and preferences, change their password and replace their profile picture. |
 | Delete | Delete their account or profile picture, remove saved items, and delete single history entries or clear the whole history. |
 
-### 🔍 Product Discovery
+## 🔍 Product Discovery
 By [Rebecca](#rebecca) ([2506637110](#rebecca))
 
 The main page of SpoonFeed. Users search Indonesian food products, filter them, and see a short card with each product's SpoonFeed grade. The detail page explains the grade, shows nutrition, ingredients, packaging and environmental data, and recommends up to three better alternatives from the same category. Products can be saved as favorites or added to the compare tray.
@@ -165,7 +166,7 @@ The main page of SpoonFeed. Users search Indonesian food products, filter them, 
 | Update | Click the heart again to switch a product between saved and unsaved. Revisiting a product updates its time in the history instead of adding a duplicate. |
 | Delete | Unsave a favorite or remove a product from the compare tray. History entries are deleted from the Profile page. |
 
-### ⚖️ Product Comparison
+## ⚖️ Product Comparison
 By [Alyssa](#alyssa) ([2506558466](#alyssa))
 
 Lets users evaluate two or three products side by side using nutrition, environmental indicators, processing scores, labels and allergens. Better values are highlighted per row. Logged-in users can save comparison lineups and manage them from their profile.
@@ -177,7 +178,7 @@ Lets users evaluate two or three products side by side using nutrition, environm
 | Update | Edit a saved comparison's name and notes. |
 | Delete | Remove a saved comparison, or remove a product from the active comparison. |
 
-### 🍽️ Meal Plan
+## 🍽️ Meal Plan
 By [Reyhan](#reyhan) ([2506637086](#reyhan))
 
 Generates meal plans based on the user's diet, allergies, calorie goal and planning period. It opens on a filterable recipe browser and lets users replace any meal they don't like.
@@ -189,7 +190,7 @@ Generates meal plans based on the user's diet, allergies, calorie goal and plann
 | Update | Edit a plan's settings, or replace a single meal with another suggestion. |
 | Delete | Delete a plan after confirming. |
 
-### ⭐ Meal of the Day
+## ⭐ Meal of the Day
 By [Aryan](#aryan) ([2506636985](#aryan))
 
 Features one sustainable recipe every day, shown as a slide in the landing page carousel and on its own page. Members can save the meal and join the discussion in the comments.
@@ -201,7 +202,7 @@ Features one sustainable recipe every day, shown as a slide in the landing page 
 | Update | Switch a meal between saved and unsaved. Admins can edit scheduled meals. |
 | Delete | Unsave a meal. Admins can remove scheduled meals and comments. |
 
-### 📝 Blog
+## 📝 Blog
 By [Qeela](#qeela) ([2506637104](#qeela))
 
 Educational articles about sustainable food and responsible living: food waste, packaging, recycling, carbon footprints, sustainable shopping, nutrition labels and seasonal food. Any logged-in user can write a post.
