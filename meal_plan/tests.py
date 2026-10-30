@@ -6,7 +6,7 @@ from unittest.mock import patch
 import requests
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.test import TestCase, override_settings
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from meal_plan.models import MealPlan, MealPlanEntry
@@ -1169,3 +1169,77 @@ class RecipesViewTests(MealPlanTestCase):
             response = self.client.get(reverse('meal_plan:recipes'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Recipe data is not available right now')
+
+
+class SecurityTests(MealPlanTestCase):
+    script = '<script>alert("hi")</script>'
+
+    def test_plan_names_are_escaped_on_every_page(self):
+        plan = self.make_plan(days=1, name=self.script)
+        self.login()
+        urls = [
+            reverse('meal_plan:plan_list'),
+            reverse('meal_plan:plan_detail', args=[plan.pk]),
+            reverse('meal_plan:plan_edit', args=[plan.pk]),
+        ]
+        for url in urls:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertNotContains(response, self.script)
+                self.assertContains(response, '&lt;script&gt;alert(&quot;hi&quot;)&lt;/script&gt;')
+
+    def test_a_saved_name_is_escaped_in_the_notification(self):
+        plan = self.make_plan(days=1)
+        self.login()
+        data = {'name': self.script, 'start_date': '2026-10-26', 'days': '1', 'calorie_goal': '1800'}
+        response = self.client.post(reverse('meal_plan:plan_edit', args=[plan.pk]), data, follow=True)
+        self.assertNotContains(response, self.script)
+        self.assertContains(response, 'data-message="“&lt;script&gt;alert(&quot;hi&quot;)&lt;/script&gt;” was updated."')
+
+    def test_search_text_is_escaped(self):
+        self.api.search_results = [make_recipe(700, 'Oat Bowl')]
+        self.login()
+        response = self.client.get(reverse('meal_plan:recipes'), {'q': self.script})
+        self.assertNotContains(response, self.script)
+        self.assertContains(response, 'value="&lt;script&gt;alert(&quot;hi&quot;)&lt;/script&gt;"')
+
+    def test_recipe_text_from_spoonacular_is_escaped(self):
+        self.api.search_results = [make_recipe(701, '<img src=x onerror=alert(1)>', sourceName='<b>Evil</b>')]
+        self.login()
+        response = self.client.get(reverse('meal_plan:recipes'))
+        self.assertNotContains(response, '<img src=x onerror=alert(1)>')
+        self.assertNotContains(response, '<b>Evil</b>')
+        self.assertContains(response, '&lt;img src=x onerror=alert(1)&gt;')
+
+    def test_forms_without_a_csrf_token_are_refused(self):
+        plan = self.make_plan(days=1)
+        entry = plan.entries.first()
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.user)
+        posts = [
+            (reverse('meal_plan:plan_create'), {'name': 'Sneaky', 'start_date': '2026-10-26', 'days': '1'}),
+            (reverse('meal_plan:plan_edit', args=[plan.pk]), {'name': 'Sneaky', 'start_date': '2026-10-26', 'days': '1', 'calorie_goal': '1800'}),
+            (reverse('meal_plan:plan_delete', args=[plan.pk]), {}),
+            (reverse('meal_plan:meal_replace', args=[plan.pk, entry.pk]), {'recipe_id': '202'}),
+        ]
+        for url, data in posts:
+            with self.subTest(url=url):
+                self.assertEqual(client.post(url, data).status_code, 403)
+        plan.refresh_from_db()
+        self.assertEqual(plan.name, 'Green week')
+        self.assertEqual(MealPlan.objects.count(), 1)
+        self.assertEqual(self.api.calls, [])
+
+    def test_the_api_key_never_reaches_the_browser(self):
+        plan = self.make_plan(days=1)
+        entry = plan.entries.first()
+        self.api.search_results = [make_recipe(702, 'Toast')]
+        self.login()
+        urls = [
+            reverse('meal_plan:plan_detail', args=[plan.pk]),
+            reverse('meal_plan:recipes'),
+            reverse('meal_plan:meal_replace', args=[plan.pk, entry.pk]) + '?partial=1',
+        ]
+        for url in urls:
+            with self.subTest(url=url):
+                self.assertNotContains(self.client.get(url), 'test-key')
