@@ -641,7 +641,9 @@ class ProductOverlayAndTrayTests(TestCase):
         )
 
     def test_unavailable_fragment_returns_retryable_error(self):
-        response = self.fragment("unknown-product")
+        # change: a real-looking barcode that isn't in the fake data (= the API can't load it).
+        # "unknown-product" now gets 404, because barcodes must be digits (step 1, input safety)
+        response = self.fragment("9999999999999")
 
         self.assertEqual(response.status_code, 503)
         self.assertIn("message", response.json())
@@ -1028,3 +1030,76 @@ class EdgeCaseTests(TestCase):
         self.assertRedirects(heart, "/?q=susu", fetch_redirect_response=False)   # change: our own page -> allowed
         compare = self.client.post(reverse("main:add_to_compare", args=["1"]), {"next": "https://evil.example"})
         self.assertRedirects(compare, reverse("main:show_main"), fetch_redirect_response=False)   # change: other site -> blocked
+
+
+# change: step 1, input safety. Nothing a user types or posts can break the API URL, the cache or the page
+class InputSafetyTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.user = get_user_model().objects.create_user(username="safe", password="test-pass-123")
+
+    # --- helpers in openfoodfacts.py ---
+    def test_only_digit_barcodes_are_valid(self):
+        self.assertTrue(off.is_valid_barcode("8998009010637"))
+        for bad in ["", "12a", "../../etc", "1 2", "1" * 33, None]:
+            self.assertFalse(off.is_valid_barcode(bad), bad)       # change: letters, slashes, spaces, too long -> refused
+
+    def test_search_text_is_cleaned(self):
+        self.assertEqual(off.clean_query("  <b>Susu</b>   UHT "), "Susu UHT")   # change: tags gone, spaces squeezed
+        self.assertEqual(len(off.clean_query("a" * 300)), off.MAX_QUERY_LENGTH)
+
+    def test_cache_keys_have_no_spaces(self):
+        key = off.cache_key("search", "susu uht")
+        self.assertNotIn(" ", key)                                  # change: fixes the CacheKeyWarning
+        self.assertEqual(key, off.cache_key("search", "susu uht"))  # change: same text -> same key, so caching still works
+
+    @patch("main.services.openfoodfacts.requests.get")
+    def test_bad_barcode_never_reaches_the_api(self, fake_get):
+        self.assertIsNone(off.get_product("../../etc"))
+        fake_get.assert_not_called()
+
+    # --- views ---
+    def test_detail_page_404_for_bad_barcode(self):
+        response = self.client.get("/product/abc/")
+        self.assertEqual(response.status_code, 404)
+        self.assertTemplateUsed(response, "main/product_detail.html")   # change: our own page, not Django's error page
+        self.assertContains(response, "find this product", status_code=404)
+        self.assertContains(response, "Go to Discover", status_code=404)
+
+    def test_detail_overlay_404_for_bad_barcode(self):
+        response = self.client.get("/product/abc/", {"fragment": "1"})
+        self.assertEqual(response.status_code, 404)
+        self.assertIn("message", response.json())                  # change: Alyssa's overlay still gets JSON it can show
+
+    def test_heart_refuses_bad_barcode(self):
+        self.client.force_login(self.user)
+        response = self.client.post("/favorite/abc/")
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(FavoriteProduct.objects.exists())
+
+    def test_heart_strips_html_from_the_name(self):
+        self.client.force_login(self.user)
+        self.client.post(reverse("main:toggle_favorite", args=["111"]), {"product_name": "<b>Ultra</b> Milk"})
+        self.assertEqual(FavoriteProduct.objects.get().product_name, "Ultra Milk")
+
+    def test_compare_cleans_name_and_grade(self):
+        self.client.force_login(self.user)
+        self.client.post(reverse("main:add_to_compare", args=["111"]), {"product_name": "<i>Milk</i>", "grade": "Z"})
+        self.client.post(reverse("main:add_to_compare", args=["222"]), {"product_name": "Tea", "grade": "b"})
+        info = self.client.session["compare_info"]
+        self.assertEqual(info["111"], {"name": "Milk", "grade": "?"})   # change: unknown letter -> "?"
+        self.assertEqual(info["222"]["grade"], "B")
+
+    def test_compare_refuses_bad_barcode(self):
+        self.client.force_login(self.user)
+        self.assertEqual(self.client.post("/tray/add/abc/").status_code, 404)
+        self.assertEqual(self.client.session.get("compare", []), [])
+        self.assertEqual(self.client.post("/tray/remove/abc/").status_code, 404)   # change: removing checks too
+
+    @patch("main.views.search_products", return_value=[])
+    def test_long_or_html_search_is_cleaned(self, fake_search):
+        response = self.client.get(reverse("main:show_main"), {"q": "<b>susu</b> " + "a" * 300})
+        self.assertEqual(len(response.context["q"]), off.MAX_QUERY_LENGTH)
+        self.assertNotIn("<b>", response.context["q"])
+        fake_search.assert_called_once_with(response.context["q"])
+
