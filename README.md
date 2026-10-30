@@ -303,14 +303,12 @@ python manage.py test main.tests_functional
 <a id="contributors"></a>
 ## 🙌 Contributors
 
-Each member's section covers what their module adds beyond the overview above, followed by their AI disclosure.
-
 <a id="serafin"></a>
-## Serafin Reysetyo Amantresno Grajo Pingol · Profile · 2506637136
+### 👤 Serafin Reysetyo Amantresno Grajo Pingol (Profile, 2506637136)
 
 The Profile module handles everything about a user's account: signing up, logging in, their details and preferences, and what they've saved or viewed.
 
-### ✨ Highlights
+#### ✨ Highlights
 
 The module is made up of six parts:
 
@@ -323,28 +321,28 @@ The module is made up of six parts:
 
 <!-- TODO (Serafin): a short description of each part and its key technical details -->
 
-### 🤖 AI Disclosure
+#### 🤖 AI Disclosure
 
-#### Models used
+**Models used**
 
 | Model | Used for |
 |---|---|
 | Google Gemini 3.1 and 3.6 | Bug fixing, understanding how to implement certain features, and translating the Figma designs into code |
 
-#### How prompts were written
+**How prompts were written**
 
 - Prompts gave as much context and detail as possible, so little was left to interpretation.
 - Every result was checked for possible issues or regressions before it was implemented.
 - AI stayed in a limited, supporting role. It was never used for git commands and was never left to build things on its own.
 
-#### Limitations and manual fixes
+**Limitations and manual fixes**
 
 | Problem | What went wrong | How it was fixed |
 |---|---|---|
 | HTML visuals | The AI struggled to produce a good-looking result and needed many iterations | Manual changes to the templates and styling |
 | Regressions | Random hallucinations and regressions, especially when context or specifications were missing | Most manual fixes reversed regressions and syntax conflicts, especially around file names, conventions and directories |
 
-### 📌 Dev Note
+#### 📌 Dev Note
 
 <details>
 <summary>Commit convention</summary>
@@ -370,16 +368,16 @@ The commit convention is followed from 28 October 2026 onwards, after an earlier
 ---
 
 <a id="rebecca"></a>
-## Rebecca Love Lianov Simanjuntak · Product Discovery · 2506637110
+### 🔍 Rebecca Love Lianov Simanjuntak (Product Discovery, 2506637110)
 
 Product Discovery is the main page of SpoonFeed (the `main` app): live product search with filters, the SpoonFeed grade, product detail pages with better alternatives, favorites, view history, and the compare tray that leads into the Comparison module.
 
 <!-- TODO: GIFs, e.g. docs/readme/discover-search.gif, docs/readme/favorite-toast.gif, docs/readme/compare-tray.gif -->
 <!-- ![Live search and filters](docs/readme/discover-search.gif) -->
 
-### ✨ Highlights
+#### ✨ Highlights
 
-#### API caching and resilience
+**API caching and resilience**
 
 Open Food Facts is a free, community-run API that is sometimes slow or answers `503 Too busy`. `main/services/openfoodfacts.py` uses several cache layers so the page keeps working when the API doesn't:
 
@@ -397,7 +395,7 @@ Open Food Facts is a free, community-run API that is sometimes slow or answers `
 - A product that doesn't exist, a search with no results and an API failure each show their own message.
 - The Comparison module reuses `get_product`, so a product loaded on Discover opens instantly on Comparison.
 
-#### Security
+**Security**
 
 - Custom decorators in `main/decorators.py`:
   - `@rate_limit` allows at most 60 searches, 30 heart clicks and 40 compare clicks per minute per user or IP, counted in the cache. Going over returns `429` and a "Slow down" toast.
@@ -408,7 +406,7 @@ Open Food Facts is a free, community-run API that is sometimes slow or answers `
 - The product detail page uses `@never_cache`, because it shows personal data such as the saved state.
 - A `UniqueConstraint` allows one favorite per user per product, and history uses `update_or_create`, so there are no duplicate rows.
 
-#### Interactivity
+**Interactivity**
 
 - HTMX live search and filters update the results as the user types and clicks, without a page reload. `hx-push-url` keeps the URL shareable and the Back button working.
 - The favorite heart turns red instantly and rolls back if the server refuses, with a shared toast either way.
@@ -418,26 +416,26 @@ Open Food Facts is a free, community-run API that is sometimes slow or answers `
 - The hero carousel respects `prefers-reduced-motion`.
 - Logged-in users see a "Fits your preferences" chip on products that match the diet and allergies saved in their Profile.
 
-#### Testing
+**Testing**
 
 - 151 unit and integration tests in 27 test classes, covering grading, caching, API failures, backup search, input safety, rate limits, JSON login, favorites, history, filters and the compare tray.
 - 5 Selenium functional tests for the Discover page in a real browser.
 - Open Food Facts is mocked everywhere, so the tests never need the internet.
 
-#### Design system
+**Design system**
 
 The global CSS (`static/css/tokens.css`, `base.css`, `components.css`, `pages.css`) was built from the team's Figma design system, together with the local `/styleguide/` page that shows every token and component. This way all six members build pages with the same buttons, cards, chips, dialogs and toasts.
 
-### 🤖 AI Disclosure
+#### 🤖 AI Disclosure
 
-#### Models used
+**Models used**
 
 | Model | Used for |
 |---|---|
 | Claude Opus 5.5 | The harder parts: architecture planning, debugging, and consulting on design decisions (for example, how the cache should behave when the API is down). Also helped turn the Figma design system into the global CSS and build the `/styleguide/` page. |
 | Claude Sonnet 5.5 | Easier, repetitive work, such as test boilerplate and similar template changes across files |
 
-#### How prompts were written
+**How prompts were written**
 
 - Work was split into small steps, each with a test scenario that was run by hand before moving on.
 - Layouts were checked against the exact Figma frame, not the AI's own idea of the page.
@@ -445,7 +443,7 @@ The global CSS (`static/css/tokens.css`, `base.css`, `components.css`, `pages.cs
 - Every edit was marked with a `# change:` comment explaining what changed and why, so all of the code could be understood and explained.
 - Before any shared file was touched, the change was checked against teammates' branches for conflicts.
 
-#### Limitations and manual fixes
+**Limitations and manual fixes**
 
 | Problem | What went wrong | How it was fixed |
 |---|---|---|
@@ -461,13 +459,13 @@ The global CSS (`static/css/tokens.css`, `base.css`, `components.css`, `pages.cs
 ---
 
 <a id="reyhan"></a>
-## Muhammad Reyhan Attarizky · Meal Plan · 2506637086
+### 🍽️ Muhammad Reyhan Attarizky (Meal Plan, 2506637086)
 
 Meal Plan creates personalised meal plans from Spoonacular recipes and lets users browse recipes, edit plans and replace single meals.
 
 <!-- TODO: GIF, e.g. docs/readme/meal-plan-create.gif -->
 
-### ✨ Highlights
+#### ✨ Highlights
 
 - The Recipes page is Meal Plan's landing page. It searches Spoonacular recipes with filters for meal, diet (several at once: vegetarian, vegan, pescatarian, ketogenic and halal), max kcal, max minutes, gluten free, dairy free and sustainable. "Load more recipes" adds the next page with AJAX, without reloading.
 - Creating a plan takes a name, start date, 1 to 14 days, diets, allergies, an optional daily snack and a calorie goal. The form is filled in from the user's Profile preferences, and the plan summary updates live. Spoonacular's meal planner picks breakfast, lunch and dinner for each day. Allergies are excluded, and halal skips pork and alcohol (labelled "Halal not verified", since Spoonacular can't confirm halal).
@@ -481,15 +479,15 @@ Meal Plan creates personalised meal plans from Spoonacular recipes and lets user
 - Layouts are responsive for desktop, tablet and phone, following the Figma (the replace dialog becomes a bottom sheet on phones), and the dropdowns work with the keyboard.
 - 102 automated tests, including security tests. They mock Spoonacular, so they never use API points.
 
-### 🤖 AI Disclosure
+#### 🤖 AI Disclosure
 
-#### Models used
+**Models used**
 
 | Model | Used for |
 |---|---|
 | Claude Opus | Most of the `meal_plan` code and its tests, running tests on teammates' PRs, and checking pages in a browser against the Figma |
 
-#### How prompts were written
+**How prompts were written**
 
 - Claude was given what to build, as agreed with the group, plus the team's Figma design through the read-only Figma connector and read-only access to the code.
 - It worked in a separate copy, ran the tests, and checked the pages in a browser against the Figma.
@@ -497,7 +495,7 @@ Meal Plan creates personalised meal plans from Spoonacular recipes and lets user
 - It never committed, pushed or merged anything. All git work and every PR was done by Reyhan, after reviewing the change and running the tests locally.
 - Outside `meal_plan`, it only touched the Saved page in `profiles` when the team asked for it.
 
-#### Limitations and manual fixes
+**Limitations and manual fixes**
 
 | Problem | What went wrong | How it was fixed |
 |---|---|---|
@@ -511,29 +509,29 @@ Meal Plan creates personalised meal plans from Spoonacular recipes and lets user
 ---
 
 <a id="alyssa"></a>
-## Alyssa Rahma Adjani · Product Comparison · 2506558466
+### ⚖️ Alyssa Rahma Adjani (Product Comparison, 2506558466)
 
 The Product Comparison module lets users evaluate two or three food products side by side using nutritional information, environmental indicators, processing scores, labels and allergens. Logged-in users can also save and manage comparison lineups through their profiles.
 
 <!-- TODO: GIF, e.g. docs/readme/comparison.gif -->
 
-### ✨ Highlights
+#### ✨ Highlights
 
-#### Field-level comparison and highlighting
+**Field-level comparison and highlighting**
 - Comparison logic lives in reusable service functions rather than in the templates.
 - Scores and nutritional fields follow their own comparison direction to find the better available value.
 - Missing data is evaluated separately for each row, so two valid values can still be compared when a third product has no information.
 - Rows with fewer than two comparable values, or entirely equal values, get no "Better" highlight.
 - Missing values stay visibly unavailable instead of being treated as zero.
 
-#### Saved comparison management
+**Saved comparison management**
 - Saved comparisons store the owner, name, optional notes, product barcodes and creation time.
 - Saved comparisons are reopened through Profile → Saved → Comparisons.
 - Editing changes only the name and notes. It doesn't replace the saved lineup or transfer ownership.
 - Removing a saved comparison deletes the saved record without deleting products or changing the active comparison.
 - Saved comparisons keep the selected barcodes. They are not frozen snapshots of old product information.
 
-#### Product detail overlay
+**Product detail overlay**
 - Each Details button loads the product inside a native `<dialog>` without leaving the Comparison page.
 - The overlay reuses the existing product detail content and preparation logic.
 - Recommendations and global page elements are left out of the popup.
@@ -541,14 +539,14 @@ The Product Comparison module lets users evaluate two or three food products sid
 - Loading, failure and retry states show the progress of the request.
 - Request cancellation and stale-response checks stop an earlier request from replacing a more recently selected product.
 
-#### Accessible and responsive interactions
+**Accessible and responsive interactions**
 - The overlay has an accessible close button, closes with Escape, manages focus, and returns focus to the Details button that opened it.
 - Background scrolling is locked while the overlay is open and restored when it closes.
 - A bounded dialog height with internal scrolling keeps long product details usable on any screen.
 - Save, Edit and Remove reuse SpoonFeed's shared buttons, icons, dialogs and notifications.
 - Asynchronous actions show loading states and disable controls while submitting.
 
-#### Authorization and session protection
+**Authorization and session protection**
 - Viewing, editing and deleting saved comparisons is restricted by server-side ownership filters using both the record ID and `request.user`.
 - New saved comparisons take their owner from the logged-in user, never from submitted data.
 - Editing ignores submitted attempts to change ownership or product barcodes.
@@ -557,39 +555,39 @@ The Product Comparison module lets users evaluate two or three food products sid
 - Opening a saved comparison doesn't overwrite the active comparison tray.
 - Personalised comparison responses use `@never_cache` so private content isn't cached.
 
-#### Failure feedback
+**Failure feedback**
 - Missing, inaccessible or invalid saved records show a dedicated "Saved comparison unavailable" page with a link back to Saved.
 - Another user's record IDs and nonexistent IDs get the same failure response, so other users' saved records are never revealed.
 - Asynchronous actions give validation, authentication and security-error feedback.
 - Security failures are handled before assuming the server response is JSON.
 
-#### Automated testing
+**Automated testing**
 - Tests cover saved comparison CRUD, valid and invalid forms, highlighting rules, missing product information and active tray behaviour.
 - Authorization tests check foreign record IDs, alternative removal routes, forged identifiers and ownership preservation.
 - Request protection tests cover missing or incorrect CSRF tokens and untrusted request origins.
 - Session tests cover isolation between users, malformed data, cleared login sessions and cache-control headers.
 - External product lookups are mocked, so tests don't depend on the live API.
 
-#### Shared design system contribution
+**Shared design system contribution**
 - Reuses SpoonFeed's global button, icon, dialog and typography components.
 - Added the SpoonFeed SVG favicon through the shared base template, so every page shows the same browser tab icon.
 
-### 🤖 AI Disclosure
+#### 🤖 AI Disclosure
 
-#### Models used
+**Models used**
 
 | Model | Used for |
 |---|---|
 | ChatGPT-6.1 Sol Medium and Codex | Agentic pair programming in Visual Studio Code: comparison rules, design system integration, the detail overlay, saved comparisons, authorization and tests |
 
-#### How prompts were written
+**How prompts were written**
 
 - The work was divided into focused tasks (comparison rules, shared design system integration, product detail overlays, saved comparison management, authorization and testing). Each request included the relevant files and the expected behaviour.
 - The AI was asked to inspect the current implementation before proposing changes, reuse existing Django preparation logic and shared components, and leave unrelated work untouched.
 - For many changes, complete code and placement instructions were requested through chat, so the implementation could be understood and applied by hand.
 - Screenshots, tracebacks and test failures were shared to refine the implementation. Tests were used to check behaviour and prevent regressions; this was not a strictly test-driven process.
 
-#### Limitations and manual fixes
+**Limitations and manual fixes**
 
 | Problem | What went wrong | How it was fixed |
 |---|---|---|
@@ -604,25 +602,25 @@ The Product Comparison module lets users evaluate two or three food products sid
 ---
 
 <a id="aryan"></a>
-## Aryan Alexander Rinaldi · Meal of the Day · 2506636985
+### ⭐ Aryan Alexander Rinaldi (Meal of the Day, 2506636985)
 
 The Meal of the Day module delivers a daily recipe recommendation that works both as a feature in the homepage carousel and as a recipe page of its own, with community interactions.
 
 <!-- TODO: GIF, e.g. docs/readme/meal-of-the-day.gif -->
 
-### ✨ Highlights
+#### ✨ Highlights
 
-#### Immutable snapshot architecture
+**Immutable snapshot architecture**
 - Instead of storing a foreign key or remote ID that breaks if external recipes change or Spoonacular is unavailable, saving a meal stores an immutable snapshot (`snapshot_data = models.JSONField(...)`).
 - If an admin clears or re-seeds the meal calendar, users keep their saved meals in their profiles (`on_delete=models.SET_NULL`).
 - If Spoonacular hits its limits or goes down, `prepare_meal_context` falls back to rendering from database snapshots instead of showing an error.
 
-#### JavaScript interactivity
+**JavaScript interactivity**
 - Clicking Save sends an async `fetch()` POST with CSRF verification and updates the UI optimistically (the heart turns pink and the text changes to "Saved"), syncs every matching button on the page, and shows a toast.
 - Comments are submitted through `submitComment(event, mealID)`: the comment is sent with AJAX and added to the page with a slide-in animation (`commentFadeIn`), a generated user avatar and a live comment counter, all without reloading.
 - The "See recipe" toggle scrolls smoothly, flips its label and arrow, and pauses the carousel's auto-slide while the user is reading.
 
-#### Security hardening
+**Security hardening**
 - Failed or invalid API requests are cached negatively for 5 minutes (`cache.set(key, False, 300)`), so spamming lookups for non-existent recipes can't exhaust Django worker threads.
 - `_get_safe_redirect_url` validates `HTTP_REFERER` headers with Django's `url_has_allowed_host_and_scheme(require_https=...)`, blocking open-redirect phishing.
 - External source and image URLs are validated with `is_safe_external_url`, so only `http://` and `https://` links are rendered (blocking `javascript:`, `data:` and `file:`).
@@ -630,28 +628,28 @@ The Meal of the Day module delivers a daily recipe recommendation that works bot
 - When saving, the backend ignores recipe titles sent by the client and takes the title only from trusted server-side snapshots.
 - All external recipe links use `target="_blank"` and `rel="noopener noreferrer"`.
 
-#### Curated seeding command (`seed_meals`)
+**Curated seeding command (`seed_meals`)**
 - A custom Django management command (`python manage.py seed_meals`) backed by an internal pool of 100 verified Spoonacular recipe IDs.
 - It can seed 365 days of recommendations without duplicates, respects dates an admin set by hand, and preserves the daily API quota.
 
-#### Test coverage
+**Test coverage**
 - 50 unit and integration tests covering models, uniqueness constraints, sanitisation, open-redirect defences, negative caching, AJAX toggles and cross-module profile integration.
 
-### 🤖 AI Disclosure
+#### 🤖 AI Disclosure
 
-#### Models used
+**Models used**
 
 | Model | Used for |
 |---|---|
 | Google Gemini 3.8 Flash | Agentic pair programming in Antigravity: schema and migrations, API integration, UI, async interactivity, the snapshot architecture, and security auditing |
 
-#### How prompts were written
+**How prompts were written**
 
 - Instead of asking for a complete application in one pass, the AI was used to build in deliberate, verifiable stages: database schema and migrations, data services and API integration, design system UI/UX, async interactivity, offline snapshot architecture, and security audit and hardening.
 - The focus was on the AI's strengths, such as detailed risk auditing and implementing difficult concepts, rather than leaving everything to it.
 - Django's test suite was run after every iteration as a regression check, keeping a 100% pass rate throughout.
 
-#### Limitations and manual fixes
+**Limitations and manual fixes**
 
 | Problem | What went wrong | How it was fixed |
 |---|---|---|
@@ -664,16 +662,16 @@ The Meal of the Day module delivers a daily recipe recommendation that works bot
 ---
 
 <a id="qeela"></a>
-## Qeela Mufazzal Rafif Putra E · Blog · 2506637104
+### 📝 Qeela Mufazzal Rafif Putra E (Blog, 2506637104)
 
 The Blog module provides educational content about sustainable food consumption and environmentally responsible lifestyles. It helps users understand the information shown elsewhere in the app and encourages more sustainable daily habits. Articles cover food waste, packaging, recycling, carbon footprints, sustainable shopping, nutrition labels, seasonal food and responsible consumption.
 
-### ✨ Highlights
+#### ✨ Highlights
 
 <!-- TODO (Qeela): what was added (security, interactivity, testing) -->
 Coming soon.
 
-### 🤖 AI Disclosure
+#### 🤖 AI Disclosure
 
 <!-- TODO (Qeela): models, prompt strategy, limitations and manual fixes -->
 Coming soon.
