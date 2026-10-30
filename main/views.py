@@ -18,7 +18,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from main.models import FavoriteProduct, ViewHistory
-from main.decorators import login_required_json, rate_limit, wants_json, SEARCH_LIMIT, FAVORITE_LIMIT, COMPARE_LIMIT  # change: step 2
+from main.decorators import login_required_json, rate_limit, wants_json, is_test_client, SEARCH_LIMIT, FAVORITE_LIMIT, COMPARE_LIMIT  # change: step 2
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
 
@@ -125,10 +125,24 @@ def compare_tray(request):
         "compare_barcodes": barcodes,
     }
 
+# change: everything in the address that is a filter or a view setting (not the search text itself)
+FILTER_KEYS = ("grade", "label", "processing", "avoid", "sort", "show")
+
 # main / product discovery page: search + filters + sort + load more
 @rate_limit("search", SEARCH_LIMIT)   # change: max 60 Discover loads/searches per minute per person
 def show_main(request):
     q = clean_query(request.GET.get("q", ""))   # change: no HTML tags, no extra spaces, max 100 characters
+
+    # change: filters belong to one visit. The session remembers that this visit already started.
+    # A new session (server restarted, logged out, new browser) that opens an old address with filters
+    # goes back to the same search with nothing ticked. Refreshing in the middle of a visit keeps them.
+    if not request.session.get("discover_visit"):
+        request.session["discover_visit"] = True
+        has_filters = any(key in request.GET for key in FILTER_KEYS)
+        # HTMX / Load more clicks only mark the visit, a redirect would break them.
+        # Skipped for the test host, like the rate limit, so other tests can open filtered pages directly
+        if has_filters and not wants_json(request) and not is_test_client(request):
+            return redirect(reverse("main:show_main") + ("?" + urlencode({"q": q}) if q else ""))
     grades = request.GET.getlist("grade")              # e.g. ["A", "B"]  (getlist: a key can repeat)
     labels = request.GET.getlist("label")              # e.g. ["halal"]
     processing = request.GET.get("processing", "any")  # "not_ultra" or "any"
@@ -185,6 +199,8 @@ def show_main(request):
         "sort_url": "?" + sort_params.urlencode(),
         "filter_count": (1 if grades else 0) + len(labels) + (1 if processing == "not_ultra" else 0) + len(avoid),
         "clear_url": "?" + urlencode({"q": q}),         # same search, no filters
+        # change: where "+ Compare" (logged out) sends you back after login: same search, filters back to default
+        "login_next": reverse("main:show_main") + ("?" + urlencode({"q": q}) if q else ""),
         # filter panel: every option with whether it's ticked
         "grade_options": [{"value": g, "checked": g in grades} for g in GRADE_OPTIONS],
         "label_options": [{"value": v, "text": t, "checked": v in labels} for v, t in LABEL_OPTIONS],

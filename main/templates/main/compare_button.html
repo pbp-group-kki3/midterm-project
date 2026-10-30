@@ -20,7 +20,8 @@
     </button>
 {% elif not user.is_authenticated %}
     {# logged out: goes to login (team doc + Figma) #}
-    <a href="{% url 'login' %}?next={{ request.get_full_path|urlencode }}" class="btn {{ style }} btn-block">+ Compare</a>
+    {# change: Discover passes login_next (search kept, filters reset). Other pages like the product page fall back to their own address #}
+    <a href="{% url 'login' %}?next={% if login_next %}{{ login_next|urlencode }}{% else %}{{ request.get_full_path|urlencode }}{% endif %}" class="btn {{ style }} btn-block">+ Compare</a>
 {% elif code in compare_barcodes and not compare_full %}
     <form method="post" action="{% url 'main:remove_from_compare' code %}" class="discover-card-action js-compare-form">
         {% csrf_token %}
