@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Compare | SpoonFeed{% endblock %}
+{% block title %}{% if viewing_saved %}{{ saved_comparison.name }}{% else %}Compare{% endif %} | SpoonFeed{% endblock %}
 
 {% block extra_head %}
     <link
@@ -16,10 +16,17 @@
 {% endblock %}
 
 {% block content %}
-    <header class="page-header compare-header">
-        {# change: a comparison opened from Saved goes back to Saved, a normal one stays Back to Discover #}
+    <header
+    id="compare-header"
+    class="page-header compare-header{% if viewing_saved %} compare-saved-header{% endif %}"
+    {% if viewing_saved %}data-saved-id="{{ saved_comparison.pk }}"{% endif %}
+    >
         {% if viewing_saved %}
-            <a href="{% url 'profile_saved' %}?category=comparison" class="back-link mb-3">
+            <a
+                id="compare-back-to-saved"
+                href="{% url 'profile_saved' %}?category=comparison"
+                class="back-link mb-3"
+            >
                 <span class="icon icon-arrow-left" aria-hidden="true"></span>
                 Back to Saved
             </a>
@@ -31,9 +38,32 @@
         {% endif %}
 
         <div class="compare-header-row">
-            <h1 class="page-title page-title-lg">Compare</h1>
+            <h1 id="compare-page-heading" class="page-title page-title-lg">{% if viewing_saved %}{{ saved_comparison.name }}{% else %}Compare{% endif %}</h1>
 
-            {% if user.is_authenticated %}
+            {% if viewing_saved %}
+                <div class="compare-saved-actions">
+                    <button
+                        id="compare-edit-open"
+                        type="button"
+                        class="btn btn-secondary compare-saved-edit"
+                        aria-haspopup="dialog"
+                        aria-controls="compare-edit-dialog"
+                    >
+                        Edit
+                        <span class="icon icon-edit" aria-hidden="true"></span>
+                    </button>
+
+                    <button
+                        id="compare-saved-remove-open"
+                        type="button"
+                        class="btn btn-danger-subtle btn-sm compare-saved-remove"
+                        aria-haspopup="dialog"
+                        aria-controls="compare-saved-remove-dialog"
+                    >
+                        Remove
+                    </button>
+                </div>
+            {% elif user.is_authenticated %}
                 <button
                     type="button"
                     id="compare-save-open"
@@ -51,24 +81,27 @@
             {% endif %}
         </div>
 
-        <p class="page-subtitle">
-            Green highlights the best available values when at least two products have comparable data.
-            Rows where all comparable values are equal are not highlighted.
-        </p>
+        {% if viewing_saved %}
+            <p id="compare-saved-notes" class="page-subtitle compare-saved-notes"{% if not saved_comparison.notes %} hidden{% endif %}>{{ saved_comparison.notes }}</p>
+        {% else %}
+            <p class="page-subtitle">
+                Green highlights the best available values. Rows where all comparable values are equal are not highlighted.
+            </p>
 
-        <p
-            id="compare-save-location"
-            class="type-caption text-secondary mt-3"
-            {% if not is_saved %}hidden{% endif %}
-        >
-            Comparison saved. Find it in your profile's
-            <a class="compare-saved-link" href="{% url 'profile_saved' %}?category=comparison">Saved</a> section.
-        </p>
+            <p
+                id="compare-save-location"
+                class="type-caption text-secondary mt-3"
+                {% if not is_saved %}hidden{% endif %}
+            >
+                Comparison saved. Find it in your profile's
+                <a class="compare-saved-link" href="{% url 'profile_saved' %}?category=comparison">Saved</a> section.
+            </p>
+        {% endif %}
     </header>
 
     {% if show_compare_panel %}
         <div
-            class="card compare-panel"
+            class="card compare-panel{% if viewing_saved %} compare-saved-panel{% endif %}"
             role="region"
             aria-label="Product comparison"
             tabindex="0"
@@ -301,8 +334,12 @@
 
     <!---Dialog overlays-->
     {% include "comparison/components/product_details_dialog.html" %}
-    {% include "comparison/components/save_dialog.html" %}
-    {% include "comparison/components/remove_dialog.html" %}
+    {% if viewing_saved %}
+        {% include "comparison/components/saved_comparison_dialogs.html" %}
+    {% else %}
+        {% include "comparison/components/save_dialog.html" %}
+        {% include "comparison/components/remove_dialog.html" %}
+    {% endif %}
     
 {% endblock %}
 
@@ -321,4 +358,11 @@
         src="{% static 'comparison/js/product_detail_overlay.js' %}"
         defer
     ></script>
+
+    {% if viewing_saved %}
+        <script
+            src="{% static 'comparison/js/saved_comparison.js' %}"
+            defer
+        ></script>
+    {% endif %}
 {% endblock %}
