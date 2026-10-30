@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils.text import slugify
+from django.conf import settings
+from uuid import uuid4
 
 class Article(models.Model):
     TOPIC_CHOICES = [
@@ -27,7 +29,8 @@ class Article(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.title)
+            title_slug = slugify(self.title)[:180] or "article"
+            self.slug = f"{title_slug}-{uuid4().hex[:12]}"
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):
@@ -51,3 +54,36 @@ class ArticleComment(models.Model):
 
     def __str__(self):
         return f"Comment by {self.user.username} on {self.article.title}"
+
+# Preserve an owned article snapshot independently of its source article.
+class SavedArticle(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="article_snapshots",
+    )
+    article = models.ForeignKey(
+        Article,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="saved_snapshots",
+    )
+    snapshot_data = models.JSONField(default=dict)
+    cover_image = models.ImageField(
+        upload_to="blog/saved_covers/",
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "article"],
+                name="blog_unique_saved_article",
+            ),
+        ]
+
+    def __str__(self):
+        return self.snapshot_data.get("title", "Saved article")
