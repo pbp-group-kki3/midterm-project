@@ -58,7 +58,7 @@ Missing parts are left out and the remaining weights are rescaled, so a product 
 
 | Resource | Link |
 |---|---|
-| Deployment (PWS) | `[PWS LINK HERE]` |
+| Deployment (PWS) | [rebecca-love-spoonfed.pws.cs.ui.ac.id](https://rebecca-love-spoonfed.pws.cs.ui.ac.id) |
 | Figma (design system and wireframes) | [PBP Midterm Project - KKI Kelompok 3](https://www.figma.com/design/CPywGGQPpltri1IsAXi0hK/PBP-MIDTERM-PROJECT---KKI-KELOMPOK-3?node-id=0-1) |
 | Repository | [pbp-group-kki3/midterm-project](https://github.com/pbp-group-kki3/midterm-project) |
 | Design system page (local) | `http://127.0.0.1:8000/styleguide/` |
@@ -118,6 +118,8 @@ Used for product search, product details, category alternatives and comparisons.
 ### Spoonacular
 
 Used for recipe search, the meal planner and the Meal of the Day. Following Spoonacular's terms, results are cached for at most 1 hour and plans store only recipe IDs. Meal of the Day also stores a snapshot of each featured recipe, so it still renders when the daily points run out. See [Meal Plan](#reyhan) and [Meal of the Day](#aryan).
+
+> **Known issue (30 October 2026):** Spoonacular no longer shows a free plan, and our keys are currently rejected with HTTP 401, even after subscribing. Until this is resolved with Spoonacular, recipe features (Meal Plan and the Meal of the Day slide) show a short "not available" message, while the rest of the site keeps working.
 
 ---
 
@@ -218,7 +220,7 @@ Educational articles about sustainable food and responsible living: food waste, 
 
 - Python 3.11+
 - Git
-- A free [Spoonacular API key](https://spoonacular.com/food-api/console#Dashboard), needed only for Meal Plan and Meal of the Day
+- A [Spoonacular API key](https://spoonacular.com/food-api/console#Dashboard), needed only for Meal Plan and Meal of the Day (Spoonacular no longer lists a free plan, see [Known issue](#spoonacular))
 - No key is needed for Open Food Facts. It only asks for a `User-Agent` that names the app (`OFF_USER_AGENT` in `.env`)
 
 ### Setup
@@ -641,9 +643,10 @@ The Meal of the Day module delivers a daily recipe recommendation that works bot
 **Curated seeding command (`seed_meals`)**
 - A custom Django management command (`python manage.py seed_meals`) backed by an internal pool of 100 verified Spoonacular recipe IDs.
 - It can seed 365 days of recommendations without duplicates, respects dates an admin set by hand, and preserves the daily API quota.
+- PWS has no terminal to run the command, so the first visit of each day also creates that day's meal automatically (`get_todays_meal()` in `food_of_the_day/services.py`). It picks from the same 100-recipe pool, never replaces a meal an admin chose, and handles two visitors arriving at the same moment.
 
 **Test coverage**
-- 50 unit and integration tests covering models, uniqueness constraints, sanitisation, open-redirect defences, negative caching, AJAX toggles and cross-module profile integration.
+- 52 unit and integration tests covering models, uniqueness constraints, sanitisation, open-redirect defences, negative caching, AJAX toggles and cross-module profile integration.
 
 ### 🤖 AI Disclosure
 
