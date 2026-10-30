@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block content %}
-    <a href="{% if action == 'Edit' %}{% url 'blog:article_detail' form.instance.slug %}{% else %}{% url 'blog:blog_list' %}{% endif %}" class="back-link mt-8 mb-6">
+    <a href="{% if action == 'Edit' %}{% url 'blog:article_detail' form.instance.slug %}{% else %}{% url 'blog:blog_list' %}{% endif %}" class="back-link mt-8 mb-6" data-blog-exit>
         <span class="icon icon-arrow-left" aria-hidden="true"></span> Back to {% if action == 'Edit' %}Your articles{% else %}Blog{% endif %}
     </a>
 
@@ -20,8 +20,16 @@
     </header>
 
     <div class="card max-w-4xl mx-auto">
-        <form method="post" enctype="multipart/form-data" class="form-stack">
+        <form
+            method="post"
+            enctype="multipart/form-data"
+            class="form-stack js-blog-form"
+            data-blog-mode="navigate"
+            data-blog-editor
+        >
             {% csrf_token %}
+            <p class="field-error blog-form-errors" role="alert" hidden></p>
+            {{ form.non_field_errors }}
 
             <div class="field">
                 <label class="field-label" for="{{ form.title.id_for_label }}">Article title *</label>
@@ -39,7 +47,13 @@
             <div class="field">
                 <label class="field-label text-tertiary">Cover image (optional)</label>
                 <div class="blog-image-upload-box">
-                    <p class="type-caption text-tertiary m-0">No image selected</p>
+                    <p class="type-caption text-tertiary m-0" data-blog-image-name>
+                        {% if form.instance.cover_image %}
+                            Current image: {{ form.instance.cover_image.name }}
+                        {% else %}
+                            No image selected
+                        {% endif %}
+                    </p>
                     <label for="cover_image_input" class="btn btn-secondary btn-sm cursor-pointer">Choose image</label>
                     <!-- The actual file input is hidden by the 'hidden' class in forms.py -->
                     {{ form.cover_image }}
@@ -60,7 +74,7 @@
             </div>
 
             <div class="flex justify-end gap-4 mt-8">
-                <a href="{% if action == 'Edit' %}{% url 'blog:article_detail' form.instance.slug %}{% else %}{% url 'blog:blog_list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+                <a href="{% if action == 'Edit' %}{% url 'blog:article_detail' form.instance.slug %}{% else %}{% url 'blog:blog_list' %}{% endif %}" class="btn btn-secondary" data-blog-exit>Cancel</a>
                 <button type="submit" class="btn btn-primary">
                     {% if action == 'Create' %}Publish article{% else %}Save changes{% endif %}
                 </button>
@@ -68,11 +82,9 @@
         </form>
     </div>
 
-    <!-- Simple JS to update the "No image selected" text when a file is chosen -->
-    <script>
-        document.getElementById('cover_image_input').addEventListener('change', function(e) {
-            const fileName = e.target.files[0] ? e.target.files[0].name : 'No image selected';
-            e.target.previousElementSibling.previousElementSibling.textContent = fileName;
-        });
-    </script>
+    {% include "blog/components/article_confirmation.html" %}
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'blog/js/blog.js' %}" defer></script>
 {% endblock %}
