@@ -57,6 +57,9 @@ document.addEventListener("DOMContentLoaded", () => {
             if (await handleBlockedResponse(response)) {               // change: 401 -> login page, 429 -> "slow down" toast
                 return;
             }
+            if (response.status >= 500) {
+                throw new ServerProblem();                             // change: step 3b. our server broke -> toast below, page stays
+            }
             if (response.redirected || !response.ok) {                  // e.g. logged out -> login page
                 window.location.href = response.url;
                 return;
@@ -72,7 +75,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             });
         } catch (error) {
-            form.submit();                                             // network problem: fall back to the normal reload
+            if (reportConnectionProblem(error)) {                      // change: step 3b. no internet / server error -> toast, page stays
+                return;
+            }
+            form.submit();                                             // anything else: fall back to the normal reload
         }
     });
 
@@ -93,7 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
             if (!response.ok) {
-                throw new Error("load more failed");
+                throw response.status >= 500 ? new ServerProblem() : new Error("load more failed");   // change: step 3b
             }
             const data = await response.json();                        // {"cards": "<article...>", "has_more": true, "more_url": "?show=18"}
             document.getElementById("discover-grid").insertAdjacentHTML("beforeend", data.cards);
@@ -106,6 +112,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 document.getElementById("load-more-holder").remove();  // everything is shown: no more button
             }
         } catch (error) {
+            if (reportConnectionProblem(error)) {                      // change: step 3b. keep the cards, give the button back
+                link.classList.remove("is-disabled");
+                link.textContent = "Load more products";
+                return;
+            }
             window.location.href = link.href;                          // something went wrong: fall back to the normal reload
         }
     });
@@ -283,6 +294,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             });
 
+            // change: step 6. the same toast as saving a comparison (Alyssa's comparison.js uses "Saved" + success too)
+            if (data.message && typeof window.showToast === "function") {
+                window.showToast(data.saved ? "Saved" : "Removed", data.message, data.saved ? "success" : "info");
+            }
+
             document.dispatchEvent(
                 new CustomEvent("spoonfeed:favorite-changed", {
                     detail: {
@@ -293,6 +309,9 @@ document.addEventListener("DOMContentLoaded", () => {
             );
         } catch (error) {
             if (!inOverlay) {
+                if (reportConnectionProblem(error)) {                  // change: step 3b. no internet -> toast, the heart stays as it was
+                    return;
+                }
                 // Preserve the existing standalone fallback.
                 form.submit();
                 return;
@@ -603,4 +622,91 @@ async function handleBlockedResponse(response) {
     }
     return true;
 }
+
+
+// change: step 3b. What happens when OUR side fails (not Open Food Facts, that's step 3a):
+// the internet is down, or our Django server crashed / was stopped.
+// Before: the page tried to reload and you got Chrome's "No internet" page or Django's error page.
+// Now: the page stays as it is, and the shared toast (static/js/toast.js) says what went wrong.
+
+// thrown by our own code when the server answered with a 5xx error
+class ServerProblem extends Error {}
+
+// fetch() throws a TypeError only when the request never reached the server (no internet, server stopped)
+function isNetworkProblem(error) {
+    return error instanceof TypeError;
+}
+
+// Shows the right toast and returns true when the error was a connection or server problem
+function reportConnectionProblem(error) {
+    if (!isNetworkProblem(error) && !(error instanceof ServerProblem)) {
+        return false;                                                  // some other bug: let the caller do its usual fallback
+    }
+    if (typeof window.showToast === "function") {
+        if (isNetworkProblem(error)) {
+            window.showToast("No connection", "We couldn't reach SpoonFeed. Check your internet and try again.", "error");
+        } else {
+            window.showToast("Something went wrong", "Our server had a problem. Please try again in a moment.", "error");
+        }
+    }
+    return true;
+}
+
+// HTMX (live search, filters, chips, sort) has its own error events
+// htmx:sendError = the request never got an answer (no internet / server stopped)
+// htmx:responseError = the server answered with an error (401, 429, 500...)
+// HTMX doesn't swap error answers in, so the old results stay on screen
+document.addEventListener("htmx:sendError", (event) => {
+    reportConnectionProblem(new TypeError("htmx send error"));
+    showRetry(requestUrl(event));
+});
+
+document.addEventListener("htmx:responseError", async (event) => {
+    const xhr = event.detail.xhr;
+    if (xhr.status === 401 || xhr.status === 429) {
+        // same answers as our fetch() calls: reuse the step 2 handler (login page / "Slow down" toast)
+        await handleBlockedResponse(new Response(xhr.responseText, { status: xhr.status }));
+        return;
+    }
+    reportConnectionProblem(new ServerProblem());
+    if (xhr.status >= 500) {
+        showRetry(requestUrl(event));
+    }
+});
+
+// the address HTMX was asking for, with the search text and filters
+function requestUrl(event) {
+    const info = event.detail.pathInfo || {};
+    return info.finalRequestPath || info.requestPath || window.location.href;
+}
+
+// A "Try again" box above the results. Clicking it asks for the same results again
+function showRetry(url) {
+    const results = document.getElementById("discover-results");
+    if (!results || typeof window.htmx === "undefined") {
+        return;
+    }
+    let box = document.getElementById("discover-retry");
+    if (!box) {
+        box = document.createElement("div");
+        box.id = "discover-retry";
+        box.className = "alert alert-warning mt-6";
+        box.setAttribute("role", "alert");
+        box.innerHTML = '<p class="m-0">These results may be out of date because the last update failed.</p>'
+            + '<button type="button" class="btn btn-secondary mt-2">Try again</button>';
+        results.before(box);                                           // outside #discover-results, so a successful swap doesn't need to remove it
+    }
+    box.querySelector("button").onclick = async () => {
+        box.querySelector("button").disabled = true;
+        await window.htmx.ajax("GET", url, { target: "#discover-results", indicator: "#search-indicator" });
+        history.replaceState(null, "", url);                           // the address bar matches what is shown again
+    };
+}
+
+// a successful HTMX answer means we're connected again: the "Try again" box goes away
+document.addEventListener("htmx:afterSwap", (event) => {
+    if (event.detail.target && event.detail.target.id === "discover-results") {
+        document.getElementById("discover-retry")?.remove();
+    }
+});
 
