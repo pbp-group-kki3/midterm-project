@@ -1,5 +1,7 @@
 from django.test import TestCase
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock   # change: MagicMock builds fake API responses for the openfoodfacts tests
+import requests                              # change: needed to fake a network error (requests.RequestException)
+from django.core.cache import cache          # change: the API tests empty the cache first so one test can't leak into another
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -33,11 +35,6 @@ class GradingTests(TestCase):
         self.assertEqual(result["score"], 59.4)          # (75*0.5 + 37*0.35) / 0.85
         self.assertNotIn("processing", result["parts"])
 
-    def test_no_nutriscore_gives_question_mark(self):
-        result = spoonfeed_grade({"ecoscore_score": 37, "nova_group": 3})
-        self.assertEqual(result["grade"], "?")
-        self.assertIsNone(result["score"])
-
     def test_grade_value(self):
         self.assertEqual(grade_value("B", NUTRI_POINTS), "B")
         self.assertEqual(grade_value("a-plus", GREEN_POINTS), "A+")
@@ -45,6 +42,20 @@ class GradingTests(TestCase):
         self.assertEqual(grade_value("unknown", GREEN_POINTS), "?")
         self.assertEqual(grade_value(None, NUTRI_POINTS), "?")
 
+    # change: Alyssa's grading fix grades a product from whatever scores it has,
+    # so a missing Nutri-Score no longer means "?". This test now checks that new rule
+    def test_no_nutriscore_uses_the_other_two(self):
+        result = spoonfeed_grade({"ecoscore_score": 37, "nova_group": 3})
+        self.assertEqual(result["score"], 37.9)          # (37*0.35 + 40*0.15) / 0.50
+        self.assertEqual(result["grade"], "D")
+        self.assertNotIn("nutrition", result["parts"])
+
+
+    # change: "?" only shows up now when all three scores are missing
+    def test_no_scores_at_all_gives_question_mark(self):
+        result = spoonfeed_grade({"product_name": "Mystery snack"})
+        self.assertEqual(result["grade"], "?")
+        self.assertIsNone(result["score"])
 
 # The Discover page. search_products is replaced by a fake, so no real API call happens
 class ShowMainTests(TestCase):
@@ -845,3 +856,175 @@ class ProductOverlayAndTrayTests(TestCase):
             len(parser.ids),
             len(set(parser.ids)),
         )
+
+
+# change: the profile now saves diet as a list, e.g. ["vegan"] or ["halal", "vegan"]
+class PreferenceListTests(TestCase):
+    def test_diet_as_list(self):
+        vegan = {"ingredients_analysis_tags": ["en:vegan"], "allergens_tags": []}
+        fit = preference_fit(vegan, {"diet": ["vegan"], "off_tags": []})
+        self.assertEqual(fit["status"], "fits")
+
+    def test_two_diets_one_unknown(self):
+        vegan_only = {"ingredients_analysis_tags": ["en:vegan"], "labels_tags": [], "allergens_tags": []}
+        fit = preference_fit(vegan_only, {"diet": ["vegan", "halal"], "off_tags": []})
+        self.assertEqual(fit["text"], "? Can't verify halal")      # vegan ok, halal not on the label
+
+    def test_empty_list_means_no_chip(self):
+        self.assertIsNone(preference_fit({}, {"diet": [], "off_tags": []}))
+
+# change: openfoodfacts.py was only at 28% because every other test fakes the whole file.
+# Here we fake one level lower instead: requests.get. So the real code in openfoodfacts.py runs
+# (caching, backup search, alternatives), but no test ever calls the real API (fast, works offline)
+from main.services import openfoodfacts as off   # change: short name, so the tests below stay readable
+
+API_DOWN = requests.RequestException("503 too busy")   # change: what requests raises when the server fails
+
+
+def fake_response(data):
+    # change: a pretend HTTP answer. .json() gives our data, raise_for_status() does nothing (= status 200)
+    response = MagicMock()
+    response.json.return_value = data
+    return response
+
+
+@patch("main.services.openfoodfacts.requests.get")   # change: every test in this class gets the fake as fake_get
+class OpenFoodFactsTests(TestCase):
+    def setUp(self):
+        cache.clear()   # change: start every test with an empty cache, otherwise results from the last test would be reused
+
+    # --- get_product ---
+    def test_product_is_fetched_once_then_cached(self, fake_get):
+        fake_get.return_value = fake_response({"product": ULTRA_MILK})
+        first = off.get_product("8998009010637")
+        second = off.get_product("8998009010637")       # change: same barcode again -> should come from the cache
+        self.assertEqual(first, ULTRA_MILK)
+        self.assertEqual(second, ULTRA_MILK)
+        self.assertEqual(fake_get.call_count, 1)         # change: only ONE real request for two calls
+
+    def test_product_is_none_when_api_is_down(self, fake_get):
+        fake_get.side_effect = API_DOWN                  # change: side_effect = raise this instead of returning
+        self.assertIsNone(off.get_product("000"))
+
+    # --- search_products + backup_search ---
+    def test_search_cleans_the_text_and_caches(self, fake_get):
+        fake_get.return_value = fake_response({"products": [ULTRA_MILK]})
+        self.assertEqual(off.search_products("  SUSU "), [ULTRA_MILK])
+        off.search_products("susu")                      # change: same search after cleaning -> cache hit
+        self.assertEqual(fake_get.call_count, 1)
+        self.assertEqual(fake_get.call_args.kwargs["params"]["search_terms"], "susu")
+
+    def test_search_uses_the_backup_when_the_main_api_fails(self, fake_get):
+        # change: 1st call (main API) fails, 2nd call (backup service) answers with "hits"
+        fake_get.side_effect = [API_DOWN, fake_response({"hits": [ULTRA_MILK]})]
+        self.assertEqual(off.search_products("susu"), [ULTRA_MILK])
+        self.assertEqual(fake_get.call_args.args[0], off.BACKUP_SEARCH_URL)   # change: last call went to the backup
+
+    def test_search_is_none_when_both_fail(self, fake_get):
+        fake_get.side_effect = API_DOWN                  # change: every call fails, main and backup
+        self.assertIsNone(off.search_products("susu"))
+
+    # --- browse_products ---
+    def test_browse_asks_for_popular_products_and_caches(self, fake_get):
+        fake_get.return_value = fake_response({"products": [ULTRA_MILK]})
+        self.assertEqual(off.browse_products(), [ULTRA_MILK])
+        off.browse_products()
+        self.assertEqual(fake_get.call_count, 1)
+        self.assertEqual(fake_get.call_args.kwargs["params"]["sort_by"], "unique_scans_n")
+
+    def test_browse_backup_keeps_the_popular_sort(self, fake_get):
+        fake_get.side_effect = [API_DOWN, fake_response({"hits": [ULTRA_MILK]})]
+        self.assertEqual(off.browse_products(), [ULTRA_MILK])
+        self.assertEqual(fake_get.call_args.kwargs["params"]["sort_by"], "-unique_scans_n")
+
+    def test_browse_is_none_when_both_fail(self, fake_get):
+        fake_get.side_effect = API_DOWN
+        self.assertIsNone(off.browse_products())
+
+    # --- get_alternatives ---
+    # change: ULTRA_MILK is grade C (56.5). Only products with a BETTER grade should come back, best first
+    GRADE_A = {"code": "1", "nutriscore_grade": "a", "ecoscore_score": 90, "nova_group": 1}   # 96.5 -> A
+    GRADE_B = {"code": "2", "nutriscore_grade": "b", "ecoscore_score": 70, "nova_group": 2}   # 73.25 -> B
+    GRADE_E = {"code": "3", "nutriscore_grade": "e", "nova_group": 4}                          # 0 -> E
+    NO_GRADE = {"code": "4", "product_name": "No data"}                                       # "?"
+
+    def test_alternatives_are_better_graded_and_best_first(self, fake_get):
+        candidates = [dict(ULTRA_MILK), dict(self.GRADE_B), dict(self.GRADE_E), dict(self.NO_GRADE), dict(self.GRADE_A)]
+        fake_get.return_value = fake_response({"products": candidates})
+        result = off.get_alternatives(dict(ULTRA_MILK))
+        self.assertEqual([p["code"] for p in result], ["1", "2"])   # change: itself, E and "?" are left out; A before B
+        self.assertEqual(result[0]["spoonfeed"]["grade"], "A")
+        off.get_alternatives(dict(ULTRA_MILK))                       # change: same category -> cached
+        self.assertEqual(fake_get.call_count, 1)
+
+    def test_no_categories_means_no_alternatives(self, fake_get):
+        self.assertEqual(off.get_alternatives({"code": "9"}), [])
+        fake_get.assert_not_called()                                 # change: it shouldn't even ask the API
+
+    def test_ungraded_product_gets_no_alternatives(self, fake_get):
+        self.assertEqual(off.get_alternatives({"code": "9", "categories_tags": ["en:milks"]}), [])
+        fake_get.assert_not_called()
+
+    def test_alternatives_use_the_backup_when_the_api_fails(self, fake_get):
+        fake_get.side_effect = [API_DOWN, fake_response({"hits": [dict(self.GRADE_A)]})]
+        self.assertEqual([p["code"] for p in off.get_alternatives(dict(ULTRA_MILK))], ["1"])
+
+    def test_alternatives_are_empty_when_both_fail(self, fake_get):
+        fake_get.side_effect = API_DOWN
+        self.assertEqual(off.get_alternatives(dict(ULTRA_MILK)), [])
+
+
+# change: the last small branches no test reached yet (edge cases the rubric's 3.5 asks for)
+class EdgeCaseTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(username="edge", password="test-pass-123")
+
+    # models.py: the names shown in Django admin
+    def test_model_names_in_admin(self):
+        named = FavoriteProduct.objects.create(user=self.user, barcode="1", product_name="Ultra Milk")
+        unnamed = ViewHistory.objects.create(user=self.user, barcode="2")
+        self.assertEqual(str(named), "edge - Ultra Milk")
+        self.assertEqual(str(unnamed), "edge viewed 2")        # change: no name -> falls back to the barcode
+
+    # grading.py: Green-Score letter without a number, and the A / B cut-offs
+    def test_green_letter_only_and_top_grades(self):
+        self.assertEqual(spoonfeed_grade({"ecoscore_grade": "a"})["grade"], "A")      # 85 -> A
+        self.assertEqual(spoonfeed_grade({"nutriscore_grade": "b"})["grade"], "B")    # 75 -> B
+
+    # details.py: per 100 ml / per 100 g, vegan + palm oil badges, Green-Score letter only
+    def test_detail_page_small_cases(self):
+        from main.services.details import nutrition_unit, build_ingredient_badges, build_environment
+        self.assertEqual(nutrition_unit({"quantity": "1 L"}), "100 ml")
+        self.assertEqual(nutrition_unit({"quantity": "250 g"}), "100 g")
+        self.assertEqual(nutrition_unit({}), "100 g or ml")
+        badges = [b["text"] for b in build_ingredient_badges({"ingredients_analysis_tags": ["en:vegan", "en:palm-oil"]})]
+        self.assertEqual(badges, ["Vegan", "Contains palm oil"])
+        rows = {row["label"]: row["value"] for row in build_environment({"ecoscore_grade": "b"})}
+        self.assertEqual(rows["Green-Score"], "B")             # change: letter but no score number
+
+    # filters.py: unknown label in the URL, sort key, and the two "can't verify" chips
+    def test_filter_edge_cases(self):
+        from main.services.filters import best_grade_key
+        card = prepare_card(dict(ULTRA_MILK))
+        self.assertTrue(passes_filters(card, [], ["unicorn"], "any", []))      # change: unknown label is ignored, not a crash
+        self.assertEqual(best_grade_key(card), 56.5)
+        self.assertEqual(best_grade_key(prepare_card({"code": "x"})), -1)     # change: no grade -> goes last
+        self.assertEqual(preference_fit({}, {"diet": "pescatarian", "off_tags": []})["status"], "unknown")
+        self.assertEqual(preference_fit({}, {"diet": "none", "off_tags": ["en:milk"]})["text"], "? Can't verify allergens")
+
+    # views.py: ?show=abc, sort by best grade, and the redirect after a click without JavaScript
+    @patch("main.views.browse_products")
+    def test_bad_show_value_and_sorting(self, fake_browse):
+        fake_browse.return_value = [dict(ULTRA_MILK, code=str(i)) for i in range(8)] + [dict(OpenFoodFactsTests.GRADE_A)]
+        response = self.client.get(reverse("main:show_main"), {"show": "abc"})
+        self.assertEqual(len(response.context["products"]), 6)                 # change: rubbish value -> back to 6 cards
+        response = self.client.get(reverse("main:show_main"), {"sort": "grade"})
+        self.assertEqual(response.context["products"][0]["code"], "1")         # change: grade A jumps to the front
+        self.assertNotIn("sort=", response.context["sort_url"])                # change: clicking again switches sorting off
+
+    def test_redirects_go_back_only_to_our_own_site(self):
+        self.client.force_login(self.user)
+        heart = self.client.post(reverse("main:toggle_favorite", args=["1"]), {"next": "/?q=susu"})
+        self.assertRedirects(heart, "/?q=susu", fetch_redirect_response=False)   # change: our own page -> allowed
+        compare = self.client.post(reverse("main:add_to_compare", args=["1"]), {"next": "https://evil.example"})
+        self.assertRedirects(compare, reverse("main:show_main"), fetch_redirect_response=False)   # change: other site -> blocked
