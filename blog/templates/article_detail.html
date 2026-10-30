@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load static blog_tags %}
+
+{% block title %}{{ article.title }} | SpoonFeed{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'css/blog.css' %}">
+{% endblock %}
+
+{% block content %}
+    <a href="{% url 'blog:blog_list' %}" class="back-link mt-8 mb-6">
+        <span class="icon icon-arrow-left" aria-hidden="true"></span> Back to Blog
+    </a>
+
+    <!-- Header Section -->
+    <header class="page-header mb-8">
+        <div>
+            <span class="type-overline text-brand">{{ article.get_topic_display }}</span>
+            <!-- Removed .page-title so .type-serif can apply the Young Serif font correctly -->
+            <h1 class="type-serif m-0">{{ article.title }}</h1>
+            <!-- Removed .page-subtitle so .type-caption can shrink to the correct 12px size -->
+            <p class="type-caption text-secondary mt-1">
+                {{ article.author.username }} | {{ article.published_at|date:"N j, Y" }} | {{ article.get_read_time }} min read
+            </p>
+        </div>
+        
+        <!-- Author / Staff Actions -->
+        {% if request.user == article.author or request.user.is_staff %}
+        <div class="page-actions">
+            {% if request.user == article.author %}
+                <a href="{% url 'blog:article_edit' article.slug %}" class="btn btn-secondary">
+                    <span class="icon icon-edit" aria-hidden="true"></span> Edit article
+                </a>
+            {% endif %}
+            <button class="btn btn-danger" onclick="document.getElementById('delete-dialog').showModal()">Delete article</button>
+        </div>
+        {% endif %}
+    </header>
+
+    <!-- Cover Image (Using native Tailwind & style tags to guarantee rendering) -->
+    {% if article.cover_image %}
+        <img src="{{ article.cover_image.url }}" alt="{{ article.title }}" class="mb-8 w-full rounded-lg object-cover bg-subtle" style="aspect-ratio: 3 / 2;">
+    {% else %}
+        <div class="mb-8 w-full rounded-lg bg-subtle flex items-center justify-center text-tertiary type-caption" style="aspect-ratio: 3 / 2;">
+            Cover image, 3:2
+        </div>
+    {% endif %}
+
+    <!-- Article Content -->
+    <div class="type-body-lg text-primary max-w-3xl">
+        {{ article.body|linebreaks|link_barcodes }}
+    </div>
+
+    <!-- Save Button (Logged in only) -->
+    {% if user.is_authenticated %}
+    <form method="post" class="mt-8">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_article">
+        <button type="submit" class="btn btn-outline">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="{% if user in article.saved_by.all %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="{% if user in article.saved_by.all %}text-danger{% endif %}" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+            {% if user in article.saved_by.all %}Saved{% else %}Save{% endif %}
+        </button>
+    </form>
+    {% endif %}
+
+    <hr class="my-10 border-subtle">
+
+    <!-- Comments Section -->
+    <section>
+        <h3 class="type-h3 mb-6">Comments ({{ article.comments.count }})</h3>
+
+        {% if user.is_authenticated %}
+        <form method="post" class="search-bar mb-8">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="comment">
+            <input class="input" name="text" placeholder="Share your thoughts" required>
+            <button type="submit" class="btn btn-primary">Post</button>
+        </form>
+        {% endif %}
+
+        <div class="flex flex-col gap-6">
+            {% for comment in comments %}
+                <!-- Main Comment -->
+                <div class="flex gap-4">
+                    {% include 'components/avatar.html' with name=comment.user.username size='sm' %}
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                            <span class="type-label-sm">{{ comment.user.username }}</span>
+                            <span class="type-caption text-tertiary">{{ comment.created_at|timesince }} ago</span>
+                        </div>
+                        <p class="type-body-sm mt-1">{{ comment.text }}</p>
+                        
+                        <!-- Comment Actions -->
+                        <div class="flex items-center gap-4 mt-2">
+                            {% if user.is_authenticated %}
+                                <button type="button" class="type-caption text-secondary hover:text-brand" onclick="document.getElementById('reply-form-{{ comment.id }}').toggleAttribute('hidden')">Reply</button>
+                            {% endif %}
+                            
+                            <form method="post" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="like_comment">
+                                <input type="hidden" name="comment_id" value="{{ comment.id }}">
+                                <button type="submit" class="flex items-center gap-1 type-caption text-secondary hover:text-danger">
+                                    <!-- Inline heart SVG to match the mockup perfectly -->
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="{% if user in comment.likes.all %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                    {{ comment.likes.count }}
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Hidden Reply Form -->
+                        <form method="post" id="reply-form-{{ comment.id }}" class="search-bar mt-4" hidden>
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="comment">
+                            <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                            <input class="input" name="text" placeholder="Write a reply..." required>
+                            <button type="submit" class="btn btn-secondary btn-sm">Reply</button>
+                        </form>
+
+                        <!-- Replies Loop -->
+                        {% for reply in comment.replies.all %}
+                            <div class="flex gap-4 blog-reply-block">
+                                {% include 'components/avatar.html' with name=reply.user.username size='sm' %}
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="type-label-sm">{{ reply.user.username }}</span>
+                                        <span class="type-caption text-tertiary">{{ reply.created_at|timesince }} ago</span>
+                                    </div>
+                                    <p class="type-body-sm mt-1">{{ reply.text }}</p>
+                                    <div class="flex items-center gap-4 mt-2">
+                                        <form method="post" class="inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="like_comment">
+                                            <input type="hidden" name="comment_id" value="{{ reply.id }}">
+                                            <button type="submit" class="flex items-center gap-1 type-caption text-secondary hover:text-danger">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="{% if user in reply.likes.all %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                                {{ reply.likes.count }}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% empty %}
+                <p class="type-body-sm text-secondary">No comments yet. Be the first to share your thoughts!</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Delete Confirmation Dialog -->
+    {% if request.user == article.author or request.user.is_staff %}
+    <dialog class="dialog" id="delete-dialog">
+        <div class="dialog-header">
+            <h2 class="dialog-title">Delete this article?</h2>
+            {% include 'components/dialog_close.html' %}
+        </div>
+        <p class="dialog-text">This action can't be undone.</p>
+        <div class="dialog-actions">
+            <button type="button" class="btn btn-secondary" onclick="this.closest('dialog').close()">Cancel</button>
+            <form method="post" action="{% url 'blog:article_delete' article.slug %}">
+                {% csrf_token %}
+                <button class="btn btn-danger">Delete article</button>
+            </form>
+        </div>
+    </dialog>
+    {% endif %}
+{% endblock %}
