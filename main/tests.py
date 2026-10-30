@@ -1333,3 +1333,30 @@ class LiveSearchTests(TestCase):
         response = self.client.get(reverse("main:show_main"), {"q": "susu", "show": 12}, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
         self.assertIn("cards", response.json())                                  # change: the old Load more keeps working
 
+
+# change: step 8. product cards lift on hover, like the Meal Plan card
+class CardHoverTests(TestCase):
+    def css(self):
+        from pathlib import Path
+        from django.conf import settings
+        return (Path(settings.BASE_DIR) / "main" / "static" / "main" / "main.css").read_text(encoding="utf-8")
+
+    def rule(self, css, selector):
+        # change: returns what is inside the { } of one selector, so we test the rule and not just any word in the file
+        start = css.index(selector + " {")
+        return css[start:css.index("}", start)]
+
+    def test_card_lifts_on_hover(self):
+        hover = self.rule(self.css(), ".discover-card:hover")
+        self.assertIn("translateY(-2px)", hover)            # change: same 2px lift as the Meal Plan card
+        self.assertIn("var(--shadow-md)", hover)
+        self.assertIn("var(--color-border-brand)", hover)
+
+    def test_card_hover_is_smooth(self):
+        base = self.rule(self.css(), ".discover-card")
+        self.assertIn("0.15s", base)                        # change: same speed as the Meal Plan card
+
+    def test_card_hover_respects_reduced_motion(self):
+        css = self.css()
+        block = css[css.index("prefers-reduced-motion: reduce", css.index(".discover-card:hover")):]
+        self.assertIn(".discover-card", block[:300])        # change: people who turned off animations get no movement
