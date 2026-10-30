@@ -10,11 +10,12 @@ from django.contrib.auth.views import LoginView
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.http import Http404, JsonResponse
+from django.http import Http404, JsonResponse, request
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_POST
+from django.http import JsonResponse
 
 from comparison.models import SavedComparison
 from main.models import FavoriteProduct,ViewHistory
@@ -206,11 +207,18 @@ def profile_edit(request):
 @login_required
 @require_POST
 def profile_picture_delete(request):
-    if request.method == 'POST':
-        profile = request.user.profile
-        if profile.profile_picture:
-            profile.profile_picture.delete(save=True)
-            messages.success(request, "Profile picture removed.")
+    profile = request.user.profile
+    if profile.profile_picture:
+        profile.profile_picture.delete(save=True)
+        
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        # Send the user's initial back so JS can build the default avatar
+        return JsonResponse({
+            "status": "success", 
+            "initial": request.user.username[0].upper()
+        })
+            
+    messages.success(request, "Profile picture removed.")
     return redirect('profile')
 
 # PROFILE DELETE VIEW
@@ -263,11 +271,6 @@ def profile_saved_remove(request, kind, pk):
         "product": FavoriteProduct,
         "comparison": SavedComparison,
     }
-    try:
-        from food_of_the_day.models import SavedMeal
-        models["meal"] = SavedMeal
-    except ImportError:
-        pass
     model = models.get(kind)
 
     if model is None:
@@ -275,6 +278,10 @@ def profile_saved_remove(request, kind, pk):
 
     record = get_object_or_404(model, pk=pk, user=request.user)
     record.delete()
+
+    # Intercept for AJAX requests
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({"status": "success"})
 
     category = request.POST.get("category", "all")
 
@@ -351,6 +358,9 @@ class ProfileLoginView(LoginView):
 def history_item_delete(request, item_id):
     # Filter by both id and user to prevent unauthorized deletions
     ViewHistory.objects.filter(id=item_id, user=request.user).delete()
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({"status": "success", "message": "Item deleted."})
+        
     messages.success(request, "Item removed from history.")
     return redirect(reverse('profile') + "?section=history")
 
@@ -359,5 +369,8 @@ def history_item_delete(request, item_id):
 @require_POST
 def history_clear(request):
     ViewHistory.objects.filter(user=request.user).delete()
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({"status": "success"})
+        
     messages.success(request, "History cleared successfully.")
     return redirect(reverse('profile') + "?section=history")
