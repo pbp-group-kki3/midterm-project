@@ -628,3 +628,25 @@ class MealBackLinkTests(TestCase):
         self.client.force_login(self.user)
         response = self.client.get(reverse('profile_saved'), {'category': 'meal'})
         self.assertContains(response, reverse('food_of_the_day:detail', args=[self.meal.id]) + '?source=saved')
+
+
+# change: tests for the self-seeding helper, so a fresh PWS database still shows a meal
+class GetTodaysMealTests(TestCase):
+    # change: local imports keep this block self-contained at the bottom of the file
+    from django.utils import timezone
+    from food_of_the_day.constants import CURATED_RECIPE_IDS
+    def test_creates_todays_meal_when_table_is_empty(self):
+        from food_of_the_day.services import get_todays_meal
+        self.assertEqual(MealOfTheDay.objects.count(), 0)
+        meal = get_todays_meal()
+        self.assertEqual(meal.date, self.timezone.localdate())
+        self.assertIn(meal.recipe_id, self.CURATED_RECIPE_IDS)
+        # change: calling it again must reuse the same row, not make a second one
+        self.assertEqual(get_todays_meal().pk, meal.pk)
+        self.assertEqual(MealOfTheDay.objects.count(), 1)
+
+    def test_keeps_admin_pick_for_today(self):
+        from food_of_the_day.services import get_todays_meal
+        admin_pick = MealOfTheDay.objects.create(date=self.timezone.localdate(), recipe_id=999999)
+        self.assertEqual(get_todays_meal().recipe_id, 999999)
+        self.assertEqual(get_todays_meal().pk, admin_pick.pk)

@@ -359,3 +359,27 @@ def build_recipe_snapshot(recipe):
         'sourceUrl': source_url,
         'source_url': source_url,
     }
+
+
+# change: PWS has no terminal, so we can't run seed_meals there by hand.
+# Instead, the first visit of each day creates that day's meal if it's missing.
+def get_todays_meal():
+    """Return today's MealOfTheDay, creating it from the curated pool if nobody has yet."""
+    # change: imported here (not at the top) so services.py never imports models in a loop
+    from django.db import IntegrityError
+    from django.utils import timezone
+    from food_of_the_day.constants import CURATED_RECIPE_IDS
+    from food_of_the_day.models import MealOfTheDay
+
+    today = timezone.localdate()
+    # change: the same date always picks the same recipe, so it stays put all day
+    recipe_id = CURATED_RECIPE_IDS[today.toordinal() % len(CURATED_RECIPE_IDS)]
+    try:
+        # change: look up by date only, so a meal an admin already picked is never replaced
+        meal, _created = MealOfTheDay.objects.get_or_create(
+            date=today, defaults={"recipe_id": recipe_id}
+        )
+    except IntegrityError:
+        # change: two visitors hit the page at the same moment and the other one won, so just read theirs
+        meal = MealOfTheDay.objects.get(date=today)
+    return meal
