@@ -12,7 +12,8 @@
     <div class="page-header-user min-w-0">
         <span class="avatar avatar-lg">
             {% if profile.profile_picture %}
-                <img src="{{ profile.profile_picture.url }}" alt="{{ request.user.username }}">
+                {# change: same letter fallback as the navbar if the photo file is missing #}
+                <img src="{{ profile.profile_picture.url }}" alt="{{ request.user.username }}" onerror="this.replaceWith(document.createTextNode('{{ request.user.username|first|upper|escapejs }}'))">
             {% else %}
                 {{ request.user.username|slice:":1"|upper }}
             {% endif %}
@@ -123,7 +124,8 @@
                         <div class="photo-picker shrink-0">
                             <span class="avatar avatar-xl" id="avatar-preview-container">
                                 {% if profile.profile_picture %}
-                                    <img src="{{ profile.profile_picture.url }}" alt="{{ request.user.username }}" class="w-full h-full object-cover">
+                                    {# change: same letter fallback here too #}
+                                    <img src="{{ profile.profile_picture.url }}" alt="{{ request.user.username }}" class="w-full h-full object-cover" onerror="this.replaceWith(document.createTextNode('{{ request.user.username|first|upper|escapejs }}'))">
                                 {% else %}
                                     {{ request.user.username|slice:":1"|upper }}
                                 {% endif %}
