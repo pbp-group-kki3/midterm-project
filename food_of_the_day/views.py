@@ -21,6 +21,7 @@ from food_of_the_day.services import (
     extract_ingredients,
     extract_instructions,
     is_safe_external_url,
+    get_todays_meal,  # change: creates today's meal when it's missing
 )
 
 
@@ -112,7 +113,7 @@ def index(request):
     Displays today's featured meal, detail panel (if authenticated), and comments.
     """
     today = timezone.localdate()
-    today_meal = MealOfTheDay.objects.filter(date=today).first()
+    today_meal = get_todays_meal()  # change: never empty now, even on a fresh database
     context = _prepare_meal_context(today_meal, request)
 
     # Archive of past meals for exploration
@@ -143,7 +144,7 @@ def slide_partial(request):
     Used for the second slide on the home page carousel or AJAX fetch.
     """
     today = timezone.localdate()
-    today_meal = MealOfTheDay.objects.filter(date=today).first()
+    today_meal = get_todays_meal()  # change: never empty now, even on a fresh database
     context = _prepare_meal_context(today_meal, request)
     return render(request, 'food_of_the_day/components/slide.html', context)
 
