@@ -222,6 +222,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
         pendingFavorites.add(action);
 
+        // change: step 7. optimistic heart: flip it right away, before the server answers, so the click feels instant.
+        // wasSaved remembers how it looked, so we can flip it back if saving fails
+        const clicked = form.querySelector("button");
+        const wasSaved = clicked ? clicked.getAttribute("aria-pressed") === "true" : false;
+        let confirmed = false;                                         // becomes true once the server says what happened
+        matchingFavoriteForms(action).forEach((matchingForm) => {
+            const button = matchingForm.querySelector("button");
+            if (button) {
+                showFavorite(button, !wasSaved);
+            }
+        });
+
         matchingFavoriteForms(action).forEach((matchingForm) => {
             matchingForm.querySelector(
                 ".product-action-feedback"
@@ -286,11 +298,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
             }
 
+            confirmed = true;                                          // change: step 7. the server agreed, keep it
             matchingFavoriteForms(action).forEach((matchingForm) => {
                 const button = matchingForm.querySelector("button");
 
                 if (button) {
-                    showFavorite(button, data.saved);
+                    showFavorite(button, data.saved);                  // usually already right, this just makes sure
                 }
             });
 
@@ -327,6 +340,17 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         } finally {
             pendingFavorites.delete(action);
+
+            // change: step 7. saving failed (no internet, too many clicks, server error): flip the heart back.
+            // The toast from step 3b / step 2 already told the user why
+            if (!confirmed) {
+                matchingFavoriteForms(action).forEach((matchingForm) => {
+                    const button = matchingForm.querySelector("button");
+                    if (button) {
+                        showFavorite(button, wasSaved);
+                    }
+                });
+            }
 
             matchingFavoriteForms(action).forEach((matchingForm) => {
                 matchingForm.removeAttribute("aria-busy");
