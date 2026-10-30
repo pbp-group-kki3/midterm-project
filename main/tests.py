@@ -1480,3 +1480,66 @@ class SaveToastTests(TestCase):
         texts = [str(m) for m in response.context["messages"]]
         self.assertIn("Ultra Milk was added to your saved products.", texts)        # change: base.html turns it into the same toast
 
+
+# change: Discover's search + filters are checked by a Django form (main/forms.py), not by hand in the view
+class DiscoverFilterFormTests(TestCase):
+    def setUp(self):
+        cache.clear()
+
+    def clean(self, data):
+        from django.http import QueryDict
+        from main.forms import DiscoverFilterForm
+        form = DiscoverFilterForm(QueryDict(data))
+        self.assertTrue(form.is_valid())                     # never "invalid": bad values are dropped, the page still works
+        return form.cleaned_data
+
+    def test_empty_address_gives_the_defaults(self):
+        data = self.clean("")
+        self.assertEqual(data["q"], "")
+        self.assertEqual(data["grade"], [])
+        self.assertEqual(data["label"], [])
+        self.assertEqual(data["avoid"], [])
+        self.assertEqual(data["processing"], "any")
+        self.assertEqual(data["sort"], "")
+        self.assertEqual(data["show"], 6)
+
+    def test_good_values_are_kept(self):
+        data = self.clean("q=susu&grade=A&grade=B&label=halal&label=palm_oil_free&avoid=milk&processing=not_ultra&sort=grade&show=12")
+        self.assertEqual(data["grade"], ["A", "B"])
+        self.assertEqual(data["label"], ["halal", "palm_oil_free"])   # the "No palm oil" quick chip must keep working
+        self.assertEqual(data["avoid"], ["milk"])
+        self.assertEqual(data["processing"], "not_ultra")
+        self.assertEqual(data["sort"], "grade")
+        self.assertEqual(data["show"], 12)
+
+    def test_unknown_choices_are_dropped_one_by_one(self):
+        data = self.clean("grade=A&grade=Z&label=halal&label=<b>x</b>&avoid=nuts&avoid=soy")
+        self.assertEqual(data["grade"], ["A"])               # Z dropped, A kept
+        self.assertEqual(data["label"], ["halal"])
+        self.assertEqual(data["avoid"], ["soy"])
+
+    def test_bad_single_values_fall_back_to_the_default(self):
+        data = self.clean("processing=raw&sort=hack")
+        self.assertEqual(data["processing"], "any")
+        self.assertEqual(data["sort"], "")
+
+    def test_bad_show_numbers_fall_back_to_six(self):
+        for bad in ["abc", "-5", "0", "3", "999999"]:
+            self.assertEqual(self.clean(f"show={bad}")["show"], 6, bad)
+
+    def test_search_text_is_cleaned(self):
+        self.assertEqual(self.clean("q=%3Cb%3Esusu%3C/b%3E%20%20%20uht")["q"], "susu uht")   # tags + extra spaces removed
+        self.assertEqual(len(self.clean("q=" + "a" * 300)["q"]), 100)                     # cut to 100 characters
+
+    @patch("main.views.search_products", return_value=[dict(ULTRA_MILK)])
+    def test_view_ignores_a_fake_grade(self, fake_search):
+        response = self.client.get(reverse("main:show_main"), {"q": "susu", "grade": "Z"})
+        self.assertEqual(response.context["filter_count"], 0)   # before: ?grade=Z counted as a filter and hid every product
+        self.assertEqual(response.context["total"], 1)
+
+    @patch("main.views.search_products", return_value=[dict(ULTRA_MILK)])
+    def test_view_uses_the_form(self, fake_search):
+        response = self.client.get(reverse("main:show_main"), {"q": "susu"})
+        from main.forms import DiscoverFilterForm
+        self.assertIsInstance(response.context["form"], DiscoverFilterForm)
+
