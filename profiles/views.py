@@ -15,7 +15,6 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_POST
-from django.http import JsonResponse
 
 from comparison.models import SavedComparison
 from main.models import FavoriteProduct,ViewHistory
@@ -63,10 +62,12 @@ def register_view(request):
 
                 profile.save()
 
+            # Display the toast message
             messages.success(request, "Your account has been created. Please log in.")
-            login_view = ProfileLoginView()
-            login_view.setup(request)
-            next_url = login_view.get_redirect_url()
+            
+            # Execute the redirect using the next_url 
+            login_url = reverse("login")
+            return redirect(login_url + ("?" + urlencode({"next": next_url}) if next_url else ""))
     else:
         form = SignupForm()
 
@@ -283,6 +284,13 @@ def profile_saved_remove(request, kind, pk):
         "product": FavoriteProduct,
         "comparison": SavedComparison,
     }
+    
+    try:
+        from food_of_the_day.models import SavedMeal
+        models["meal"] = SavedMeal
+    except ImportError:
+        pass
+
     model = models.get(kind)
 
     if model is None:
@@ -309,7 +317,7 @@ def profile_saved_remove(request, kind, pk):
     )
 
 
-# Display an owned saved comparison without replacing the active lineup.
+# Display an owned saved comparison without replacing the active lineup
 @login_required
 @never_cache
 @require_GET
