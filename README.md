@@ -58,7 +58,7 @@ Missing parts are left out and the remaining weights are rescaled, so a product 
 
 | Resource | Link |
 |---|---|
-| Deployment (PWS) | `[PWS LINK HERE]` |
+| Deployment (PWS) | [rebecca-love-spoonfed.pws.cs.ui.ac.id](https://rebecca-love-spoonfed.pws.cs.ui.ac.id/) |
 | Figma (design system and wireframes) | [PBP Midterm Project - KKI Kelompok 3](https://www.figma.com/design/CPywGGQPpltri1IsAXi0hK/PBP-MIDTERM-PROJECT---KKI-KELOMPOK-3?node-id=0-1) |
 | Repository | [pbp-group-kki3/midterm-project](https://github.com/pbp-group-kki3/midterm-project) |
 | Design system page (local) | `http://127.0.0.1:8000/styleguide/` |
