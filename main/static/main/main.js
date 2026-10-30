@@ -135,7 +135,9 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
         // radios: switching one on switches the others in the group off, so update the whole group
-        const group = document.querySelectorAll(`input[name="${input.name}"]`);
+        // change: look only inside this filter form. Every Compare button also has a hidden input called "grade",
+        // and searching the whole page picked those up too, crashed on them (no <label>) and the grade chips stopped working
+        const group = input.form.querySelectorAll(`input[name="${input.name}"]`);
         group.forEach((other) => {
             other.closest("label").classList.toggle("is-selected", other.checked);
         });
