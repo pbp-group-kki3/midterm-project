@@ -1,6 +1,9 @@
 # fetch data from openfoodfacts API
 
 import os # used to read .env variables
+import re # change: checks that a barcode is only digits
+import hashlib # change: turns any search text into a short, safe cache key
+from django.utils.html import strip_tags # change: removes HTML tags from what users type (same as Aryan's module)
 import requests # library used to make HTTP calls to the API
 from django.core.cache import cache # implement cache by using django's short term memory - to not repeat API calls
 from main.services.grading import spoonfeed_grade # import spoonfeed grade
@@ -10,6 +13,29 @@ BASE_URL = "https://id.openfoodfacts.org"
 
 # headers for every request
 HEADERS = {"User-Agent": os.environ.get("OFF_USER_AGENT", "SpoonFed/1.0")}
+
+# change: input safety helpers (step 1)
+BARCODE_PATTERN = re.compile(r"\d{1,32}")   # change: barcodes are digits only, at most 32 (same as the model's max_length)
+MAX_QUERY_LENGTH = 100                       # change: longer searches are cut, nobody types a 100+ letter product name
+
+
+# change: True only for a digits-only barcode. The barcode goes into the API URL,
+# so "../" or other characters must never get that far
+def is_valid_barcode(barcode):
+    return isinstance(barcode, str) and BARCODE_PATTERN.fullmatch(barcode) is not None
+
+
+# change: cleans what the user typed: no HTML tags, no double spaces, max 100 characters
+def clean_query(text):
+    text = strip_tags(text or "")
+    text = " ".join(text.split())       # change: split() + join squeezes every run of spaces into one
+    return text[:MAX_QUERY_LENGTH]
+
+
+# change: a cache key without spaces or odd characters ("susu uht" made Django warn).
+# md5 is only used as a short fingerprint here, not for security
+def cache_key(prefix, text):
+    return f"off:{prefix}:" + hashlib.md5(text.encode("utf-8")).hexdigest()
 
 # product fields SpoonFeed needs the data for
 FIELDS = "code,product_name,brands,quantity,image_front_small_url,nutriscore_grade,ecoscore_grade,ecoscore_score,nova_group,labels_tags,allergens_tags,categories_tags,ingredients_analysis_tags"
@@ -47,6 +73,8 @@ def get_score(product):
 # return one product as a dict, or none if it's missing/API fails
 # function : get product and it's detail from the API
 def get_product(barcode):
+    if not is_valid_barcode(barcode):    # change: refuse anything that isn't a real barcode, before calling the API
+        return None
     key = f"off:product:{barcode}"
     product = cache.get(key)
     if product is not None: # if something is in the cache, return product
@@ -70,9 +98,9 @@ def get_product(barcode):
 # returns a list of products matching text, [] if none, or None if API fails
 # function : to search products in the search bar
 def search_products(text):
-    text = text.strip().lower() # turns into lower case for easier caching
+    text = clean_query(text).lower() # change: cleaned first (tags, spaces, length), then lower case for easier caching
 
-    key = f"off:search:{text}"
+    key = cache_key("search", text)     # change: safe key, e.g. off:search:3f2a... instead of off:search:susu uht
     products = cache.get(key)
     if products is not None:
         return products

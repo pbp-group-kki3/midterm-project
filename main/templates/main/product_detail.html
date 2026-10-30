@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ product.product_name|default:"Product" }} | SpoonFeed{% endblock %}
+{% block title %}{% if not_found %}Product not found{% else %}{{ product.product_name|default:"Product" }}{% endif %} | SpoonFeed{% endblock %}
 
 {% block extra_head %}
     <link rel="stylesheet" href="{% static 'main/main.css' %}">
@@ -29,6 +29,13 @@
 
     {% if product %}
         {% include 'main/components/product_detail_content.html' %}
+    {# change: the address has no real barcode (e.g. /product/abc/): friendly empty state, shared design system classes #}
+    {% elif not_found %}
+        <div class="empty-state mt-6">
+            <h1 class="empty-state-title">We couldn't find this product</h1>
+            <p class="empty-state-text">The link may be wrong or incomplete. Try searching for it on Discover.</p>
+            <a href="{% url 'main:show_main' %}#discover" class="btn btn-primary">Go to Discover</a>
+        </div>
     {% else %}
         <div class="alert alert-warning mt-6">
             Product data is not available right now.

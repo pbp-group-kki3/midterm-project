@@ -5,6 +5,9 @@ import json # change: reads the list of cards that JavaScript sends
 from django.contrib import messages # one-time notes like "Remove one to add another"
 from django.http import HttpResponse
 from main.services.openfoodfacts import search_products, browse_products, get_product, get_alternatives # import search function + to call API
+from main.services.openfoodfacts import is_valid_barcode, clean_query # change: input safety helpers (step 1)
+from django.http import Http404 # change: a bad barcode gets the normal "page not found"
+from django.utils.html import strip_tags # change: removes HTML tags from posted product names
 from main.services.grading import spoonfeed_grade, grade_value, NUTRI_POINTS, GREEN_POINTS,NOVA_POINTS # import gradings
 from main.services.filters import passes_filters, best_grade_key, preference_fit
 from main.services.details import build_grade_rows, nutrition_unit, build_nutrition, build_ingredient_badges, build_environment, clean_ingredients # detail page panels
@@ -85,6 +88,16 @@ def saved_barcodes(request):
     return set(request.user.favorite_products.values_list("barcode", flat=True))   # related_name from models.py
 
 
+# change: posted text comes from the browser, so it's cleaned like Aryan's module does
+def clean_name(value):
+    return strip_tags(value or "").strip()[:255]    # change: no HTML tags, max 255 (the model field's max_length)
+
+
+def clean_grade(value):
+    letter = (value or "").strip().upper()[:1]
+    return letter if letter in GRADE_OPTIONS else "?"   # change: GRADE_OPTIONS is ["A".."E"], defined at the top
+
+
 COMPARE_MAX = 3   # agreed with Alyssa: her page reads up to 3 barcodes from request.session["compare"]
 
 
@@ -112,7 +125,7 @@ def compare_tray(request):
 
 # main / product discovery page: search + filters + sort + load more
 def show_main(request):
-    q = request.GET.get("q", "").strip()
+    q = clean_query(request.GET.get("q", ""))   # change: no HTML tags, no extra spaces, max 100 characters
     grades = request.GET.getlist("grade")              # e.g. ["A", "B"]  (getlist: a key can repeat)
     labels = request.GET.getlist("label")              # e.g. ["halal"]
     processing = request.GET.get("processing", "any")  # "not_ultra" or "any"
@@ -204,6 +217,13 @@ def product_detail(request, barcode):
             headers={"Allow": "GET"},
         )
     
+    # change: only digits can be a barcode. Anything else is "not found", before any API call
+    if not is_valid_barcode(barcode):
+        if overlay:
+            return JsonResponse({"message": "This product doesn't exist."}, status=404)   # change: JSON, so Alyssa's overlay can show it
+        # change: our own friendly page instead of Django's error page, still with status 404 ("not found")
+        return render(request, "main/product_detail.html", {"product": None, "not_found": True}, status=404)
+
     product = get_product(barcode)                           
     if product is None:
         if overlay:
@@ -281,6 +301,8 @@ def product_detail(request, barcode):
 @login_required(login_url="login")   # login page by its URL name (Profile module), works even if settings.LOGIN_URL is outdated
 @require_POST # GET (typing the URL) is refused
 def toggle_favorite(request, barcode):
+    if not is_valid_barcode(barcode):   # change: never save a fake barcode
+        raise Http404("Product not found")
     favorite = FavoriteProduct.objects.filter(user=request.user, barcode=barcode).first()
     if favorite:
         favorite.delete() # if already saved -> remove
@@ -288,7 +310,7 @@ def toggle_favorite(request, barcode):
         FavoriteProduct.objects.create(
             user=request.user,
             barcode=barcode,
-            product_name=request.POST.get("product_name", "")[:255],   # [:255] fits the field's max_length
+            product_name=clean_name(request.POST.get("product_name", "")),   # change: tags removed, max 255 (the field's max_length)
         )
 
 
@@ -344,6 +366,8 @@ def back_to(request, fallback="main:show_main"):
 @login_required(login_url="login")   # login page by its URL name (Profile module), works even if settings.LOGIN_URL is outdated
 @require_POST
 def add_to_compare(request, barcode):
+    if not is_valid_barcode(barcode):   # change: never put a fake barcode in the tray (Alyssa's page reads it)
+        raise Http404("Product not found")
     barcodes = request.session.get("compare", [])
     if barcode in barcodes:
         if not is_ajax(request):            # change: the no-reload version shows the state on the buttons instead
@@ -356,8 +380,8 @@ def add_to_compare(request, barcode):
         request.session["compare"] = barcodes               # assigning again tells Django the session changed
         info = request.session.get("compare_info", {})
         info[barcode] = {
-            "name": request.POST.get("product_name", "")[:255],
-            "grade": request.POST.get("grade", "?")[:1],    # one letter, A-E or ?
+            "name": clean_name(request.POST.get("product_name", "")),   # change: tags removed
+            "grade": clean_grade(request.POST.get("grade", "")),         # change: only A-E, anything else becomes "?"
         }
         request.session["compare_info"] = info
     if is_ajax(request):                    # change: clicked with JavaScript -> send the new tray + buttons, no reload
@@ -369,6 +393,8 @@ def add_to_compare(request, barcode):
 @login_required(login_url="login")   # login page by its URL name (Profile module), works even if settings.LOGIN_URL is outdated
 @require_POST
 def remove_from_compare(request, barcode):
+    if not is_valid_barcode(barcode):   # change: same check as adding
+        raise Http404("Product not found")
     request.session["compare"] = [b for b in request.session.get("compare", []) if b != barcode]
     info = request.session.get("compare_info", {})
     info.pop(barcode, None)
