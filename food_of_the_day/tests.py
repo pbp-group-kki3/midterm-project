@@ -562,3 +562,31 @@ class SeedMealsCommandTest(TestCase):
         call_command('seed_meals', days=3, clear=True)
         self.assertEqual(MealOfTheDay.objects.count(), 3)
 
+
+# change: the detail page shows a "Back to ..." link instead of the breadcrumb
+class MealBackLinkTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.user = User.objects.create_user(username='backlink', password='password123')
+        self.meal = MealOfTheDay.objects.create(date=datetime.date.today(), recipe_id=716429)
+        self.recipe = {"id": 716429, "title": "Healthy Green Bowl", "image": "", "readyInMinutes": 30, "servings": 2}
+
+    @patch('food_of_the_day.views.get_recipe')
+    def test_back_to_meal_of_the_day_by_default(self, mock_get_recipe):
+        mock_get_recipe.return_value = self.recipe
+        response = self.client.get(reverse('food_of_the_day:detail', args=[self.meal.id]))
+        self.assertContains(response, 'Back to Meal of the Day')
+        self.assertNotContains(response, 'Back to Saved')
+        self.assertNotContains(response, '&rsaquo;')        # change: the old breadcrumb separator is gone
+
+    @patch('food_of_the_day.views.get_recipe')
+    def test_back_to_saved_when_opened_from_saved(self, mock_get_recipe):
+        mock_get_recipe.return_value = self.recipe
+        response = self.client.get(reverse('food_of_the_day:detail', args=[self.meal.id]), {'source': 'saved'})
+        self.assertContains(response, 'Back to Saved')
+
+    def test_saved_meal_opens_with_source_saved(self):
+        SavedMeal.objects.create(user=self.user, meal=self.meal, recipe_title="Healthy Green Bowl")
+        self.client.force_login(self.user)
+        response = self.client.get(reverse('profile_saved'), {'category': 'meal'})
+        self.assertContains(response, reverse('food_of_the_day:detail', args=[self.meal.id]) + '?source=saved')
