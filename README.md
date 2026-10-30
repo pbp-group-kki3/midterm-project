@@ -72,12 +72,12 @@ Click a name or NPM to go to that member's section.
 
 | Name | NPM | Module |
 |---|---|---|
-| [Serafin](#serafin) | [2506637136](#serafin) | Profile |
-| [Rebecca](#rebecca) | [2506637110](#rebecca) | Product Discovery |
-| [Reyhan](#reyhan) | [2506637086](#reyhan) | Meal Plan |
-| [Alyssa](#alyssa) | [2506558466](#alyssa) | Product Comparison |
-| [Aryan](#aryan) | [2506636985](#aryan) | Meal of the Day |
-| [Qeela](#qeela) | [2506637104](#qeela) | Blog |
+| [Serafin Reysetyo Amantresno Grajo Pingol](#serafin) | [2506637136](#serafin) | Profile |
+| [Rebecca Love Lianov Simanjuntak](#rebecca) | [2506637110](#rebecca) | Product Discovery |
+| [Muhammad Reyhan Attarizky](#reyhan) | [2506637086](#reyhan) | Meal Plan |
+| [Alyssa Rahma Adjani](#alyssa) | [2506558466](#alyssa) | Product Comparison |
+| [Aryan Alexander Rinaldi](#aryan) | [2506636985](#aryan) | Meal of the Day |
+| [Qeela Mufazzal Rafif Putra E](#qeela) | [2506637104](#qeela) | Blog |
 
 ---
 
@@ -138,7 +138,7 @@ Used for recipe search, the meal planner and the Meal of the Day. Following Spoo
 Each module has its own models, views, templates and forms, server-side permission checks, and at least one interaction that updates the page without a reload.
 
 ## 👤 Profile
-By [Serafin](#serafin) ([2506637136](#serafin))
+By [Serafin Reysetyo Amantresno Grajo Pingol](#serafin) ([2506637136](#serafin))
 
 Manages user accounts and personal preferences. Users register, log in, edit their profile and access their saved items. They can set dietary preferences, allergies and nutritional goals, which other modules use to personalise meal plans and product results.
 
@@ -150,7 +150,7 @@ Manages user accounts and personal preferences. Users register, log in, edit the
 | Delete | Delete their account or profile picture, remove saved items, and delete single history entries or clear the whole history. |
 
 ## 🔍 Product Discovery
-By [Rebecca](#rebecca) ([2506637110](#rebecca))
+By [Rebecca Love Lianov Simanjuntak](#rebecca) ([2506637110](#rebecca))
 
 The main page of SpoonFeed. Users search Indonesian food products, filter them, and see a short card with each product's SpoonFeed grade. The detail page explains the grade, shows nutrition, ingredients, packaging and environmental data, and recommends up to three better alternatives from the same category. Products can be saved as favorites or added to the compare tray.
 
@@ -162,7 +162,7 @@ The main page of SpoonFeed. Users search Indonesian food products, filter them, 
 | Delete | Unsave a favorite or remove a product from the compare tray. History entries are deleted from the Profile page. |
 
 ## ⚖️ Product Comparison
-By [Alyssa](#alyssa) ([2506558466](#alyssa))
+By [Alyssa Rahma Adjani](#alyssa) ([2506558466](#alyssa))
 
 Lets users evaluate two or three products side by side using nutrition, environmental indicators, processing scores, labels and allergens. Better values are highlighted per row. Logged-in users can save comparison lineups and manage them from their profile.
 
@@ -174,7 +174,7 @@ Lets users evaluate two or three products side by side using nutrition, environm
 | Delete | Remove a saved comparison, or remove a product from the active comparison. |
 
 ## 🍽️ Meal Plan
-By [Reyhan](#reyhan) ([2506637086](#reyhan))
+By [Muhammad Reyhan Attarizky](#reyhan) ([2506637086](#reyhan))
 
 Generates meal plans based on the user's diet, allergies, calorie goal and planning period. It opens on a filterable recipe browser and lets users replace any meal they don't like.
 
@@ -186,7 +186,7 @@ Generates meal plans based on the user's diet, allergies, calorie goal and plann
 | Delete | Delete a plan after confirming. |
 
 ## ⭐ Meal of the Day
-By [Aryan](#aryan) ([2506636985](#aryan))
+By [Aryan Alexander Rinaldi](#aryan) ([2506636985](#aryan))
 
 Features one sustainable recipe every day, shown as a slide in the landing page carousel and on its own page. Members can save the meal and join the discussion in the comments.
 
@@ -198,7 +198,7 @@ Features one sustainable recipe every day, shown as a slide in the landing page 
 | Delete | Unsave a meal. Admins can remove scheduled meals and comments. |
 
 ## 📝 Blog
-By [Qeela](#qeela) ([2506637104](#qeela))
+By [Qeela Mufazzal Rafif Putra E](#qeela) ([2506637104](#qeela))
 
 Educational articles about sustainable food and responsible living: food waste, packaging, recycling, carbon footprints, sustainable shopping, nutrition labels and seasonal food. Any logged-in user can write a post.
 
@@ -303,7 +303,7 @@ python manage.py test main.tests_functional
 ## 🙌 Contributors
 
 <a id="serafin"></a>
-### Serafin · Profile · 2506637136
+### Serafin Reysetyo Amantresno Grajo Pingol · Profile · 2506637136
 
 The Profile module is made up of six parts: Registration, Login, Account, Preferences, Saved/Favourites and History.
 
@@ -352,7 +352,7 @@ The commit convention is followed from 28 October 2026 onwards, after an earlier
 ---
 
 <a id="rebecca"></a>
-### Rebecca · Product Discovery · 2506637110
+### Rebecca Love Lianov Simanjuntak · Product Discovery · 2506637110
 
 Product Discovery is the main page of SpoonFeed (the `main` app): live product search with filters, the SpoonFeed grade, product detail pages with better alternatives, favorites, view history, and the compare tray that leads into the Comparison module.
 
@@ -439,7 +439,7 @@ The global CSS (`static/css/tokens.css`, `base.css`, `components.css`, `pages.cs
 ---
 
 <a id="reyhan"></a>
-### Reyhan · Meal Plan · 2506637086
+### Muhammad Reyhan Attarizky · Meal Plan · 2506637086
 
 Meal Plan creates personalised meal plans from Spoonacular recipes and lets users browse recipes, edit plans and replace single meals.
 
@@ -487,7 +487,7 @@ Meal Plan creates personalised meal plans from Spoonacular recipes and lets user
 ---
 
 <a id="alyssa"></a>
-### Alyssa · Product Comparison · 2506558466
+### Alyssa Rahma Adjani · Product Comparison · 2506558466
 
 The Product Comparison module lets users evaluate two or three food products side by side using nutritional information, environmental indicators, processing scores, labels and allergens. Logged-in users can also save and manage comparison lineups through their profiles.
 
@@ -578,7 +578,7 @@ The Product Comparison module lets users evaluate two or three food products sid
 ---
 
 <a id="aryan"></a>
-### Aryan · Meal of the Day · 2506636985
+### Aryan Alexander Rinaldi · Meal of the Day · 2506636985
 
 The Meal of the Day module delivers a daily recipe recommendation that works both as a feature in the homepage carousel and as a recipe page of its own, with community interactions.
 
@@ -636,7 +636,7 @@ The Meal of the Day module delivers a daily recipe recommendation that works bot
 ---
 
 <a id="qeela"></a>
-### Qeela · Blog · 2506637104
+### Qeela Mufazzal Rafif Putra E · Blog · 2506637104
 
 The Blog module provides educational content about sustainable food consumption and environmentally responsible lifestyles. It helps users understand the information shown elsewhere in the app and encourages more sustainable daily habits. Articles cover food waste, packaging, recycling, carbon footprints, sustainable shopping, nutrition labels, seasonal food and responsible consumption.
 
