@@ -22,3 +22,12 @@ class ArticleForm(forms.ModelForm):
         # Summary and image are optional
         self.fields['summary'].required = False
         self.fields['cover_image'].required = False
+
+# Validate comments and replies before they reach the database.
+class ArticleCommentForm(forms.Form):
+    text = forms.CharField(
+        max_length=2000,
+        strip=True,
+        error_messages={"required": "Write a comment before posting."},
+    )
+    parent_id = forms.IntegerField(required=False, min_value=1)
