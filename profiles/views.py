@@ -10,7 +10,7 @@ from django.contrib.auth.views import LoginView
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.http import Http404, JsonResponse
+from django.http import Http404, JsonResponse, request
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
@@ -62,7 +62,10 @@ def register_view(request):
 
                 profile.save()
 
+            # Display the toast message
             messages.success(request, "Your account has been created. Please log in.")
+            
+            # Execute the redirect using the next_url 
             login_url = reverse("login")
             return redirect(login_url + ("?" + urlencode({"next": next_url}) if next_url else ""))
     else:
@@ -206,11 +209,18 @@ def profile_edit(request):
 @login_required
 @require_POST
 def profile_picture_delete(request):
-    if request.method == 'POST':
-        profile = request.user.profile
-        if profile.profile_picture:
-            profile.profile_picture.delete(save=True)
-            messages.success(request, "Profile picture removed.")
+    profile = request.user.profile
+    if profile.profile_picture:
+        profile.profile_picture.delete(save=True)
+        
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        # Send the user's initial back so JS can build the default avatar
+        return JsonResponse({
+            "status": "success", 
+            "initial": request.user.username[0].upper()
+        })
+            
+    messages.success(request, "Profile picture removed.")
     return redirect('profile')
 
 # PROFILE DELETE VIEW
@@ -231,18 +241,26 @@ def change_password_view(request):
         current_password = request.POST.get('current_password')
         new_password = request.POST.get('new_password')
         confirm_password = request.POST.get('confirm_password')
+        
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
         if not request.user.check_password(current_password):
+            if is_ajax:
+                return JsonResponse({"status": "error", "message": "Current password is incorrect."}, status=400)
             messages.error(request, "Current password is incorrect.")
             return redirect('profile')
 
         if new_password != confirm_password:
+            if is_ajax:
+                return JsonResponse({"status": "error", "message": "New passwords do not match."}, status=400)
             messages.error(request, "New passwords do not match.")
             return redirect('profile')
 
         try:
             validate_password(new_password, request.user)
         except ValidationError as e:
+            if is_ajax:
+                return JsonResponse({"status": "error", "message": " ".join(e.messages)}, status=400)
             for error in e.messages:
                 messages.error(request, error)
             return redirect('profile')
@@ -251,6 +269,9 @@ def change_password_view(request):
         request.user.save()
         update_session_auth_hash(request, request.user)
         
+        if is_ajax:
+            return JsonResponse({"status": "success", "message": "Password changed successfully."})
+            
         messages.success(request, "Password changed successfully.")
         
     return redirect('profile')
@@ -263,11 +284,13 @@ def profile_saved_remove(request, kind, pk):
         "product": FavoriteProduct,
         "comparison": SavedComparison,
     }
+    
     try:
         from food_of_the_day.models import SavedMeal
         models["meal"] = SavedMeal
     except ImportError:
         pass
+
     model = models.get(kind)
 
     if model is None:
@@ -275,6 +298,10 @@ def profile_saved_remove(request, kind, pk):
 
     record = get_object_or_404(model, pk=pk, user=request.user)
     record.delete()
+
+    # Intercept for AJAX requests
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({"status": "success"})
 
     category = request.POST.get("category", "all")
 
@@ -290,7 +317,7 @@ def profile_saved_remove(request, kind, pk):
     )
 
 
-# Display an owned saved comparison without replacing the active lineup.
+# Display an owned saved comparison without replacing the active lineup
 @login_required
 @never_cache
 @require_GET
@@ -351,6 +378,9 @@ class ProfileLoginView(LoginView):
 def history_item_delete(request, item_id):
     # Filter by both id and user to prevent unauthorized deletions
     ViewHistory.objects.filter(id=item_id, user=request.user).delete()
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({"status": "success", "message": "Item deleted."})
+        
     messages.success(request, "Item removed from history.")
     return redirect(reverse('profile') + "?section=history")
 
@@ -359,5 +389,8 @@ def history_item_delete(request, item_id):
 @require_POST
 def history_clear(request):
     ViewHistory.objects.filter(user=request.user).delete()
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({"status": "success"})
+        
     messages.success(request, "History cleared successfully.")
     return redirect(reverse('profile') + "?section=history")

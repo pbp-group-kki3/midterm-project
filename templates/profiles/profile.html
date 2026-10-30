@@ -316,7 +316,7 @@
                                             <a href="{% url 'main:product_detail' item.barcode %}" class="btn btn-secondary">Open</a>
                                             
                                         <!-- Delete Item Button (Updated with confirmation attributes) -->
-                                        <form method="POST" action="{% url 'history_item_delete' item.id %}" class="inline"
+                                        <form method="POST" action="{% url 'history_item_delete' item.id %}" class="inline ajax-delete"
                                             data-confirm-title="Remove this item?" 
                                             data-confirm-text="This product will be removed from your history." 
                                             data-confirm-label="Remove">
@@ -335,8 +335,8 @@
 
                 <!-- Clear History Button -->
                 <div class="pt-4">
-                    <form method="POST" action="{% url 'history_clear' %}" data-confirm-title="Clear all history?" data-confirm-text="This will remove all your recently viewed products." data-confirm-label="Clear">
-                        {% csrf_token %}
+                    <form method="POST" action="{% url 'history_clear' %}" class="ajax-clear-history" data-confirm-title="Clear all history?" data-confirm-text="This will remove all your recently viewed products." data-confirm-label="Clear">                     
+                           {% csrf_token %}
                         <button type="submit" class="btn btn-secondary bg-surface text-primary">Clear history</button>
                     </form>
                 </div>
@@ -355,17 +355,23 @@
 </div>
 
 <!-- Keep photo removal separate from the account-information form. -->
-<form id="remove-picture-form" method="post" action="{% url 'profile_picture_delete' %}" data-confirm-title="Remove your profile picture?" data-confirm-text="Your account and other profile information will stay unchanged." data-confirm-label="Remove" hidden>
-    {% csrf_token %}
+<form id="remove-picture-form" class="ajax-remove-picture" method="post" action="{% url 'profile_picture_delete' %}" data-confirm-title="Remove your profile picture?" data-confirm-text="Your account and other profile information will stay unchanged." data-confirm-label="Remove" hidden>
+        {% csrf_token %}
 </form>
 
 <!-- CHANGE PASSWORD DIALOG -->
 <dialog class="dialog dialog-form profile-confirm-dialog" id="password-dialog" aria-labelledby="password-dialog-title">
     <h2 class="type-title text-primary" id="password-dialog-title">Change password</h2>
     <p class="type-body-sm text-secondary mb-4">Enter your current password and choose a new one.</p>
-    <form method="POST" action="{% url 'change_password' %}">
+    
+    <!--  ID here so JS can target it -->
+    <form id="password-change-form" method="POST" action="{% url 'change_password' %}">
         {% csrf_token %}
         <div class="dialog-body form-stack">
+            
+            <!-- AJAX Error Container -->
+            <div id="password-dialog-error" class="text-danger type-body-sm mb-4 hidden font-medium"></div>
+
             <div class="field">
                 <label class="field-label type-label-md" for="current_password">Current password</label>
                 <input class="input" type="password" id="current_password" name="current_password" placeholder="Password" required>
@@ -514,10 +520,109 @@
         }
     });
 
-    document.getElementById('profile-confirm-submit').addEventListener('click', () => {
+    document.getElementById('profile-confirm-submit').addEventListener('click', async () => {
         if (!pendingForm) return;
         const form = pendingForm;
         confirmation.close();
+
+        if (form.classList.contains('ajax-delete-item') || 
+            form.classList.contains('ajax-clear-history') || 
+            form.classList.contains('ajax-remove-picture')||
+            form.classList.contains('ajax-remove-saved')) {
+            
+            const formData = new FormData(form);
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+
+                    if (form.classList.contains('ajax-delete-item')) {
+                        const card = form.closest('.card');
+                        card.style.transition = 'all 0.3s ease';
+                        card.style.opacity = '0';
+                        card.style.transform = 'scale(0.95)';
+                        
+                        setTimeout(() => {
+                            card.remove();
+                            const remainingItems = document.querySelectorAll('#sec-history .card');
+                            if (remainingItems.length === 0) {
+                                document.getElementById('sec-history').innerHTML = `
+                                    <div class="flex flex-col gap-2">
+                                        <h2 class="type-heading-m text-primary">History</h2>
+                                        <p class="type-body-sm text-secondary">Products you've looked at recently.</p>
+                                    </div>
+                                    <div class="card flex flex-col items-center justify-center py-12 text-center fade-in">
+                                        <div class="empty-state max-w-sm">
+                                            <span class="icon icon-history text-tertiary text-4xl mb-2" aria-hidden="true"></span>
+                                            <h3 class="empty-state-title type-card-title text-primary">No history yet</h3>
+                                            <p class="empty-state-text type-body-sm text-secondary">Products you view will show up here.</p>
+                                        </div>
+                                    </div>`;
+                            }
+                        }, 300);
+                    }
+
+                    if (form.classList.contains('ajax-clear-history')) {
+                        const historyContainer = form.closest('section');
+                        historyContainer.style.opacity = '0';
+                        setTimeout(() => {
+                            historyContainer.innerHTML = `
+                                <div class="flex flex-col gap-2">
+                                    <h2 class="type-heading-m text-primary">History</h2>
+                                    <p class="type-body-sm text-secondary">Products you've looked at recently.</p>
+                                </div>
+                                <div class="card flex flex-col items-center justify-center py-12 text-center">
+                                    <div class="empty-state max-w-sm">
+                                        <span class="icon icon-history text-tertiary text-4xl mb-2" aria-hidden="true"></span>
+                                        <h3 class="empty-state-title type-card-title text-primary">No history yet</h3>
+                                        <p class="empty-state-text type-body-sm text-secondary">Products you view will show up here.</p>
+                                    </div>
+                                </div>`;
+                            historyContainer.style.opacity = '1';
+                        }, 300);
+                    }
+
+                    if (form.classList.contains('ajax-remove-picture')) {
+                        // Replace the large preview avatar
+                        const container = document.getElementById('avatar-preview-container');
+                        container.innerHTML = data.initial;
+                        
+                        document.querySelectorAll('.user-chip .avatar, .page-header-user .avatar').forEach(el => {
+                            if (el.id !== 'avatar-preview-container') {
+                                el.innerHTML = data.initial;
+                                el.querySelector('img')?.remove(); 
+                            }
+                        });
+
+                        document.querySelector('[data-confirm-form="remove-picture-form"]')?.classList.add('hidden');
+                    }
+
+                    if (form.classList.contains('ajax-remove-saved')) {
+                        const card = form.closest('.card'); 
+                        if (card) {
+                            card.style.transition = 'all 0.3s ease';
+                            card.style.opacity = '0';
+                            card.style.transform = 'scale(0.95)';
+                            setTimeout(() => {
+                                card.remove();
+                            }, 300);
+                        }
+                    }
+                    
+                }
+            } catch (error) {
+                console.error("AJAX request failed", error);
+            }
+            pendingForm = null;
+            return;
+        }
+
+        // Standard forms (like Logout or Account Deletion) bypass AJAX
         confirmedForm = form;
         form.requestSubmit();
         confirmedForm = null;
