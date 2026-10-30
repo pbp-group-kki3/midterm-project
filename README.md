@@ -36,7 +36,8 @@ The Blog module provides educational content about sustainable food consumption 
 ---
 
 ### 🔗 API Integration
-* **Open Food Facts** - [https://id.openfoodfacts.org/](https://id.openfoodfacts.org/)
+* **Open Food Facts** - [https://id.openfoodfacts.org/](https://id.openfoodfacts.org/) (Product Discovery, Product Comparison)
+* **Spoonacular** - [https://spoonacular.com/food-api](https://spoonacular.com/food-api) (Meal Plan, Meal of the Day)
 
 
 
