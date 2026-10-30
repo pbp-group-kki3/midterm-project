@@ -1282,3 +1282,54 @@ class ApiDownTests(TestCase):
         self.assertNotContains(response, "saved earlier")
         self.assertFalse(response.context["stale"])
 
+
+# change: step 4, HTMX live search (lecture 07 + tutorial 6: hx-get, hx-trigger with delay = debounce, hx-target, partials)
+HTMX = {"HTTP_HX_REQUEST": "true"}
+
+
+class LiveSearchTests(TestCase):
+    def setUp(self):
+        cache.clear()
+
+    def test_page_loads_htmx_and_the_debounced_search(self):
+        with patch("main.views.browse_products", return_value=[dict(ULTRA_MILK)]):
+            response = self.client.get(reverse("main:show_main"))
+        self.assertContains(response, "htmx.org@2.0.11")                       # change: same version as the lecture
+        self.assertContains(response, 'hx-trigger="input changed delay:500ms"')  # change: debounce, waits until typing stops
+        self.assertContains(response, 'hx-target="#discover-results"')
+        self.assertContains(response, 'id="discover-results"')
+        self.assertContains(response, "X-CSRFToken")                            # change: tutorial 6, token sent with every HTMX request
+
+    @patch("main.views.search_products", return_value=[dict(ULTRA_MILK)])
+    def test_htmx_search_gets_only_the_results_part(self, fake_search):
+        response = self.client.get(reverse("main:show_main"), {"q": "susu"}, **HTMX)
+        self.assertTemplateUsed(response, "main/components/discover_htmx.html")
+        self.assertTemplateNotUsed(response, "main/main.html")                  # change: no full page, just the part that changes
+        self.assertContains(response, "Ultra Milk Low Fat")
+        self.assertContains(response, 'hx-swap-oob="true"')                     # change: Filters/Sort buttons are updated too
+        self.assertNotContains(response, "<html")
+        fake_search.assert_called_once_with("susu")
+
+    @patch("main.views.browse_products", return_value=[dict(ULTRA_MILK)])
+    def test_back_button_restore_gets_the_full_page(self, fake_browse):
+        response = self.client.get(reverse("main:show_main"), HTTP_HX_HISTORY_RESTORE_REQUEST="true", **HTMX)
+        self.assertTemplateUsed(response, "main/main.html")                     # change: htmx asks for the whole page here
+
+    @patch("main.views.browse_products", return_value=[dict(ULTRA_MILK)])
+    def test_responses_vary_on_htmx(self, fake_browse):
+        response = self.client.get(reverse("main:show_main"))
+        self.assertIn("HX-Request", response.headers.get("Vary", ""))          # change: browsers won't mix up the page and the part
+
+    @patch("main.views.search_products", return_value=off.StaleList([dict(ULTRA_MILK)]))
+    def test_saved_results_toast_also_works_for_htmx(self, fake_search):
+        import json as json_lib
+        response = self.client.get(reverse("main:show_main"), {"q": "susu"}, **HTMX)
+        event = json_lib.loads(response.headers["HX-Trigger"])["spoonfeed:toast"]   # change: main.js turns this into the shared toast
+        self.assertIn("saved earlier", event["message"])
+        self.assertEqual(event["type"], "info")
+
+    @patch("main.views.search_products", return_value=[dict(ULTRA_MILK, code=str(i)) for i in range(10)])
+    def test_load_more_still_answers_json(self, fake_search):
+        response = self.client.get(reverse("main:show_main"), {"q": "susu", "show": 12}, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
+        self.assertIn("cards", response.json())                                  # change: the old Load more keeps working
+
