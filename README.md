@@ -246,13 +246,18 @@ pip install -r requirements.txt
 Create a `.env` file in the project root:
 
 ```env
-SECRET_KEY=any-long-random-string
+SECRET_KEY=any-long-random-string 
 DEBUG=True
 SPOONACULAR_API_KEY=your-spoonacular-key
 OFF_USER_AGENT=SpoonFeed/1.0 (your-email@example.com)
 ```
-
+`Getting The Secret Key` : 
+- `Windows` : python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+- `Mac / Linux` : python3 -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+  
 Without `PRODUCTION=True` the app uses SQLite, so no database setup is needed. On PWS, `PRODUCTION=True` is set together with `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT` and `SCHEMA` to use PostgreSQL.
+
+`Team Note` : Due to issues (none of the team members has received the PostgreSQL credentials from ITF), our team as advised by our TA, we use NEON Database. The TA is aware of this issue. (cred: Thank you Kak Gibran).
 
 ### Database and data
 
