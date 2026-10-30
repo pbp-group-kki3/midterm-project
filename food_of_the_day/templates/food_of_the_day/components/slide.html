@@ -41,7 +41,7 @@
           </button>
         {% else %}
           <a 
-            href="/profiles/login/" 
+            href="{% url 'login' %}?next={{ request.get_full_path|default:request.path }}" 
             class="btn btn-on-feature btn-pill btn-sm"
           >
             Login to see the recipe &rarr;

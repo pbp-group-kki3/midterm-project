@@ -1,3 +1,4 @@
+import re
 from django import forms
 from django.core.exceptions import ValidationError
 from food_of_the_day.models import MealComment
@@ -25,8 +26,8 @@ class MealCommentForm(forms.ModelForm):
         if not text:
             raise ValidationError('Comment cannot be empty.')
 
-        # Remove null bytes if any
-        cleaned_text = text.replace('\x00', '').strip()
+        # Strip null bytes and non-printable control characters (excluding newline and tab)
+        cleaned_text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', text).strip()
 
         if len(cleaned_text) < 2:
             raise ValidationError('Comment is too short. Please provide at least 2 characters.')
