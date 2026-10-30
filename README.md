@@ -59,7 +59,7 @@ Missing parts are left out and the remaining weights are rescaled, so a product 
 | Resource | Link |
 |---|---|
 | Deployment (PWS) | `[PWS LINK HERE]` |
-| Figma (design system and wireframes) | `[FIGMA LINK HERE]` |
+| Figma (design system and wireframes) | [PBP Midterm Project - KKI Kelompok 3](https://www.figma.com/design/CPywGGQPpltri1IsAXi0hK/PBP-MIDTERM-PROJECT---KKI-KELOMPOK-3?node-id=0-1) |
 | Repository | [pbp-group-kki3/midterm-project](https://github.com/pbp-group-kki3/midterm-project) |
 | Design system page (local) | `http://127.0.0.1:8000/styleguide/` |
 
@@ -699,9 +699,9 @@ AI was used throughout the project as a design, planning and coding assistant. E
 
 The design process went like this:
 
-1. **Design system by hand.** The initial design system (colours, typography, components) and the first frames were designed in Figma.
+1. **Design system by hand.** Rebecca and Alyssa designed the initial design system (colours, typography, components) and the first frames by hand in Figma.
 2. **Layout drafts with AI.** Page layouts were discussed with Claude (Rebecca) and Codex (Alyssa). Both were connected to the Figma file through connectors, so they could read the design system and create layout drafts directly in Figma.
-3. **Final wireframe.** The final wireframe combines those drafts with hand-made UI/UX decisions. Each draft was kept, changed or rejected, and spacing, hierarchy and copy were refined by hand.
+3. **Final wireframe.** The final wireframe is a mix of manual design and AI help. Layout, spacing, hierarchy and copy were designed and refined by hand, while AI took over the repetitive work, such as repeating components across frames and building the desktop and mobile variants. Each AI draft was kept, changed or rejected.
 4. **Design system in code.** The global CSS (`static/css/`) and the `/styleguide/` page were built from the Figma design system with Claude Opus 5.5, so all six modules share the same tokens and components.
 
 <!-- TODO (team): additional details about the team's AI use -->
