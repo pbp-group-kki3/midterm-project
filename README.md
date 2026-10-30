@@ -1,20 +1,11 @@
-<p>
-  <img src="static/img/Header.svg" alt="SpoonFeed logo" height="72">
-  <img src="docs/readme/wordmark.svg" alt="SpoonFeed" height="72">
-</p>
+<img src="static/img/Header.svg" alt="SpoonFeed logo" width="128">
 
 # SpoonFeed
 
 SpoonFeed is a Django web app that helps people choose healthier and more sustainable food. It turns Open Food Facts product data and Spoonacular recipes into simple, everyday decisions, with a focus on products sold in Indonesia.
 
-| Theme | Topic | Course | Group |
-|---|---|---|---|
-| Sustainable Living | Eco Mindful Living and Food Consumption | Platform-Based Programming (PBP) 2026, Midterm Project | KKI3 |
-
 <!-- TODO: hero screenshot of the landing page (Meal of the Day carousel) -->
 <!-- ![SpoonFeed landing page](docs/readme/hero.png) -->
-
-## 🌱 About SpoonFeed
 
 Food production is one of the largest contributors to global environmental impact. Agriculture, packaging and transportation together make up a large share of a product's carbon footprint, yet this information is almost never visible to shoppers at the point of purchase.
 
@@ -22,12 +13,12 @@ Most people want to make greener choices, but nutrition labels don't show enviro
 
 SpoonFeed closes that gap. Users can:
 
-- 🔍 search products and see one clear grade for each,
-- ⚖️ compare two or three products side by side,
-- 💡 get better alternatives from the same category,
-- 🍽️ plan meals around their diet, allergies and calorie goal,
-- ⭐ discover a sustainable Meal of the Day and discuss it,
-- 📝 read and write blog articles about sustainable food.
+- 🔍 Search products and see one clear grade for each
+- ⚖️ Compare two or three products side by side
+- 💡 Get better alternatives from the same category
+- 🍽️ Plan meals around their diet, allergies and calorie goal
+- ⭐ Discover a sustainable Meal of the Day and discuss it
+- 📝 Read and write blog articles about sustainable food
 
 ### The SpoonFeed grade
 
@@ -40,6 +31,10 @@ Every product gets one overall grade from A to E, built from three public scores
 | Processing | NOVA group | 15% |
 
 Missing parts are left out and the remaining weights are rescaled, so a product with partial data still gets a fair grade. A product with no data at all shows `?` instead of a made-up grade.
+
+| Theme | Topic | Course | Group |
+|---|---|---|---|
+| Sustainable Living | Eco Mindful Living and Food Consumption | Platform-Based Programming (PBP) 2026, Midterm Project | KKI3 |
 
 ---
 
