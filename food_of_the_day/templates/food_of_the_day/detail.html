@@ -60,7 +60,7 @@
           Log in to view complete ingredient measurements, step-by-step instructions, and join the community discussion.
         </p>
         <div class="pt-2">
-          <a href="/profiles/login/" class="btn btn-primary btn-pill">
+          <a href="{% url 'login' %}?next={{ request.get_full_path|default:request.path }}" class="btn btn-primary btn-pill">
             Log in to see the recipe &rarr;
           </a>
         </div>
