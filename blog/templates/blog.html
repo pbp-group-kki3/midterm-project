@@ -27,9 +27,9 @@
     </form>
 
     <div class="chip-row mb-8">
-        <a href="?q={{ q }}" class="chip {% if not current_topic %}is-selected{% endif %}">All</a>
+        <a href="?q={{ q|urlencode }}" class="chip {% if not current_topic %}is-selected{% endif %}">All</a>
         {% for topic_val, topic_name in topics %}
-            <a href="?topic={{ topic_val }}&q={{ q }}" class="chip {% if current_topic == topic_val %}is-selected{% endif %}">
+            <a href="?topic={{ topic_val|urlencode }}&amp;q={{ q|urlencode }}" class="chip {% if current_topic == topic_val %}is-selected{% endif %}">
                 {{ topic_name }}
             </a>
         {% endfor %}

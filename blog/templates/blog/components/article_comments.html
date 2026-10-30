@@ -1,0 +1,90 @@
+<section aria-labelledby="blog-comments-title">
+    <h2 id="blog-comments-title" class="type-h3 mb-6">
+        Comments ({{ comment_count }})
+    </h2>
+
+    {% if user.is_authenticated %}
+        <form
+            method="post"
+            action="{{ comment_action_url }}"
+            class="js-blog-form form-stack mb-8"
+            data-blog-mode="comments"
+        >
+            {% csrf_token %}
+            <input type="hidden" name="action" value="comment">
+            <label class="field-label" for="blog-comment-text">Your comment</label>
+            <textarea id="blog-comment-text" class="input" name="text" maxlength="2000" required></textarea>
+            <button type="submit" class="btn btn-primary">Post</button>
+            <p class="field-error blog-form-errors" role="alert" hidden></p>
+        </form>
+    {% endif %}
+
+    <div class="flex flex-col gap-6">
+        {% for comment in comments %}
+            <article class="flex gap-4">
+                {% include "components/avatar.html" with name=comment.user.username size="sm" %}
+
+                <div class="flex-1 min-w-0">
+                    <p class="type-label-sm">{{ comment.user.username }}</p>
+                    <p class="type-caption text-tertiary">{{ comment.created_at|timesince }} ago</p>
+                    <p class="type-body-sm mt-1">{{ comment.text }}</p>
+
+                    {% if user.is_authenticated %}
+                        <div class="flex flex-wrap items-center gap-4 mt-2">
+                            <button
+                                type="button"
+                                class="link"
+                                data-blog-reply="blog-reply-{{ comment.pk }}"
+                                aria-controls="blog-reply-{{ comment.pk }}"
+                                aria-expanded="false"
+                            >
+                                Reply
+                            </button>
+
+                            {% include "blog/components/comment_like.html" %}
+                        </div>
+
+                        <form
+                            method="post"
+                            action="{{ comment_action_url }}"
+                            id="blog-reply-{{ comment.pk }}"
+                            class="js-blog-form form-stack mt-4"
+                            data-blog-mode="comments"
+                            hidden
+                        >
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="comment">
+                            <input type="hidden" name="parent_id" value="{{ comment.pk }}">
+                            <label class="field-label" for="blog-reply-text-{{ comment.pk }}">
+                                Reply to {{ comment.user.username }}
+                            </label>
+                            <textarea id="blog-reply-text-{{ comment.pk }}" class="input" name="text" maxlength="2000" required></textarea>
+                            <button type="submit" class="btn btn-secondary btn-sm">Post reply</button>
+                            <p class="field-error blog-form-errors" role="alert" hidden></p>
+                        </form>
+                    {% else %}
+                        <p class="type-caption text-secondary">{{ comment.likes.count }} likes</p>
+                    {% endif %}
+
+                    {% for reply in comment.replies.all %}
+                        <article class="blog-reply-block">
+                            <p class="type-label-sm">{{ reply.user.username }}</p>
+                            <p class="type-caption text-tertiary">{{ reply.created_at|timesince }} ago</p>
+                            <p class="type-body-sm mt-1">{{ reply.text }}</p>
+
+                            {% if user.is_authenticated %}
+                                {% include "blog/components/comment_like.html" with comment=reply %}
+                            {% else %}
+                                <p class="type-caption text-secondary">{{ reply.likes.count }} likes</p>
+                            {% endif %}
+                        </article>
+                    {% endfor %}
+                </div>
+            </article>
+        {% empty %}
+            <p class="type-body-sm text-secondary">
+                No comments yet. Be the first to share your thoughts!
+            </p>
+        {% endfor %}
+    </div>
+</section>

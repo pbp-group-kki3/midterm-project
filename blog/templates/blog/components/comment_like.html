@@ -1,0 +1,27 @@
+<form
+    method="post"
+    action="{{ comment_action_url }}"
+    class="js-blog-form"
+    data-blog-mode="comments"
+>
+    {% csrf_token %}
+    <input type="hidden" name="action" value="like_comment">
+    <input type="hidden" name="comment_id" value="{{ comment.pk }}">
+    <input type="hidden" name="liked" value="{% if user in comment.likes.all %}0{% else %}1{% endif %}">
+
+    <button
+        type="submit"
+        class="btn btn-ghost btn-sm"
+        aria-pressed="{% if user in comment.likes.all %}true{% else %}false{% endif %}"
+        aria-label="{% if user in comment.likes.all %}Unlike{% else %}Like{% endif %} comment by {{ comment.user.username }}"
+    >
+        {% if user in comment.likes.all %}
+            <span class="text-danger">♥</span>
+        {% else %}
+            ♡
+        {% endif %}
+        {{ comment.likes.count }}
+    </button>
+
+    <p class="field-error blog-form-errors" role="alert" hidden></p>
+</form>

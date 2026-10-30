@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Article action unavailable | SpoonFeed{% endblock %}
+
+{% block content %}
+    <section class="empty-state">
+        <h1 class="empty-state-title">Article action unavailable</h1>
+        <p class="empty-state-text">{{ error_message }}</p>
+        <a href="{% url 'blog:blog_list' %}" class="btn btn-secondary">
+            Back to Blog
+        </a>
+    </section>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% load blog_tags %}
+
+<header class="page-header mb-8">
+    <div>
+        <span class="type-overline text-brand">
+            {{ article.get_topic_display }}
+        </span>
+        <h1 class="type-serif m-0">{{ article.title }}</h1>
+        <p class="type-caption text-secondary mt-1">
+            {{ article.author.username }}
+            | {{ article.published_at|date:"N j, Y" }}
+            | {{ article.get_read_time }} min read
+        </p>
+
+        {% if viewing_saved %}
+            <p class="type-caption text-secondary mt-2">
+                Saved copy. Article content reflects the version saved.
+            </p>
+        {% endif %}
+    </div>
+
+    {% if can_edit or can_delete %}
+        <div class="page-actions">
+            {% if can_edit %}
+                <a href="{% url 'blog:article_edit' article.slug %}" class="btn btn-secondary">
+                    <span class="icon icon-edit" aria-hidden="true"></span>
+                    Edit article
+                </a>
+            {% endif %}
+
+            {% if can_delete %}
+                <form
+                    method="post"
+                    action="{% url 'blog:article_delete' article.slug %}"
+                    class="js-blog-form"
+                    data-blog-mode="navigate"
+                    data-blog-confirm="Delete this article permanently? Saved copies already owned by readers will remain."
+                >
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        Delete article
+                    </button>
+                    <p class="field-error blog-form-errors" role="alert" hidden></p>
+                </form>
+            {% endif %}
+        </div>
+    {% endif %}
+</header>
+
+{% if article.cover_image %}
+    <img
+        src="{{ article.cover_image.url }}"
+        alt="{{ article.title }}"
+        class="blog-article-hero mb-8"
+        width="1216"
+        height="480"
+    >
+{% else %}
+    <div class="blog-article-hero blog-article-placeholder mb-8">
+        No cover image
+    </div>
+{% endif %}
+
+<div class="blog-article-body type-body-lg text-primary max-w-3xl">
+    {{ article.body|link_barcodes|linebreaks }}
+</div>

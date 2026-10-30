@@ -1,0 +1,28 @@
+{% if user.is_authenticated %}
+    <!-- Update the saved appearance only after the server confirms the action. -->
+    <form
+        method="post"
+        action="{{ save_url }}"
+        class="js-blog-form mt-8"
+        data-blog-mode="save"
+    >
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_article">
+        <input type="hidden" name="saved" value="{% if is_saved %}0{% else %}1{% endif %}">
+
+        {% if viewing_saved %}
+            <input type="hidden" name="return_to_saved" value="1">
+        {% endif %}
+
+        <button
+            type="submit"
+            class="btn {% if is_saved %}btn-danger-subtle{% else %}btn-outline{% endif %}"
+            data-blog-save-button
+            aria-pressed="{% if is_saved %}true{% else %}false{% endif %}"
+        >
+            {% if is_saved %}♥ Saved{% else %}♡ Save{% endif %}
+        </button>
+
+        <p class="field-error blog-form-errors" role="alert" hidden></p>
+    </form>
+{% endif %}

@@ -37,7 +37,6 @@
                         Open
                     </a>
 
-                    {# change: removed the x (remove) button, unsaving happens from the item's own page #}
                 </div>
             </article>
         {% empty %}
@@ -46,11 +45,7 @@
                 <span class="icon icon-saved" aria-hidden="true"></span>
                 <h3 class="empty-state-title">Nothing saved here yet</h3>
                 <p class="empty-state-text">
-                    {% if saved_category == "article" %}
-                        Article bookmarks are not available yet.
-                    {% else %}
-                        Items you save in this category will appear here.
-                    {% endif %}
+                    Items you save in this category will appear here.
                 </p>
             </div>
         {% endfor %}

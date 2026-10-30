@@ -1,0 +1,23 @@
+<!-- Reuse one confirmation dialog for deletion, unsaving and discarding changes. -->
+<dialog
+    class="dialog"
+    id="blog-confirm-dialog"
+    aria-labelledby="blog-confirm-title"
+    aria-describedby="blog-confirm-description"
+>
+    <div class="dialog-header">
+        <h2 class="dialog-title" id="blog-confirm-title">Confirm action</h2>
+        {% include "components/dialog_close.html" %}
+    </div>
+
+    <p class="dialog-text" id="blog-confirm-description"></p>
+
+    <div class="dialog-actions">
+        <button type="button" class="btn btn-secondary" data-blog-confirm-cancel>
+            Cancel
+        </button>
+        <button type="button" class="btn btn-danger" data-blog-confirm-accept>
+            Confirm
+        </button>
+    </div>
+</dialog>
