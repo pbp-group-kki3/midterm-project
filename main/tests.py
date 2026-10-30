@@ -334,9 +334,9 @@ class FavoriteDisplayTests(TestCase):
     def test_click_with_javascript_answers_json(self):
         ajax = {"HTTP_X_REQUESTED_WITH": "XMLHttpRequest"}
         first = self.client.post(self.url, {"product_name": "Ultra Milk Low Fat"}, **ajax)
-        self.assertEqual(first.json(), {"saved": True})        # no redirect, so no jump to the top
+        self.assertTrue(first.json()["saved"])                  # no redirect, so no jump to the top
         second = self.client.post(self.url, **ajax)
-        self.assertEqual(second.json(), {"saved": False})
+        self.assertFalse(second.json()["saved"])                # change: step 6 also sends a "message", so only check "saved" here
 
     @patch("main.views.search_products")
     def test_saved_product_has_red_heart(self, fake_search):
@@ -1450,4 +1450,33 @@ class FreshVisitResetsFiltersTests(TestCase):
     def fresh_client(self):
         from django.test import Client
         return Client(HTTP_HOST="localhost")   # change: a real-looking visitor, the reset is skipped for the shared test host
+
+
+# change: step 6. saving a product shows the same toast as saving a comparison
+class SaveToastTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.user = get_user_model().objects.create_user(username="saver", password="test-pass-123")
+        self.client.force_login(self.user)
+        self.url = reverse("main:toggle_favorite", args=["111"])
+
+    def test_json_answer_has_a_saved_message(self):
+        data = self.client.post(self.url, {"product_name": "Ultra Milk"}, **AJAX).json()
+        self.assertTrue(data["saved"])
+        self.assertEqual(data["message"], "Ultra Milk was added to your saved products.")   # change: main.js shows it in the toast
+
+    def test_json_answer_has_a_removed_message(self):
+        self.client.post(self.url, {"product_name": "Ultra Milk"}, **AJAX)
+        data = self.client.post(self.url, {"product_name": "Ultra Milk"}, **AJAX).json()
+        self.assertFalse(data["saved"])
+        self.assertEqual(data["message"], "Ultra Milk was removed from your saved products.")
+
+    def test_message_without_a_name_still_reads_well(self):
+        data = self.client.post(self.url, **AJAX).json()
+        self.assertEqual(data["message"], "This product was added to your saved products.")
+
+    def test_without_javascript_the_toast_comes_from_django_messages(self):
+        response = self.client.post(self.url, {"product_name": "Ultra Milk", "next": "/"}, follow=True)
+        texts = [str(m) for m in response.context["messages"]]
+        self.assertIn("Ultra Milk was added to your saved products.", texts)        # change: base.html turns it into the same toast
 
