@@ -45,6 +45,55 @@ FIELDS = "code,product_name,brands,quantity,image_front_small_url,nutriscore_gra
 # Used only when the normal search fails, e.g. the 503 "too busy" error. It answers with "hits" instead of "products"
 BACKUP_SEARCH_URL = "https://search.openfoodfacts.org/search"
 
+# change: step 3a, what happens when Open Food Facts is down
+STALE_SECONDS = 60 * 60 * 24 * 7   # change: the "last good copy" of every answer is kept for 7 days
+DOWN_KEY = "off:down"              # change: cache flag that means "the API just failed, leave it alone for now"
+DOWN_SECONDS = 90                  # change: how long we leave it alone (like Aryan's negative caching)
+
+
+# change: a normal list with one extra label. It means "these results were saved earlier, the API is down".
+# Everyone who uses the results (views, Alyssa's comparison) still just sees a list
+class StaleList(list):
+    stale = True
+
+
+# change: True when the results are a saved copy, used by the view to show the note
+def is_stale(results):
+    return getattr(results, "stale", False)
+
+
+# change: remember an answer twice: the normal short cache, plus a long "last good copy" for bad days
+def remember(key, value, seconds):
+    cache.set(key, value, seconds)
+    cache.set(key + ":last-good", value, STALE_SECONDS)
+
+
+def last_good(key):
+    return cache.get(key + ":last-good")
+
+
+# change: one place that calls the API and catches EVERY kind of failure:
+# no network, timeout, HTTP error (raise_for_status), an answer that isn't JSON (ValueError),
+# or JSON that isn't the {"products": ...} object we expect. Returns data[field], or None when it failed
+def call_api(url, params, field, default=None):
+    if cache.get(DOWN_KEY):            # change: it failed less than 90 s ago: don't even try
+        return None
+    try:
+        response = requests.get(url, params=params, headers=HEADERS, timeout=10)   # 10 s max, the page never hangs
+        response.raise_for_status()    # HTTP errors (404, 503...) become exceptions
+        data = response.json()         # change: raises ValueError when the answer isn't JSON
+    except (requests.RequestException, ValueError):
+        return None
+    if not isinstance(data, dict):     # change: JSON, but not the shape we expect
+        return None
+    return data.get(field, default)
+
+
+# change: called when both the main API and the backup failed: remember that it's down for 90 s
+def mark_down():
+    cache.set(DOWN_KEY, True, DOWN_SECONDS)
+
+
 # helper : ask the backup search service. Returns a list of products, or None if it fails too
 def backup_search(query, sort_by=None):
     params = {
@@ -54,17 +103,19 @@ def backup_search(query, sort_by=None):
     }
     if sort_by:
         params["sort_by"] = sort_by                             # e.g. "-unique_scans_n" = most scanned first
-    try:
-        response = requests.get(
-            BACKUP_SEARCH_URL,
-            params=params,
-            headers=HEADERS,
-            timeout=10,
-        )
-        response.raise_for_status()
-        return response.json().get("hits", [])
-    except requests.RequestException:
-        return None
+    return call_api(BACKUP_SEARCH_URL, params, "hits", default=[])   # change: same failure handling as the main API
+
+
+# change: the shared ending for search and browse: fresh answer -> remember it,
+# both APIs failed -> mark the API as down and hand back the last good copy (or None if there is none)
+def finish(key, products, seconds):
+    if products is not None:
+        remember(key, products, seconds)
+        return products
+    mark_down()
+    saved = last_good(key)
+    return StaleList(saved) if saved is not None else None
+
 
 # helper function
 def get_score(product):
@@ -80,7 +131,9 @@ def get_product(barcode):
     if product is not None: # if something is in the cache, return product
         return product
 
-    try: 
+    if cache.get(DOWN_KEY):              # change: API marked as down: go straight to the saved copy
+        return last_good(key)
+    try:
         response = requests.get( # sends a GET request and the result stored in variable response
             f"{BASE_URL}/api/v2/product/{barcode}", # address of the product
             params={"fields": FIELDS + ",nutriments,nutrient_levels,ingredients_text,ecoscore_data"}, # details needed for the product, FIELDS - from API
@@ -88,14 +141,21 @@ def get_product(barcode):
             timeout=10, # after 10 sec, give up (page doesn't hang)
         )
         response.raise_for_status() # if there's an HTTP error, it'll be turned into an exception
-        product = response.json().get("product") # parse JSON, to take just the product part
-    except requests.RequestException: # network / HTTP error goes here
-        return None
+        data = response.json() # parse JSON
+    except (requests.RequestException, ValueError): # change: network / HTTP error / not JSON
+        mark_down()
+        return last_good(key)            # change: the last good copy, or None if we never had one
+    if not isinstance(data, dict):
+        mark_down()
+        return last_good(key)
 
-    cache.set(key, product, 60 * 60 * 6) # store the product for 6 hrs ( 60 sec * 60 min * 6)
+    product = data.get("product") # take just the product part. None = the product doesn't exist (not a failure)
+    if product is not None:
+        remember(key, product, 60 * 60 * 6) # store the product for 6 hrs ( 60 sec * 60 min * 6), plus the last good copy
     return product # return product dict to caller
 
 # returns a list of products matching text, [] if none, or None if API fails
+# change: when the API is down it returns the last good copy as a StaleList (see is_stale)
 # function : to search products in the search bar
 def search_products(text):
     text = clean_query(text).lower() # change: cleaned first (tags, spaces, length), then lower case for easier caching
@@ -105,27 +165,22 @@ def search_products(text):
     if products is not None:
         return products
 
-    try: 
-        response = requests.get(
-            f"{BASE_URL}/cgi/search.pl",
-            params={
-                "search_terms":text, 
-                "search_simple":1,
-                "action":"process",
-                "json":1,
-                "page_size":24,
-                "fields":FIELDS},
-            headers=HEADERS,
-            timeout=10,
-        )
-        response.raise_for_status()
-        products = response.json().get("products", [])
-    except requests.RequestException:
+    products = call_api(
+        f"{BASE_URL}/cgi/search.pl",
+        {
+            "search_terms": text,
+            "search_simple": 1,
+            "action": "process",
+            "json": 1,
+            "page_size": 24,
+            "fields": FIELDS,
+        },
+        "products",
+        default=[],
+    )
+    if products is None:
         products = backup_search(text) # normal search failed (e.g. 503): try the backup service
-        if products is None:
-            return None # both failed: the page shows the "not available" message
-    cache.set(key, products, 60 * 60)
-    return products
+    return finish(key, products, 60 * 60)   # change: cache it, or fall back to the last good copy
 
 # returns popular Indonesian products (most scanned first), [] if none, or None if the API fails
 # function : what the Discover page shows before anything is searched
@@ -135,27 +190,21 @@ def browse_products():
     if products is not None:
         return products
 
-    try:
-        response = requests.get(
-            f"{BASE_URL}/cgi/search.pl",
-            params={
-                "action": "process",
-                "json": 1,
-                "page_size": 24,
-                "sort_by": "unique_scans_n",   # most scanned = most popular
-                "fields": FIELDS,
-            },                                 # no search_terms: all products sold in Indonesia
-            headers=HEADERS,
-            timeout=10,
-        )
-        response.raise_for_status()
-        products = response.json().get("products", [])
-    except requests.RequestException:
+    products = call_api(
+        f"{BASE_URL}/cgi/search.pl",
+        {
+            "action": "process",
+            "json": 1,
+            "page_size": 24,
+            "sort_by": "unique_scans_n",   # most scanned = most popular
+            "fields": FIELDS,
+        },                                 # no search_terms: all products sold in Indonesia
+        "products",
+        default=[],
+    )
+    if products is None:
         products = backup_search("", sort_by="-unique_scans_n")   # normal search failed: try the backup
-        if products is None:
-            return None
-    cache.set(key, products, 60 * 60)
-    return products
+    return finish(key, products, 60 * 60)
 
 # function : give alternative option based on the current clicked product, recommends another product (up to 3)
 # if no alternative, returns []
@@ -172,24 +221,17 @@ def get_alternatives(product, limit=3):
     key = f"off:category:{category}" # one cache entry per category
     candidates = cache.get(key) # look for candidates inside cache first
     if candidates is None:
-        try:
-            response = requests.get(
-                f"{BASE_URL}/api/v2/search",
-                params={
-                    "categories_tags" : category,
-                    "fields" : FIELDS,
-                    "page_size" : 24
-                },
-                headers=HEADERS,
-                timeout=10,
-            )
-            response.raise_for_status()
-            candidates = response.json().get("products",[])
-        except requests.RequestException:
+        candidates = call_api(               # change: same failure handling as search
+            f"{BASE_URL}/api/v2/search",
+            {"categories_tags": category, "fields": FIELDS, "page_size": 24},
+            "products",
+            default=[],
+        )
+        if candidates is None:
             candidates = backup_search(f'categories_tags:"{category}"') # normal search failed: try the backup
-            if candidates is None:
-                return []
-        cache.set(key, candidates, 60 * 60)
+        candidates = finish(key, candidates, 60 * 60)   # change: or the last good copy for this category
+        if candidates is None:
+            return []
 
     alternatives = []
     for p in candidates:

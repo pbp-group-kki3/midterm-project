@@ -5,7 +5,7 @@ import json # change: reads the list of cards that JavaScript sends
 from django.contrib import messages # one-time notes like "Remove one to add another"
 from django.http import HttpResponse
 from main.services.openfoodfacts import search_products, browse_products, get_product, get_alternatives # import search function + to call API
-from main.services.openfoodfacts import is_valid_barcode, clean_query # change: input safety helpers (step 1)
+from main.services.openfoodfacts import is_valid_barcode, clean_query, is_stale # change: input safety (step 1) + saved-copy check (step 3a)
 from django.http import Http404 # change: a bad barcode gets the normal "page not found"
 from django.utils.html import strip_tags # change: removes HTML tags from posted product names
 from main.services.grading import spoonfeed_grade, grade_value, NUTRI_POINTS, GREEN_POINTS,NOVA_POINTS # import gradings
@@ -174,6 +174,7 @@ def show_main(request):
         "q": q,
         "searched": bool(q),
         "error": error,
+        "stale": is_stale(results),                   # change: True = API down, these are the last good results
         "products": products[:show],                   # only the cards to show now
         "total": len(products),                        # for "6 results for ..."
         "has_more": len(products) > show,
@@ -190,6 +191,11 @@ def show_main(request):
         "processing": processing,
     }
     context.update(compare_tray(request))                  # the compare tray at the bottom
+
+    # change: API down -> tell the user with the shared toast (the same one as saving a comparison).
+    # messages.info shows up as the blue "info" toast through templates/components/toasts.html in base.html
+    if context["stale"] and not is_ajax(request):
+        messages.info(request, "Open Food Facts isn't responding right now, so these are results we saved earlier.")
 
     # change: "Load more products" clicked with JavaScript -> send only the NEXT cards as HTML, no reload.
     # Same product_card.html as a normal load, so the cards look exactly the same
