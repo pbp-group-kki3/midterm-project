@@ -5,7 +5,7 @@ import json # change: reads the list of cards that JavaScript sends
 from django.contrib import messages # one-time notes like "Remove one to add another"
 from django.http import HttpResponse
 from main.services.openfoodfacts import search_products, browse_products, get_product, get_alternatives # import search function + to call API
-from main.services.openfoodfacts import is_valid_barcode, clean_query, is_stale # change: input safety (step 1) + saved-copy check (step 3a)
+from main.services.openfoodfacts import is_valid_barcode, is_stale # change: input safety (step 1) + saved-copy check (step 3a). clean_query moved into forms.py
 from django.http import Http404 # change: a bad barcode gets the normal "page not found"
 from django.utils.cache import patch_vary_headers # change: step 4, tells browsers the answer depends on the HX-Request header
 from django.utils.html import strip_tags # change: removes HTML tags from posted product names
@@ -21,6 +21,7 @@ from main.models import FavoriteProduct, ViewHistory
 from main.decorators import login_required_json, rate_limit, wants_json, is_test_client, SEARCH_LIMIT, FAVORITE_LIMIT, COMPARE_LIMIT  # change: step 2
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
+from main.forms import DiscoverFilterForm, GRADE_OPTIONS, PAGE_STEP   # change: the filter form; the options now live in forms.py
 
 
 # Tags on a card (Figma: up to 2 slots, read from labels_tags). (tag, text, badge style)
@@ -31,7 +32,6 @@ TAG_RULES = [
 ]
 
 # Options in the filter panel (Figma "SF / Filter panel")
-GRADE_OPTIONS = ["A", "B", "C", "D", "E"]
 LABEL_OPTIONS = [("halal", "Halal"), ("vegetarian", "Vegetarian"), ("vegan", "Vegan"), ("organic", "Organic")]
 ALLERGEN_OPTIONS = [("milk", "Milk"), ("peanuts", "Peanuts"), ("gluten", "Gluten"), ("soy", "Soy")]
 
@@ -44,7 +44,6 @@ QUICK_CHIPS = [
     ("Vegan", "label", ["vegan"]),
 ]
 
-PAGE_STEP = 6   # cards shown at first, and how many more "Load more" adds (Figma shows 6)
 
 
 # preparation function
@@ -131,7 +130,12 @@ FILTER_KEYS = ("grade", "label", "processing", "avoid", "sort", "show")
 # main / product discovery page: search + filters + sort + load more
 @rate_limit("search", SEARCH_LIMIT)   # change: max 60 Discover loads/searches per minute per person
 def show_main(request):
-    q = clean_query(request.GET.get("q", ""))   # change: no HTML tags, no extra spaces, max 100 characters
+    # change: the Django form checks the search text and every filter (main/forms.py).
+    # It's always valid: unknown values are dropped or replaced by the default, so cleaned_data is safe to use
+    form = DiscoverFilterForm(request.GET)
+    form.is_valid()
+    filters = form.cleaned_data
+    q = filters["q"]                                   # no HTML tags, no extra spaces, max 100 characters
 
     # change: filters belong to one visit. The session remembers that this visit already started.
     # A new session (server restarted, logged out, new browser) that opens an old address with filters
@@ -143,15 +147,12 @@ def show_main(request):
         # Skipped for the test host, like the rate limit, so other tests can open filtered pages directly
         if has_filters and not wants_json(request) and not is_test_client(request):
             return redirect(reverse("main:show_main") + ("?" + urlencode({"q": q}) if q else ""))
-    grades = request.GET.getlist("grade")              # e.g. ["A", "B"]  (getlist: a key can repeat)
-    labels = request.GET.getlist("label")              # e.g. ["halal"]
-    processing = request.GET.get("processing", "any")  # "not_ultra" or "any"
-    avoid = request.GET.getlist("avoid")               # e.g. ["milk"]
-    sort = request.GET.get("sort", "")                 # "grade" = best grade first, "" = API order
-    try:
-        show = max(PAGE_STEP, int(request.GET.get("show", PAGE_STEP)))   # how many cards to show
-    except ValueError:                                 # someone typed ?show=abc
-        show = PAGE_STEP
+    grades = filters["grade"]                          # e.g. ["A", "B"]
+    labels = filters["label"]                          # e.g. ["halal"]
+    processing = filters["processing"]                 # "not_ultra" or "any"
+    avoid = filters["avoid"]                           # e.g. ["milk"]
+    sort = filters["sort"]                             # "grade" = best grade first, "" = API order
+    show = filters["show"]                             # how many cards to show (6, 12, 18...). ?show=abc -> 6
 
     products = []
     error = False
@@ -206,6 +207,7 @@ def show_main(request):
         "label_options": [{"value": v, "text": t, "checked": v in labels} for v, t in LABEL_OPTIONS],
         "allergen_options": [{"value": v, "text": t, "checked": v in avoid} for v, t in ALLERGEN_OPTIONS],
         "processing": processing,
+        "form": form,                                  # change: the checked filters, e.g. for the demo / debugging
     }
     context.update(compare_tray(request))                  # the compare tray at the bottom
 
