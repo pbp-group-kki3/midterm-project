@@ -422,10 +422,12 @@
         <button type="button" class="btn btn-danger" id="profile-confirm-submit">Confirm</button>
     </div>
 </dialog>
+{% include "blog/components/article_confirmation.html" %}
 {% endblock %}
 
 <!-- SCRIPTS -->
 {% block extra_js %}
+<script src="{% static 'blog/js/blog.js' %}" defer></script>
 <script>
     const PROFILE_SECTIONS = ['account', 'preferences', 'saved', 'history'];
 
