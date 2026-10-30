@@ -363,9 +363,15 @@
 <dialog class="dialog dialog-form profile-confirm-dialog" id="password-dialog" aria-labelledby="password-dialog-title">
     <h2 class="type-title text-primary" id="password-dialog-title">Change password</h2>
     <p class="type-body-sm text-secondary mb-4">Enter your current password and choose a new one.</p>
-    <form method="POST" action="{% url 'change_password' %}">
+    
+    <!--  ID here so JS can target it -->
+    <form id="password-change-form" method="POST" action="{% url 'change_password' %}">
         {% csrf_token %}
         <div class="dialog-body form-stack">
+            
+            <!-- AJAX Error Container -->
+            <div id="password-dialog-error" class="text-danger type-body-sm mb-4 hidden font-medium"></div>
+
             <div class="field">
                 <label class="field-label type-label-md" for="current_password">Current password</label>
                 <input class="input" type="password" id="current_password" name="current_password" placeholder="Password" required>
