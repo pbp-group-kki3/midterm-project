@@ -32,3 +32,6 @@ class SavedComparisonForm(forms.ModelForm):
                 "required": "Enter a comparison name.",
             },
         }
+
+class SavedComparisonEditForm(SavedComparisonForm):
+    selection = None

@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ action }} article | SpoonFeed{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'css/blog.css' %}">
+{% endblock %}
+
+{% block content %}
+    <a href="{% if action == 'Edit' %}{% url 'blog:article_detail' form.instance.slug %}{% else %}{% url 'blog:blog_list' %}{% endif %}" class="back-link mt-8 mb-6">
+        <span class="icon icon-arrow-left" aria-hidden="true"></span> Back to {% if action == 'Edit' %}Your articles{% else %}Blog{% endif %}
+    </a>
+
+    <header class="page-header mb-8">
+        <div>
+            <h1 class="page-title type-heading-l">{{ action }} article</h1>
+            <p class="page-subtitle">{{ subtitle }}</p>
+        </div>
+    </header>
+
+    <div class="card max-w-4xl mx-auto">
+        <form method="post" enctype="multipart/form-data" class="form-stack">
+            {% csrf_token %}
+
+            <div class="field">
+                <label class="field-label" for="{{ form.title.id_for_label }}">Article title *</label>
+                {{ form.title }}
+                {{ form.title.errors }}
+            </div>
+
+            <div class="field">
+                <label class="field-label" for="{{ form.topic.id_for_label }}">Category *</label>
+                {{ form.topic }}
+                {{ form.topic.errors }}
+            </div>
+
+            <!-- Custom Image Upload Box -->
+            <div class="field">
+                <label class="field-label text-tertiary">Cover image (optional)</label>
+                <div class="blog-image-upload-box">
+                    <p class="type-caption text-tertiary m-0">No image selected</p>
+                    <label for="cover_image_input" class="btn btn-secondary btn-sm cursor-pointer">Choose image</label>
+                    <!-- The actual file input is hidden by the 'hidden' class in forms.py -->
+                    {{ form.cover_image }}
+                </div>
+                {{ form.cover_image.errors }}
+            </div>
+
+            <div class="field">
+                <label class="field-label" for="{{ form.summary.id_for_label }}">Short description (optional)</label>
+                {{ form.summary }}
+                {{ form.summary.errors }}
+            </div>
+
+            <div class="field">
+                <label class="field-label" for="{{ form.body.id_for_label }}">Article content *</label>
+                {{ form.body }}
+                {{ form.body.errors }}
+            </div>
+
+            <div class="flex justify-end gap-4 mt-8">
+                <a href="{% if action == 'Edit' %}{% url 'blog:article_detail' form.instance.slug %}{% else %}{% url 'blog:blog_list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">
+                    {% if action == 'Create' %}Publish article{% else %}Save changes{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Simple JS to update the "No image selected" text when a file is chosen -->
+    <script>
+        document.getElementById('cover_image_input').addEventListener('change', function(e) {
+            const fileName = e.target.files[0] ? e.target.files[0].name : 'No image selected';
+            e.target.previousElementSibling.previousElementSibling.textContent = fileName;
+        });
+    </script>
+{% endblock %}

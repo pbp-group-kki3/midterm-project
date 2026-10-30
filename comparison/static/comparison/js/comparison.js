@@ -175,6 +175,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 },
             });
 
+            // Explain security failures even when Django returns an HTML response.
+            if (response.status === 403) {
+                showErrors({
+                    __all__: [{
+                        message: "This request failed its security check. Reload the page and try again.",
+                    }],
+                });
+                return;
+            }
             const contentType = response.headers.get("content-type") || "";
 
             if (!contentType.includes("application/json")) {

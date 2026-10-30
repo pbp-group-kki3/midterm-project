@@ -322,27 +322,23 @@ def profile_saved_remove(request, kind, pk):
 @never_cache
 @require_GET
 def profile_saved_comparison(request, pk):
-    record = get_object_or_404(
-        SavedComparison,
-        pk=pk,
-        user=request.user,
-    )
+    record = SavedComparison.objects.filter(pk=pk, user=request.user).first()
+
+    # Use the same response for missing records and records owned by others.
+    if record is None:
+        return render(request, "comparison/saved_unavailable.html", status=404)
 
     barcodes = record.barcodes
-
-    if (
-        not isinstance(barcodes, list)
-        or not 2 <= len(barcodes) <= 3
-        or not all(
-            isinstance(barcode, str)
-            and barcode.isascii()
-            and barcode.isdigit()
+    valid_selection = (
+        isinstance(barcodes, list)
+        and 2 <= len(barcodes) <= 3
+        and all(
+            isinstance(barcode, str) and barcode.isascii() and barcode.isdigit()
             for barcode in barcodes
         )
-    ):
-        raise Http404(
-            "This saved comparison has an invalid selection."
-        )
+    )
+    if not valid_selection:
+        return render(request, "comparison/saved_unavailable.html", status=404)
 
     from comparison.views import compare_products
     return compare_products(request, saved_comparison=record)

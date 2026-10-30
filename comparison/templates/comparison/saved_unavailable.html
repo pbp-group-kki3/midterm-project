@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Saved comparison unavailable | SpoonFeed{% endblock %}
+
+{% block content %}
+    <!-- Explain unavailable access without exposing another user's record. -->
+    <section class="empty-state" aria-labelledby="saved-unavailable-title">
+        <h1 id="saved-unavailable-title" class="type-heading-m">
+            Saved comparison unavailable
+        </h1>
+        <p class="empty-state-text">
+            This comparison is unavailable or you do not have permission to access it.
+        </p>
+        <a href="{% url 'profile_saved' %}?category=comparison" class="btn btn-secondary">
+            Back to Saved
+        </a>
+    </section>
+{% endblock %}

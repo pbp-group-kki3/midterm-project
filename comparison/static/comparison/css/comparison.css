@@ -347,6 +347,97 @@
     }
 }
 
+/* Saved metadata can wrap without pushing actions outside the page. */
+.compare-saved-header .page-title {
+    flex: 1 1 calc(var(--space-4xl) * 4);
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.compare-saved-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-lg);
+    max-width: 100%;
+}
+
+.compare-saved-actions .btn {
+    min-height: var(--btn-height-sm);
+}
+
+.compare-saved-edit {
+    min-width: calc(var(--space-4xl) + var(--space-2xl) + var(--space-lg));
+}
+
+.compare-saved-remove {
+    min-width: calc(var(--space-4xl) * 2);
+}
+
+.compare-saved-notes {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+/* A saved lineup has Details only, so its action row needs one column. */
+.compare-saved-panel .compare-score-heading .btn-group {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+/* Bound metadata dialogs to the viewport, including mobile browser height. */
+.compare-saved-edit-dialog,
+.compare-saved-remove-dialog {
+    max-height: calc(100vh - var(--space-xl) * 2);
+    max-height: calc(100dvh - var(--space-xl) * 2);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.compare-saved-edit-dialog .dialog-header,
+.compare-saved-remove-dialog .dialog-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--color-bg-surface);
+}
+
+/* Match the compact Edit dialog geometry using existing tokens. */
+.compare-saved-edit-dialog .dialog-close {
+    width: var(--space-2xl);
+    height: var(--space-2xl);
+    color: var(--color-text-brand);
+}
+
+.compare-saved-edit-dialog .dialog-text {
+    margin-top: var(--space-sm);
+}
+
+.compare-saved-edit-dialog .dialog-body {
+    margin-top: var(--space-xl);
+    gap: var(--space-xl);
+}
+
+.compare-saved-edit-dialog .dialog-actions {
+    margin-top: var(--space-xl);
+}
+
+.compare-saved-edit-dialog .dialog-actions .btn-secondary {
+    min-width: calc(var(--space-3xl) * 3);
+}
+
+@media (max-width: 36rem) {
+    .compare-saved-edit-dialog .dialog-actions,
+    .compare-saved-remove-dialog .dialog-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .compare-saved-edit-dialog .dialog-actions .btn,
+    .compare-saved-remove-dialog .dialog-actions .btn {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
 /* Keep the panel comfortable on narrower screens. */
 @media (max-width: 767px) {
     .compare-panel {

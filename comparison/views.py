@@ -5,21 +5,33 @@ from django.contrib.auth.views import redirect_to_login
 from django.urls import reverse
 from main.services.openfoodfacts import get_product
 from django.http import JsonResponse
+from django.views.decorators.cache import never_cache
 
 from comparison.services import (
     build_comparison_sections,
     build_nutrition_rows,
     load_comparison_products,
 )
-from comparison.forms import SavedComparisonForm
+from comparison.forms import SavedComparisonForm, SavedComparisonEditForm
 from comparison.models import SavedComparison
 # Create your views here.
+@never_cache
 @require_GET
 def compare_products(request, saved_comparison=None):
     # Display saved lineups without replacing the active session selection.
     viewing_saved = saved_comparison is not None
     selected_barcodes = saved_comparison.barcodes if viewing_saved else request.session.get("compare", [])
-    barcodes = list(dict.fromkeys(selected_barcodes))[:3]
+
+    # Validate session data before deduplicating or loading products.
+    valid_selection = isinstance(selected_barcodes, list) and all(
+        isinstance(barcode, str) and barcode.isascii() and barcode.isdigit()
+        for barcode in selected_barcodes
+    )
+    all_barcodes = list(dict.fromkeys(selected_barcodes)) if valid_selection else []
+    barcodes = all_barcodes[:3]
+
+    if not viewing_saved and (not valid_selection or len(all_barcodes) > 3):
+        messages.warning(request, "Your comparison selection is invalid or exceeds three products. Return to Discover and choose the products again.")
 
     products, unavailable_barcodes = load_comparison_products(barcodes)
 
@@ -40,16 +52,12 @@ def compare_products(request, saved_comparison=None):
     show_add_product = not viewing_saved and has_removed and len(barcodes) < 3
     display_column_count = len(products) + int(show_add_product)
 
+    # Enable saving only when the complete selection is valid and available.
     can_save = (
         not viewing_saved
-        and 2 <= len(barcodes) <= 3
+        and valid_selection
+        and 2 <= len(all_barcodes) <= 3
         and len(products) == len(barcodes)
-        and all(
-            isinstance(barcode, str)
-            and barcode.isascii()
-            and barcode.isdigit()
-            for barcode in barcodes
-        )
     )
 
     is_saved = False
@@ -69,6 +77,8 @@ def compare_products(request, saved_comparison=None):
     context = {
         "products": products,
         "viewing_saved": viewing_saved,
+        "saved_comparison": saved_comparison,
+        "edit_form": (SavedComparisonEditForm(instance=saved_comparison, prefix="edit" if viewing_saved else None)),
         "unavailable_barcodes": unavailable_barcodes,
         "nutrition_rows": nutrition_rows, # label, nilai, and Better indicator
         "comparison_sections": comparison_sections,
@@ -87,6 +97,14 @@ def compare_products(request, saved_comparison=None):
 def remove_product(request, barcode):
     selected_barcodes = request.session.get("compare", [])
 
+    # Reject malformed selections without modifying the current session.
+    if not isinstance(selected_barcodes, list) or not all(
+        isinstance(value, str) and value.isascii() and value.isdigit()
+        for value in selected_barcodes
+    ):
+        messages.warning(request, "Your comparison selection is invalid. Return to Discover and choose the products again.")
+        return redirect("comparison:compare_products")
+
     if barcode in selected_barcodes:
         request.session["compare"] = [
             selected_barcode
@@ -94,7 +112,10 @@ def remove_product(request, barcode):
             if selected_barcode != barcode
         ]
 
-        compare_info = request.session.get("compare_info", {}).copy()
+        # Copy metadata only when it has the expected dictionary structure.
+        compare_info = request.session.get("compare_info", {})
+        compare_info = compare_info.copy() if isinstance(compare_info, dict) else {}
+
         compare_info.pop(barcode, None)
         request.session["compare_info"] = compare_info
 
@@ -107,6 +128,7 @@ def remove_product(request, barcode):
 
     return redirect("comparison:compare_products")
 
+@never_cache
 @require_POST
 def save_comparison(request):
     if not request.user.is_authenticated:
@@ -210,3 +232,78 @@ def save_comparison(request):
         },
         status=201,
     )
+
+# Update metadata only; the saved lineup and active tray remain unchanged.
+@never_cache
+@require_POST
+def edit_saved_comparison(request, pk):
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            {"ok": False, "message": "Please log in again before editing this comparison."},
+            status=401,
+        )
+
+    record = SavedComparison.objects.filter(pk=pk, user=request.user).first()
+
+    if record is None:
+        return JsonResponse(
+            {"ok": False, "message": "This saved comparison is no longer available."},
+            status=404,
+        )
+
+    form = SavedComparisonEditForm(request.POST, instance=record, prefix="edit")
+
+    if not form.is_valid():
+        return JsonResponse(
+            {"ok": False, "errors": form.errors.get_json_data()},
+            status=400,
+        )
+
+    name = form.cleaned_data["name"]
+    notes = form.cleaned_data["notes"]
+
+    # A filtered update cannot recreate a record deleted by another request.
+    updated = SavedComparison.objects.filter(pk=pk, user=request.user).update(
+        name=name,
+        notes=notes,
+    )
+
+    if not updated:
+        return JsonResponse(
+            {"ok": False, "message": "This saved comparison is no longer available."},
+            status=404,
+        )
+
+    return JsonResponse({
+        "ok": True,
+        "comparison": {"id": pk, "name": name, "notes": notes},
+        "message": "Comparison updated.",
+    })
+
+
+# Delete the saved record only, leaving products and tray selections untouched.
+@never_cache
+@require_POST
+def remove_saved_comparison(request, pk):
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            {"ok": False, "message": "Please log in again before removing this comparison."},
+            status=401,
+        )
+
+    deleted, _ = SavedComparison.objects.filter(pk=pk, user=request.user).delete()
+
+    if not deleted:
+        return JsonResponse(
+            {"ok": False, "message": "This saved comparison is no longer available."},
+            status=404,
+        )
+
+    # The destination page displays this message once through the global toast.
+    messages.success(request, "Saved comparison removed.")
+
+    return JsonResponse({
+        "ok": True,
+        "comparison_id": pk,
+        "redirect_url": reverse("profile_saved") + "?category=comparison",
+    })
