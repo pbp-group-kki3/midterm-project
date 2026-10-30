@@ -1198,3 +1198,87 @@ class RateLimitTests(TestCase):
         request.user = AnonymousUser()
         self.assertEqual(client_id(request), "ip:10.0.0.5")          # change: the first address is the visitor's own
 
+
+# change: step 3a, what happens when Open Food Facts is down (main + backup both fail)
+@patch("main.services.openfoodfacts.requests.get")
+class ApiDownTests(TestCase):
+    def setUp(self):
+        cache.clear()
+
+    def expire_fresh_copy(self, key):
+        cache.delete(key)                                           # change: like the 1-hour cache running out
+
+    def test_search_falls_back_to_the_last_good_copy(self, fake_get):
+        fake_get.return_value = fake_response({"products": [ULTRA_MILK]})
+        fresh = off.search_products("susu")
+        self.assertFalse(off.is_stale(fresh))                       # change: fresh from the API
+        self.expire_fresh_copy(off.cache_key("search", "susu"))
+        fake_get.side_effect = API_DOWN                             # change: main API and backup both fail now
+        saved = off.search_products("susu")
+        self.assertEqual(saved, [ULTRA_MILK])                       # change: the saved copy, still a normal list for everyone
+        self.assertTrue(off.is_stale(saved))                        # change: ...but marked as "saved earlier"
+
+    def test_browse_falls_back_too(self, fake_get):
+        fake_get.return_value = fake_response({"products": [ULTRA_MILK]})
+        off.browse_products()
+        self.expire_fresh_copy("off:browse")
+        fake_get.side_effect = API_DOWN
+        saved = off.browse_products()
+        self.assertEqual(saved, [ULTRA_MILK])
+        self.assertTrue(off.is_stale(saved))
+
+    def test_product_falls_back_to_its_last_good_copy(self, fake_get):
+        fake_get.return_value = fake_response({"product": ULTRA_MILK})
+        off.get_product(ULTRA_MILK["code"])
+        self.expire_fresh_copy(f"off:product:{ULTRA_MILK['code']}")
+        fake_get.side_effect = API_DOWN
+        self.assertEqual(off.get_product(ULTRA_MILK["code"]), ULTRA_MILK)   # change: same signature, Alyssa's page keeps working
+
+    def test_nothing_saved_yet_still_means_none(self, fake_get):
+        fake_get.side_effect = API_DOWN
+        self.assertIsNone(off.search_products("susu"))
+
+    def test_after_a_failure_the_api_is_left_alone_for_a_while(self, fake_get):
+        fake_get.side_effect = API_DOWN
+        off.search_products("susu")
+        calls = fake_get.call_count                                 # change: main + backup were tried once
+        off.search_products("teh")
+        off.get_product(ULTRA_MILK["code"])
+        self.assertEqual(fake_get.call_count, calls)                # change: no new calls while it's marked as down
+        cache.delete(off.DOWN_KEY)                                  # change: when the 90 seconds are over...
+        off.search_products("teh")
+        self.assertGreater(fake_get.call_count, calls)              # ...it tries again
+
+    def test_broken_json_counts_as_a_failure(self, fake_get):
+        broken = MagicMock()
+        broken.json.side_effect = ValueError("not JSON")            # change: e.g. an HTML error page instead of JSON
+        fake_get.side_effect = [broken, fake_response({"hits": [ULTRA_MILK]})]
+        self.assertEqual(off.search_products("susu"), [ULTRA_MILK])   # change: treated as a failure -> backup used
+
+    def test_json_that_is_not_an_object_counts_as_a_failure(self, fake_get):
+        fake_get.side_effect = [fake_response(["weird"]), fake_response(["weird"])]
+        self.assertIsNone(off.search_products("susu"))
+
+    def test_product_answer_that_is_not_an_object_counts_as_a_failure(self, fake_get):
+        fake_get.return_value = fake_response(["weird"])
+        self.assertIsNone(off.get_product(ULTRA_MILK["code"]))
+        self.assertTrue(cache.get(off.DOWN_KEY))                    # change: marked as down
+
+    def test_missing_product_is_not_a_failure(self, fake_get):
+        fake_get.return_value = fake_response({"status": 0})       # change: the API answered, the product just doesn't exist
+        self.assertIsNone(off.get_product("0000000000000"))
+        self.assertIsNone(cache.get(off.DOWN_KEY))                  # change: so the API isn't marked as down
+
+    @patch("main.views.search_products", return_value=off.StaleList([dict(ULTRA_MILK)]))
+    def test_page_tells_the_user_these_are_saved_results(self, fake_search, fake_get):
+        response = self.client.get(reverse("main:show_main"), {"q": "susu"})
+        self.assertContains(response, "Ultra Milk Low Fat")
+        self.assertContains(response, 'data-message="Open Food Facts isn&#x27;t responding')   # change: sent to the shared toast
+        self.assertTrue(response.context["stale"])
+
+    @patch("main.views.browse_products", return_value=[dict(ULTRA_MILK)])
+    def test_fresh_results_have_no_note(self, fake_browse, fake_get):
+        response = self.client.get(reverse("main:show_main"))
+        self.assertNotContains(response, "saved earlier")
+        self.assertFalse(response.context["stale"])
+
