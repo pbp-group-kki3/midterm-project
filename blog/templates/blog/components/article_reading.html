@@ -54,6 +54,7 @@
         class="blog-article-hero mb-8"
         width="1216"
         height="480"
+        onerror="this.remove()"{# change: hide the hero if its file is missing (PWS wipes uploads on redeploy) #}
     >
 {% else %}
     <div class="blog-article-hero blog-article-placeholder mb-8">
