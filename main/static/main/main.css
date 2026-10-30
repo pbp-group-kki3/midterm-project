@@ -595,3 +595,24 @@
 .discover-tray-holder {
     display: contents;
 }
+
+/* change: step 8. the product card lifts a little when you hover it, same as the Meal Plan card
+   (2px up, bigger shadow, brand-colored border, 0.15s) so the site feels consistent */
+.discover-card {
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+
+.discover-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-border-brand);
+}
+
+/* change: people who turned off animations in their settings get no movement, the card just stays put */
+@media (prefers-reduced-motion: reduce) {
+    .discover-card,
+    .discover-card:hover {
+        transition: none;
+        transform: none;
+    }
+}
