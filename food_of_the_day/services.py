@@ -64,6 +64,12 @@ def get_recipe(recipe_id):
         recipe = _fallback_get(f"/recipes/{recipe_id}/information", {"includeNutrition": "true"})
         if recipe and isinstance(recipe, dict):
             cache.set(key, recipe, 60 * 60)
+        else:
+            # Negative caching: prevent hammering Spoonacular on repeated failures or bad IDs
+            cache.set(key, False, 5 * 60)
+            return None
+    elif recipe is False:
+        return None
     return recipe
 
 

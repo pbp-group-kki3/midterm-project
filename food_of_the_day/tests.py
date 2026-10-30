@@ -196,6 +196,20 @@ class FoodOfTheDayServicesTest(TestCase):
         self.assertIsNone(get_recipe("invalid_string"))
         self.assertIsNone(get_recipe(0))
 
+    @patch('food_of_the_day.services._get_recipe_from_meal_plan', None)
+    @patch('food_of_the_day.services._fallback_get')
+    def test_get_recipe_negative_caching(self, mock_fallback_get):
+        mock_fallback_get.return_value = None
+        # First call hits fallback_get
+        result1 = get_recipe(999999)
+        self.assertIsNone(result1)
+        self.assertEqual(mock_fallback_get.call_count, 1)
+
+        # Second call should be served from negative cache, avoiding network hit
+        result2 = get_recipe(999999)
+        self.assertIsNone(result2)
+        self.assertEqual(mock_fallback_get.call_count, 1)
+
 
 class FoodOfTheDayFormsTest(TestCase):
     def test_form_valid_text(self):
@@ -214,6 +228,16 @@ class FoodOfTheDayFormsTest(TestCase):
     def test_form_too_long_invalid(self):
         form = MealCommentForm(data={'text': 'a' * 1001})
         self.assertFalse(form.is_valid())
+
+    def test_form_control_characters_stripped(self):
+        form = MealCommentForm(data={'text': 'Delicious!\x08\x1f Great choice!'})
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['text'], 'Delicious! Great choice!')
+
+    def test_form_null_bytes_rejected(self):
+        form = MealCommentForm(data={'text': 'Delicious!\x00 Great choice!'})
+        self.assertFalse(form.is_valid())
+        self.assertIn('text', form.errors)
 
 
 @override_settings(ROOT_URLCONF='food_of_the_day.test_urls')
@@ -417,6 +441,20 @@ class FoodOfTheDayViewsTest(TestCase):
         data = response.json()
         self.assertTrue(data['saved'])
         self.assertEqual(data['meal_id'], self.meal.id)
+
+    @patch('food_of_the_day.views.get_recipe')
+    def test_toggle_save_meal_sanitizes_title(self, mock_get_recipe):
+        mock_get_recipe.return_value = self.sample_recipe
+        self.client.login(username='dineder', password='password123')
+        # Even if attacker sends malicious title in POST, canonical title is prioritized
+        response = self.client.post(
+            reverse('food_of_the_day:toggle_save_meal', args=[self.meal.id]),
+            {'recipe_title': '<script>alert("xss")</script> Malicious'}
+        )
+        self.assertEqual(response.status_code, 302)
+        saved = SavedMeal.objects.get(user=self.user, meal=self.meal)
+        self.assertEqual(saved.recipe_title, 'Healthy Green Bowl')
+        self.assertNotIn('<script>', saved.recipe_title)
 
     @patch('food_of_the_day.views.get_recipe')
     def test_is_saved_in_context(self, mock_get_recipe):
