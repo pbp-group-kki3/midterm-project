@@ -1,0 +1,11 @@
+{# change: step 4. What the server sends back for an HTMX live search, instead of the whole page. #}
+{# The first part goes into #discover-results (hx-target). The two hx-swap-oob="true" parts replace the elements #}
+{# with the same id somewhere else on the page ("out of band"), so the Filters/Sort buttons and the filter panel #}
+{# match the new search too #}
+{% include 'main/components/discover_results.html' %}
+
+<div id="discover-tools" class="contents" hx-swap-oob="true">
+    {% include 'main/components/discover_tools.html' %}
+</div>
+
+{% include 'main/components/filter_dialog.html' with oob=True %}

@@ -1,0 +1,7 @@
+{# change: step 4. Filters + Sort buttons, its own file so HTMX can update them after a live search #}
+<button type="button" id="filter-open" class="btn btn-white">
+    Filters{% if filter_count %} ({{ filter_count }}){% endif %}
+</button>
+<a href="{{ sort_url }}" class="btn btn-white">
+    Sort: {% if sort == "grade" %}Best grade{% else %}Relevance{% endif %}
+</a>

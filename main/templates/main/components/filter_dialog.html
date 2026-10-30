@@ -1,0 +1,71 @@
+{# change: step 4. The filter panel in its own file, so HTMX can redraw it with the new search text #}
+{# Filter panel (Figma: SF / Filter panel). Opened by the Filters button, see main.js #}
+<dialog class="dialog dialog-sm" id="filter-dialog"{% if oob %} hx-swap-oob="true"{% endif %}>
+    <div class="dialog-header">
+        <h2 class="dialog-title">Filter</h2>
+        {% include 'components/dialog_close.html' %}
+    </div>
+    {# Its own GET form: ticking boxes and pressing Show products reloads the page with them in the URL #}
+    <form method="get" action="{% url 'main:show_main' %}">
+        <input type="hidden" name="q" value="{{ q }}">
+        {% if sort %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+
+        <div class="discover-filter-panel">
+            <div class="discover-filter-group">
+                <p class="discover-filter-title">Grade</p>
+                <div class="chip-row">
+                    {% for option in grade_options %}
+                        <label class="chip discover-filter-chip {% if option.checked %}is-selected{% endif %}">
+                            <input type="checkbox" name="grade" value="{{ option.value }}" class="sr-only" {% if option.checked %}checked{% endif %}>
+                            {{ option.value }}
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="discover-filter-group">
+                <p class="discover-filter-title">Labels and diet</p>
+                <div class="chip-row">
+                    {% for option in label_options %}
+                        <label class="chip discover-filter-chip {% if option.checked %}is-selected{% endif %}">
+                            <input type="checkbox" name="label" value="{{ option.value }}" class="sr-only" {% if option.checked %}checked{% endif %}>
+                            {{ option.text }}
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="discover-filter-group">
+                <p class="discover-filter-title">Processing</p>
+                <div class="chip-row">
+                    {# radio buttons: only one of the two can be on #}
+                    <label class="chip discover-filter-chip {% if processing == 'not_ultra' %}is-selected{% endif %}">
+                        <input type="radio" name="processing" value="not_ultra" class="sr-only" {% if processing == 'not_ultra' %}checked{% endif %}>
+                        Not ultra-processed
+                    </label>
+                    <label class="chip discover-filter-chip {% if processing != 'not_ultra' %}is-selected{% endif %}">
+                        <input type="radio" name="processing" value="any" class="sr-only" {% if processing != 'not_ultra' %}checked{% endif %}>
+                        Any
+                    </label>
+                </div>
+            </div>
+
+            <div class="discover-filter-group">
+                <p class="discover-filter-title">Avoid allergens</p>
+                <div class="chip-row">
+                    {% for option in allergen_options %}
+                        <label class="chip discover-filter-chip {% if option.checked %}is-selected{% endif %}">
+                            <input type="checkbox" name="avoid" value="{{ option.value }}" class="sr-only" {% if option.checked %}checked{% endif %}>
+                            {{ option.text }}
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="dialog-actions">
+            <a href="{{ clear_url }}" class="btn btn-secondary">Reset</a>
+            <button type="submit" class="btn btn-primary">Show products</button>
+        </div>
+    </form>
+</dialog>

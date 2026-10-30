@@ -1,0 +1,48 @@
+{# change: step 4. The part of Discover that changes on a search: quick chips + results. #}
+{# Used by main.html (normal page) and by discover_htmx.html (HTMX answer) #}
+{# Quick filters: each chip is a link that switches one filter on or off. #}
+{# Hidden until "Filters" is clicked (main.js), but kept visible while a filter is on #}
+<div id="quick-filters" class="chip-row discover-quick-filters mt-6 {% if not filter_count %}is-hidden{% endif %}">
+    {% for chip in quick_chips %}
+        <a href="{{ chip.url }}" class="chip {% if chip.selected %}is-selected{% endif %}">{{ chip.text }}</a>
+    {% endfor %}
+</div>
+
+<section class="mt-6">
+    {% if error %}
+        {# search_products returned None: the API failed #}
+        <div class="alert alert-warning">
+            Product data is not available right now. Please try again in a moment.
+        </div>
+
+    {% elif not products %}
+        {# Nothing matched, or the filters removed everything. Not in Figma yet #}
+        <div class="empty-state">
+            <h3 class="empty-state-title">No products found</h3>
+            <p class="empty-state-text">{% if q %}Nothing matched "{{ q }}"{% if filter_count %} with these filters{% endif %}. Try another product name.{% else %}No products match these filters.{% endif %}</p>
+            {% if filter_count %}
+                <a href="{{ clear_url }}" class="btn btn-primary">Clear filters</a>
+            {% endif %}
+        </div>
+
+    {% elif products %}
+        <p class="type-label-md mb-6">
+            {% if q %}{{ total }} result{{ total|pluralize }} for "{{ q }}"{% else %}{{ total }} product{{ total|pluralize }}{% endif %}
+            {% if filter_count %}<a href="{{ clear_url }}" class="link ml-4">Clear filters</a>{% endif %}
+        </p>
+        {# change: id so main.js can add the next cards to the end of the grid #}
+        <div class="card-grid" id="discover-grid">
+            {% for p in products %}
+                {% include 'main/product_card.html' with product=p %}
+            {% endfor %}
+        </div>
+
+        {% if has_more %}
+            {# Load more: the same search with 6 more cards (no extra API call, the results are cached) #}
+            {# change: js-load-more = main.js fetches the next 6 cards in the background instead of reloading #}
+            <div class="mt-6" id="load-more-holder">
+                <a href="{{ more_url }}" class="btn btn-load-more btn-block js-load-more">Load more products</a>
+            </div>
+        {% endif %}
+    {% endif %}
+</section>

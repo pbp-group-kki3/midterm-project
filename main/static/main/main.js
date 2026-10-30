@@ -111,27 +111,43 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // "Filters" button opens the <dialog> (the browser's built-in popup)
-    const dialog = document.getElementById("filter-dialog");
-    const openButton = document.getElementById("filter-open");
-    const quickFilters = document.getElementById("quick-filters");
-    if (dialog && openButton) {
-        openButton.addEventListener("click", () => {
-            if (quickFilters) {
-                quickFilters.classList.remove("is-hidden");   // show the quick chips under the search row
-            }
+    // change: step 4. Listen on the whole document: HTMX replaces the button and the dialog after a live search,
+    // and a listener attached to the old button would be lost
+    document.addEventListener("click", (event) => {
+        if (!event.target.closest("#filter-open")) {
+            return;
+        }
+        const dialog = document.getElementById("filter-dialog");     // change: looked up on every click (it may be new)
+        const quickFilters = document.getElementById("quick-filters");
+        if (quickFilters) {
+            quickFilters.classList.remove("is-hidden");   // show the quick chips under the search row
+        }
+        if (dialog) {
             dialog.showModal();
-        });
-    }
+        }
+    });
 
     // Each chip in the panel wraps a hidden checkbox or radio. Keep .is-selected in sync with it
-    document.querySelectorAll(".discover-filter-chip input").forEach((input) => {
-        input.addEventListener("change", () => {
-            // radios: switching one on switches the others in the group off, so update the whole group
-            const group = document.querySelectorAll(`input[name="${input.name}"]`);
-            group.forEach((other) => {
-                other.closest("label").classList.toggle("is-selected", other.checked);
-            });
+    // change: same idea, one listener on the document for every chip, old or new
+    document.addEventListener("change", (event) => {
+        const input = event.target.closest(".discover-filter-chip input");
+        if (!input) {
+            return;
+        }
+        // radios: switching one on switches the others in the group off, so update the whole group
+        const group = document.querySelectorAll(`input[name="${input.name}"]`);
+        group.forEach((other) => {
+            other.closest("label").classList.toggle("is-selected", other.checked);
         });
+    });
+
+    // change: step 4. The server can ask for the shared toast in an HTMX answer (HX-Trigger header).
+    // htmx fires it as the "spoonfeed:toast" event; we pass it on to showToast from static/js/toast.js
+    document.addEventListener("spoonfeed:toast", (event) => {
+        const detail = event.detail || {};
+        if (typeof window.showToast === "function" && detail.message) {
+            window.showToast(detail.title || "Notification", detail.message, detail.type || "info");
+        }
     });
 
     const pendingFavorites = new Set();

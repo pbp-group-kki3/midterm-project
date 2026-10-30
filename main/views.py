@@ -7,6 +7,7 @@ from django.http import HttpResponse
 from main.services.openfoodfacts import search_products, browse_products, get_product, get_alternatives # import search function + to call API
 from main.services.openfoodfacts import is_valid_barcode, clean_query, is_stale # change: input safety (step 1) + saved-copy check (step 3a)
 from django.http import Http404 # change: a bad barcode gets the normal "page not found"
+from django.utils.cache import patch_vary_headers # change: step 4, tells browsers the answer depends on the HX-Request header
 from django.utils.html import strip_tags # change: removes HTML tags from posted product names
 from main.services.grading import spoonfeed_grade, grade_value, NUTRI_POINTS, GREEN_POINTS,NOVA_POINTS # import gradings
 from main.services.filters import passes_filters, best_grade_key, preference_fit
@@ -192,14 +193,28 @@ def show_main(request):
     }
     context.update(compare_tray(request))                  # the compare tray at the bottom
 
+    stale_message = "Open Food Facts isn't responding right now, so these are results we saved earlier."
+
+    # change: step 4. HTMX live search -> answer with only the part that changes (discover_htmx.html), not the whole page.
+    # Except when htmx restores a page for the Back button (HX-History-Restore-Request): then it needs everything
+    if request.headers.get("hx-request") == "true" and request.headers.get("hx-history-restore-request") != "true":
+        response = render(request, "main/components/discover_htmx.html", context)
+        if context["stale"]:
+            # change: HTMX can't show Django messages, so we ask the page to fire an event; main.js shows the shared toast
+            response["HX-Trigger"] = json.dumps({"spoonfeed:toast": {"title": "Saved results", "message": stale_message, "type": "info"}})
+        patch_vary_headers(response, ["HX-Request"])
+        return response
+
     # change: API down -> tell the user with the shared toast (the same one as saving a comparison).
     # messages.info shows up as the blue "info" toast through templates/components/toasts.html in base.html
-    if context["stale"] and not is_ajax(request):
-        messages.info(request, "Open Food Facts isn't responding right now, so these are results we saved earlier.")
+    # change: only the "Load more" fetch sends X-Requested-With. HTMX history restore also says HX-Request, so is_ajax() is too broad here
+    load_more = request.headers.get("x-requested-with") == "XMLHttpRequest"
+    if context["stale"] and not load_more:
+        messages.info(request, stale_message)
 
     # change: "Load more products" clicked with JavaScript -> send only the NEXT cards as HTML, no reload.
     # Same product_card.html as a normal load, so the cards look exactly the same
-    if is_ajax(request):
+    if load_more:
         new_cards = products[show - PAGE_STEP:show]          # e.g. show=12 -> cards 7 to 12
         cards_html = "".join(
             render_to_string("main/product_card.html", dict(context, product=p), request=request)
@@ -211,7 +226,9 @@ def show_main(request):
             "more_url": context["more_url"],                 # the link for the next click
         })
 
-    return render(request, "main/main.html", context)
+    response = render(request, "main/main.html", context)
+    patch_vary_headers(response, ["HX-Request"])   # change: the same URL gives a full page or a part, browsers must not mix them up
+    return response
 
 @never_cache
 def product_detail(request, barcode):
