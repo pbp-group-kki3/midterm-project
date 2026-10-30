@@ -306,9 +306,7 @@ python manage.py test main.tests_functional
 Each member's section covers what their module adds beyond the overview above, followed by their AI disclosure.
 
 <a id="serafin"></a>
-## Serafin Reysetyo Amantresno Grajo Pingol
-
-**Module:** Profile &nbsp;·&nbsp; **NPM:** `2506637136`
+## Serafin Reysetyo Amantresno Grajo Pingol · Profile · 2506637136
 
 The Profile module handles everything about a user's account: signing up, logging in, their details and preferences, and what they've saved or viewed.
 
@@ -372,9 +370,7 @@ The commit convention is followed from 28 October 2026 onwards, after an earlier
 ---
 
 <a id="rebecca"></a>
-## Rebecca Love Lianov Simanjuntak
-
-**Module:** Product Discovery &nbsp;·&nbsp; **NPM:** `2506637110`
+## Rebecca Love Lianov Simanjuntak · Product Discovery · 2506637110
 
 Product Discovery is the main page of SpoonFeed (the `main` app): live product search with filters, the SpoonFeed grade, product detail pages with better alternatives, favorites, view history, and the compare tray that leads into the Comparison module.
 
@@ -465,9 +461,7 @@ The global CSS (`static/css/tokens.css`, `base.css`, `components.css`, `pages.cs
 ---
 
 <a id="reyhan"></a>
-## Muhammad Reyhan Attarizky
-
-**Module:** Meal Plan &nbsp;·&nbsp; **NPM:** `2506637086`
+## Muhammad Reyhan Attarizky · Meal Plan · 2506637086
 
 Meal Plan creates personalised meal plans from Spoonacular recipes and lets users browse recipes, edit plans and replace single meals.
 
@@ -517,9 +511,7 @@ Meal Plan creates personalised meal plans from Spoonacular recipes and lets user
 ---
 
 <a id="alyssa"></a>
-## Alyssa Rahma Adjani
-
-**Module:** Product Comparison &nbsp;·&nbsp; **NPM:** `2506558466`
+## Alyssa Rahma Adjani · Product Comparison · 2506558466
 
 The Product Comparison module lets users evaluate two or three food products side by side using nutritional information, environmental indicators, processing scores, labels and allergens. Logged-in users can also save and manage comparison lineups through their profiles.
 
@@ -612,9 +604,7 @@ The Product Comparison module lets users evaluate two or three food products sid
 ---
 
 <a id="aryan"></a>
-## Aryan Alexander Rinaldi
-
-**Module:** Meal of the Day &nbsp;·&nbsp; **NPM:** `2506636985`
+## Aryan Alexander Rinaldi · Meal of the Day · 2506636985
 
 The Meal of the Day module delivers a daily recipe recommendation that works both as a feature in the homepage carousel and as a recipe page of its own, with community interactions.
 
@@ -674,9 +664,7 @@ The Meal of the Day module delivers a daily recipe recommendation that works bot
 ---
 
 <a id="qeela"></a>
-## Qeela Mufazzal Rafif Putra E
-
-**Module:** Blog &nbsp;·&nbsp; **NPM:** `2506637104`
+## Qeela Mufazzal Rafif Putra E · Blog · 2506637104
 
 The Blog module provides educational content about sustainable food consumption and environmentally responsible lifestyles. It helps users understand the information shown elsewhere in the app and encourages more sustainable daily habits. Articles cover food waste, packaging, recycling, carbon footprints, sustainable shopping, nutrition labels, seasonal food and responsible consumption.
 
