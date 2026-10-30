@@ -166,5 +166,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = '/profiles/login/'
 LOGIN_REDIRECT_URL = "main:show_main"
 
+# change: login sessions. Safer defaults for everyone (agreed with the team)
+SESSION_COOKIE_AGE = 60 * 60 * 2          # change: a login lasts at most 2 hours, then you need to log in again
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True    # change: closing the browser logs you out (the cookie isn't kept)
+
+# change: on our laptops (not the deployed site) logins live only in the server's memory,
+# so stopping runserver (Ctrl+C) logs everyone out and empties the compare tray.
+# The deployed site keeps logins in the database, so a deploy doesn't kick real users out
+if not PRODUCTION:
+    SESSION_ENGINE = "django.contrib.sessions.backends.cache"   # change: uses Django's built-in memory cache, nothing to install
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
