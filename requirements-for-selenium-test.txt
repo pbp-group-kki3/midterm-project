@@ -1,0 +1,6 @@
+# Only needed to run the browser tests in main/tests_functional.py (Product Discovery).
+# Not needed for the website itself or for deployment, so it is kept out of requirements.txt.
+#   pip install -r requirements-for-selenium-test.txt
+#   python manage.py test main.tests_functional
+# Selenium finds a matching ChromeDriver for your installed Chrome by itself.
+selenium>=4.20

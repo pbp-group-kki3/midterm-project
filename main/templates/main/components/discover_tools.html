@@ -1,0 +1,8 @@
+{# change: step 4. Filters + Sort buttons, its own file so HTMX can update them after a live search #}
+<button type="button" id="filter-open" class="btn btn-white">
+    Filters{% if filter_count %} ({{ filter_count }}){% endif %}
+</button>
+{# change: step 5. sorting swaps only the results, same pattern as the chips #}
+<a href="{{ sort_url }}" hx-get="{{ sort_url }}" hx-target="#discover-results" hx-push-url="true" class="btn btn-white">
+    Sort: {% if sort == "grade" %}Best grade{% else %}Relevance{% endif %}
+</a>

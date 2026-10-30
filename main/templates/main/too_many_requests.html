@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{# change: new page (step 2). Shown when someone sends too many requests in a minute (status 429) #}
+
+{% block title %}Slow down | SpoonFeed{% endblock %}
+
+{% block content %}
+    <div class="empty-state mt-6">
+        <h1 class="empty-state-title">Too many requests</h1>
+        <p class="empty-state-text">{{ message }}</p>
+        <a href="{% url 'main:show_main' %}" class="btn btn-primary">Back to Discover</a>
+    </div>
+{% endblock %}

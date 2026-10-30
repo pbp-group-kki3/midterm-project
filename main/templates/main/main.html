@@ -8,6 +8,10 @@
 
 {% block extra_head %}
     <link rel="stylesheet" href="{% static 'main/main.css' %}">
+    {# change: step 4. HTMX, same version and integrity hash as lecture 07. Only on this page, base.html is untouched #}
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.11/dist/htmx.min.js"
+            integrity="sha384-2OatzQy1H+Zd/IIrjr1TcuDGqLXeHhbooAyJY1KdQMKnr4LZ22k31GBLdYKHmVjg"
+            crossorigin="anonymous"></script>
 {% endblock %}
 
 {% block content %}
@@ -61,140 +65,46 @@
         </div>
     </header>
 
+    {# change: step 4. hx-headers sends the CSRF token with every HTMX request inside (tutorial 6). #}
+    {# GET searches don't need it, but any HTMX POST added later will #}
+    <div hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
     {# Search row: field, Search, Filters (n), Sort. method="get" puts the text in the URL as ?q=... #}
+    {# change: step 4. The form still works without JavaScript, HTMX just makes it live: #}
+    {#   hx-get     -> asks the same Discover view, which answers with only the results part #}
+    {#   hx-target  -> where that part goes #}
+    {#   hx-push-url -> the address bar shows ?q=..., so refresh / back / sharing the link still work #}
+    {#   hx-sync    -> a new search cancels an older one that is still loading #}
     <div class="search-bar">
-        <form method="get" action="{% url 'main:show_main' %}" class="discover-search-form">
-            <input class="input" type="text" name="q" value="{{ q }}" placeholder="Search a product">
+        <form method="get" action="{% url 'main:show_main' %}" class="discover-search-form"
+              hx-get="{% url 'main:show_main' %}" hx-target="#discover-results" hx-push-url="true"
+              hx-indicator="#search-indicator" hx-sync="this:replace">
+            {# change: debounce (lecture 07): "input changed delay:500ms" waits until typing stops for 0.5 s, #}
+            {# and only if the text really changed. So "susu" sends 1 request, not 4 #}
+            <input class="input" type="text" name="q" value="{{ q }}" placeholder="Search a product" autocomplete="off"
+                   aria-label="Search a product" aria-controls="discover-results"
+                   hx-get="{% url 'main:show_main' %}" hx-trigger="input changed delay:500ms"
+                   hx-target="#discover-results" hx-push-url="true" hx-indicator="#search-indicator"
+                   hx-sync="closest form:replace">
             <button type="submit" class="btn btn-primary">Search</button>
         </form>
-        <button type="button" id="filter-open" class="btn btn-white">
-            Filters{% if filter_count %} ({{ filter_count }}){% endif %}
-        </button>
-        <a href="{{ sort_url }}" class="btn btn-white">
-            Sort: {% if sort == "grade" %}Best grade{% else %}Relevance{% endif %}
-        </a>
+        {# change: wrapper with display: contents, so the buttons sit in the row exactly like before #}
+        <div id="discover-tools" class="contents">
+            {% include 'main/components/discover_tools.html' %}
+        </div>
     </div>
+    {# change: htmx shows this only while a search is loading (class htmx-indicator) #}
+    <p id="search-indicator" class="htmx-indicator page-subtitle mt-2" role="status">Searching...</p>
 
-    {# Quick filters: each chip is a link that switches one filter on or off. #}
-    {# Hidden until "Filters" is clicked (main.js), but kept visible while a filter is on #}
-    <div id="quick-filters" class="chip-row discover-quick-filters mt-6 {% if not filter_count %}is-hidden{% endif %}">
-        {% for chip in quick_chips %}
-            <a href="{{ chip.url }}" class="chip {% if chip.selected %}is-selected{% endif %}">{{ chip.text }}</a>
-        {% endfor %}
+    {# change: step 4. HTMX puts the new results in here. aria-live tells screen readers the list changed #}
+    <div id="discover-results" aria-live="polite">
+        {% include 'main/components/discover_results.html' %}
     </div>
-
-    <section class="mt-6">
-        {% if error %}
-            {# search_products returned None: the API failed #}
-            <div class="alert alert-warning">
-                Product data is not available right now. Please try again in a moment.
-            </div>
-
-        {% elif not products %}
-            {# Nothing matched, or the filters removed everything. Not in Figma yet #}
-            <div class="empty-state">
-                <h3 class="empty-state-title">No products found</h3>
-                <p class="empty-state-text">{% if q %}Nothing matched "{{ q }}"{% if filter_count %} with these filters{% endif %}. Try another product name.{% else %}No products match these filters.{% endif %}</p>
-                {% if filter_count %}
-                    <a href="{{ clear_url }}" class="btn btn-primary">Clear filters</a>
-                {% endif %}
-            </div>
-
-        {% elif products %}
-            <p class="type-label-md mb-6">
-                {% if q %}{{ total }} result{{ total|pluralize }} for "{{ q }}"{% else %}{{ total }} product{{ total|pluralize }}{% endif %}
-                {% if filter_count %}<a href="{{ clear_url }}" class="link ml-4">Clear filters</a>{% endif %}
-            </p>
-            {# change: id so main.js can add the next cards to the end of the grid #}
-            <div class="card-grid" id="discover-grid">
-                {% for p in products %}
-                    {% include 'main/product_card.html' with product=p %}
-                {% endfor %}
-            </div>
-
-            {% if has_more %}
-                {# Load more: the same search with 6 more cards (no extra API call, the results are cached) #}
-                {# change: js-load-more = main.js fetches the next 6 cards in the background instead of reloading #}
-                <div class="mt-6" id="load-more-holder">
-                    <a href="{{ more_url }}" class="btn btn-load-more btn-block js-load-more">Load more products</a>
-                </div>
-            {% endif %}
-        {% endif %}
-    </section>
+    </div>
 
     {# change: holder for the tray, main.js puts the new tray in here after a compare click #}
     <div id="compare-tray-holder" class="discover-tray-holder">{% include 'main/compare_tray.html' %}</div>
 
-    {# Filter panel (Figma: SF / Filter panel). Opened by the Filters button, see main.js #}
-    <dialog class="dialog dialog-sm" id="filter-dialog">
-        <div class="dialog-header">
-            <h2 class="dialog-title">Filter</h2>
-            {% include 'components/dialog_close.html' %}
-        </div>
-        {# Its own GET form: ticking boxes and pressing Show products reloads the page with them in the URL #}
-        <form method="get" action="{% url 'main:show_main' %}">
-            <input type="hidden" name="q" value="{{ q }}">
-            {% if sort %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
-
-            <div class="discover-filter-panel">
-                <div class="discover-filter-group">
-                    <p class="discover-filter-title">Grade</p>
-                    <div class="chip-row">
-                        {% for option in grade_options %}
-                            <label class="chip discover-filter-chip {% if option.checked %}is-selected{% endif %}">
-                                <input type="checkbox" name="grade" value="{{ option.value }}" class="sr-only" {% if option.checked %}checked{% endif %}>
-                                {{ option.value }}
-                            </label>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <div class="discover-filter-group">
-                    <p class="discover-filter-title">Labels and diet</p>
-                    <div class="chip-row">
-                        {% for option in label_options %}
-                            <label class="chip discover-filter-chip {% if option.checked %}is-selected{% endif %}">
-                                <input type="checkbox" name="label" value="{{ option.value }}" class="sr-only" {% if option.checked %}checked{% endif %}>
-                                {{ option.text }}
-                            </label>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <div class="discover-filter-group">
-                    <p class="discover-filter-title">Processing</p>
-                    <div class="chip-row">
-                        {# radio buttons: only one of the two can be on #}
-                        <label class="chip discover-filter-chip {% if processing == 'not_ultra' %}is-selected{% endif %}">
-                            <input type="radio" name="processing" value="not_ultra" class="sr-only" {% if processing == 'not_ultra' %}checked{% endif %}>
-                            Not ultra-processed
-                        </label>
-                        <label class="chip discover-filter-chip {% if processing != 'not_ultra' %}is-selected{% endif %}">
-                            <input type="radio" name="processing" value="any" class="sr-only" {% if processing != 'not_ultra' %}checked{% endif %}>
-                            Any
-                        </label>
-                    </div>
-                </div>
-
-                <div class="discover-filter-group">
-                    <p class="discover-filter-title">Avoid allergens</p>
-                    <div class="chip-row">
-                        {% for option in allergen_options %}
-                            <label class="chip discover-filter-chip {% if option.checked %}is-selected{% endif %}">
-                                <input type="checkbox" name="avoid" value="{{ option.value }}" class="sr-only" {% if option.checked %}checked{% endif %}>
-                                {{ option.text }}
-                            </label>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-
-            <div class="dialog-actions">
-                <a href="{{ clear_url }}" class="btn btn-secondary">Reset</a>
-                <button type="submit" class="btn btn-primary">Show products</button>
-            </div>
-        </form>
-    </dialog>
+    {% include 'main/components/filter_dialog.html' %}
 {% endblock %}
 
 {% block extra_js %}
