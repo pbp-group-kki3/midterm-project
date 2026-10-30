@@ -2,6 +2,7 @@ from django.urls import reverse
 
 from comparison.models import SavedComparison
 from main.models import FavoriteProduct
+from blog.models import SavedArticle
 
 
 # Define the categories supported by the Saved filter links.
@@ -101,6 +102,31 @@ def saved_items(user, category):
                 })
         except Exception:
             pass
+
+    # Show owned article snapshots in All and Articles.
+    if category in ("all", "article"):
+        for record in SavedArticle.objects.filter(user=user):
+            snapshot = record.snapshot_data
+
+            items.append({
+                "title": snapshot.get("title", "Saved article"),
+                "type": "Article",
+                "metadata": (
+                    snapshot.get("author_name", "Unknown author")
+                    + " · "
+                    + snapshot.get("topic_label", "Article")
+                ),
+                "created_at": record.created_at,
+                "open_url": reverse(
+                    "blog:saved_article_detail",
+                    args=[record.pk],
+                ),
+                "remove_url": reverse(
+                    "blog:saved_article_remove",
+                    args=[record.pk],
+                ),
+                "can_remove_article": True,
+            })
 
     # Display the newest persisted records first.
     return sorted(

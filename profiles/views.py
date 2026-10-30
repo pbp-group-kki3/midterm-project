@@ -156,7 +156,16 @@ def profile_view(request):
 @never_cache
 @require_GET
 def profile_saved(request):
-    return render(request, "profiles/profile.html", _profile_context(request, section="saved"))
+    context = _profile_context(request, section="saved")
+
+    if request.headers.get("X-Blog-Saved-Fragment") == "1":
+        return render(
+            request,
+            "profiles/components/saved_collection.html",
+            context,
+        )
+
+    return render(request, "profiles/profile.html", context)
 
 # Validate account and preference updates before saving them.
 @login_required
