@@ -34,7 +34,7 @@ class ComparisonHighlightTests(SimpleTestCase):
             'products': [],
             'show_compare_panel': False,
         })
-        self.assertIn('at least two products have comparable data', html)
+        self.assertIn('Green highlights the best available values.', html)
         self.assertIn('all comparable values are equal', html)
         self.assertNotIn('Equal or incomplete rows are not highlighted.', html)
 
@@ -813,3 +813,212 @@ class ComparisonEndpointTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(client.session["compare"], ["222"])
+
+# =============================================================================
+# 6. AUTHORIZATION, REQUEST PROTECTION AND SESSION ISOLATION
+# Covers: foreign IDs, alternate endpoints, forged fields, CSRF, stale sessions.
+# =============================================================================
+class ComparisonSecurityTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user("security-owner")
+        self.other = User.objects.create_user("security-other")
+        self.client.force_login(self.owner)
+        self.other_client = Client()
+        self.other_client.force_login(self.other)
+        self.seed_session(self.client, ["111", "222"])
+        self.seed_session(self.other_client, ["999", "888"])
+        self.saved = SavedComparison.objects.create(user=self.owner, name="Owner-only comparison", notes="Private notes", barcodes=["333", "444"])
+        self.compare_url = reverse("comparison:compare_products")
+        self.save_url = reverse("comparison:save_comparison")
+        self.open_url = reverse("profile_saved_comparison", args=[self.saved.pk])
+        self.edit_url = reverse("comparison:edit_saved_comparison", args=[self.saved.pk])
+        self.remove_url = reverse("comparison:remove_saved_comparison", args=[self.saved.pk])
+        self.edit_data = {"edit-name": "Updated", "edit-notes": ""}
+
+    # Give each test client its own independent comparison selection.
+    def seed_session(self, client, codes):
+        session = client.session
+        session.update({"compare": codes, "compare_info": {code: {"name": code} for code in codes}, "compare_has_removed": False})
+        session.save()
+
+    # Foreign and nonexistent IDs must not reveal which record actually exists.
+    def test_foreign_and_missing_records_have_the_same_safe_errors(self):
+        missing = self.saved.pk + 1000
+        mutations = [
+            ("comparison:edit_saved_comparison", self.edit_data),
+            ("comparison:remove_saved_comparison", {}),
+        ]
+
+        for route, data in mutations:
+            with self.subTest(route=route):
+                foreign = self.other_client.post(reverse(route, args=[self.saved.pk]), data)
+                absent = self.other_client.post(reverse(route, args=[missing]), data)
+                self.assertEqual(foreign.status_code, 404)
+                self.assertEqual(absent.status_code, 404)
+                self.assertEqual(foreign.json(), absent.json())
+                self.assertNotIn(self.saved.name, foreign.content.decode())
+
+        with patch("comparison.views.load_comparison_products") as loader:
+            for pk in [self.saved.pk, missing]:
+                page = self.other_client.get(reverse("profile_saved_comparison", args=[pk]))
+                self.assertContains(page, "Saved comparison unavailable", status_code=404)
+                self.assertContains(page, "Back to Saved", status_code=404)
+                self.assertNotContains(page, self.saved.name, status_code=404)
+            loader.assert_not_called()
+
+        self.assertTrue(SavedComparison.objects.filter(pk=self.saved.pk).exists())
+
+    # The Profile removal endpoint must enforce the same ownership boundary.
+    def test_profile_remove_route_cannot_bypass_ownership(self):
+        url = reverse("profile_saved_remove", args=["comparison", self.saved.pk])
+        response = self.other_client.post(url, {"category": "comparison", "user": self.owner.pk})
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(Client().post(url).status_code, 302)
+        self.assertTrue(SavedComparison.objects.filter(pk=self.saved.pk, user=self.owner).exists())
+
+    # Query parameters and posted owner IDs cannot switch another user's session.
+    def test_two_users_have_isolated_comparison_sessions(self):
+        before = dict(self.client.session)
+        forged = {"user": self.owner.pk, "saved_comparison": self.saved.pk, "barcodes": ["333", "444"]}
+        products = [comparison_product(code) for code in ["999", "888"]]
+
+        with patch("comparison.views.load_comparison_products", return_value=(products, [])) as loader:
+            response = self.other_client.get(self.compare_url, forged)
+
+        loader.assert_called_once_with(["999", "888"])
+        self.assertNotContains(response, self.saved.name)
+
+        response = self.other_client.post(reverse("comparison:remove_product", args=["999"]), forged)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.other_client.session["compare"], ["888"])
+        self.assertEqual(dict(self.client.session), before)
+        self.saved.refresh_from_db()
+        self.assertEqual(self.saved.barcodes, ["333", "444"])
+
+    # Editing metadata must ignore forged ownership, record IDs and barcodes.
+    def test_posted_identifiers_cannot_retarget_an_edit(self):
+        foreign = SavedComparison.objects.create(user=self.other, name="Other record", barcodes=["777", "666"])
+        data = {**self.edit_data, "pk": foreign.pk, "id": foreign.pk, "user": self.other.pk, "barcodes": ["999"]}
+        response = self.client.post(self.edit_url, data)
+
+        self.assertEqual(response.status_code, 200)
+        self.saved.refresh_from_db()
+        foreign.refresh_from_db()
+        self.assertEqual(self.saved.name, "Updated")
+        self.assertEqual(self.saved.user_id, self.owner.pk)
+        self.assertEqual(self.saved.barcodes, ["333", "444"])
+        self.assertEqual(foreign.name, "Other record")
+
+    # Every mutation path must reject missing tokens, wrong tokens and foreign origins.
+    def test_all_mutations_reject_invalid_csrf_or_foreign_origin(self):
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.owner)
+        self.seed_session(client, ["111", "222"])
+
+        with patch("comparison.views.load_comparison_products", return_value=([], [])):
+            self.assertEqual(client.get(self.open_url).status_code, 200)
+
+        token = client.cookies["csrftoken"].value
+        wrong = "A" * 32 if token != "A" * 32 else "B" * 32
+        header_cases = [
+            {},
+            {"HTTP_X_CSRFTOKEN": wrong},
+            {"HTTP_X_CSRFTOKEN": token, "HTTP_ORIGIN": "https://attacker.example"},
+        ]
+        mutations = [
+            (self.save_url, {"name": "Blocked", "notes": "", "selection": "111,222"}),
+            (self.edit_url, self.edit_data),
+            (self.remove_url, {}),
+            (reverse("comparison:remove_product", args=["111"]), {}),
+            (reverse("profile_saved_remove", args=["comparison", self.saved.pk]), {}),
+        ]
+
+        with patch("comparison.views.get_product") as fetch:
+            for url, data in mutations:
+                for headers in header_cases:
+                    with self.subTest(url=url, headers=headers):
+                        response = client.post(url, data, **headers)
+                        self.assertEqual(response.status_code, 403)
+                        self.assertTrue(SavedComparison.objects.filter(pk=self.saved.pk).exists())
+                        self.assertEqual(client.session["compare"], ["111", "222"])
+            fetch.assert_not_called()
+
+        self.saved.refresh_from_db()
+        self.assertEqual(self.saved.name, "Owner-only comparison")
+        self.assertEqual(SavedComparison.objects.count(), 1)
+
+    # Invalid session structures must not crash the page or overwrite selections.
+    def test_invalid_get_sessions_do_not_crash_or_overwrite_selection(self):
+        cases = [None, "111,222", {"first": "111"}, ["111", {"code": "222"}], ["111", "invalid"]]
+
+        for value in cases:
+            session = self.client.session
+            session["compare"] = value
+            session.save()
+
+            with self.subTest(value=value):
+                with patch("comparison.views.load_comparison_products", return_value=([], [])) as loader:
+                    response = self.client.get(self.compare_url)
+
+                self.assertEqual(response.status_code, 200)
+                loader.assert_called_once_with([])
+                self.assertFalse(response.context["can_save"])
+                self.assertEqual(self.client.session["compare"], value)
+
+    # Displaying only three columns must not make an oversized selection saveable.
+    def test_oversized_lineup_cannot_enable_save(self):
+        self.seed_session(self.client, ["111", "222", "333", "444"])
+        products = [comparison_product(code) for code in ["111", "222", "333"]]
+
+        with patch("comparison.views.load_comparison_products", return_value=(products, [])):
+            response = self.client.get(self.compare_url)
+
+        self.assertFalse(response.context["can_save"])
+        self.assertEqual(self.client.session["compare"], ["111", "222", "333", "444"])
+
+    # Removing from the active tray must tolerate malformed session metadata.
+    def test_remove_handles_invalid_session_and_metadata_safely(self):
+        session = self.client.session
+        session["compare"] = None
+        session.save()
+        url = reverse("comparison:remove_product", args=["111"])
+
+        self.assertEqual(self.client.post(url).status_code, 302)
+        self.assertIsNone(self.client.session["compare"])
+
+        self.seed_session(self.client, ["111", "222"])
+        session = self.client.session
+        session["compare_info"] = "invalid metadata"
+        session.save()
+
+        self.assertEqual(self.client.post(url).status_code, 302)
+        self.assertEqual(self.client.session["compare"], ["222"])
+        self.assertEqual(self.client.session["compare_info"], {})
+        self.assertTrue(SavedComparison.objects.filter(pk=self.saved.pk).exists())
+
+    # Personalized comparison responses should instruct clients not to cache them.
+    def test_private_responses_are_not_cacheable(self):
+        with patch("comparison.views.load_comparison_products", return_value=([], [])):
+            responses = [self.client.get(self.compare_url), self.client.get(self.open_url)]
+
+        responses += [
+            Client().post(self.save_url),
+            self.other_client.post(self.edit_url, self.edit_data),
+            self.other_client.post(self.remove_url),
+        ]
+
+        for response in responses:
+            self.assertIn("no-store", response.headers.get("Cache-Control", ""))
+
+    # An expired or cleared login session must lose access immediately.
+    def test_expired_session_does_not_keep_saved_record_access(self):
+        session = self.client.session
+        session.flush()
+
+        self.assertEqual(self.client.get(self.open_url).status_code, 302)
+        self.assertEqual(self.client.post(self.edit_url, self.edit_data).status_code, 401)
+        self.assertEqual(self.client.post(self.remove_url).status_code, 401)
+
+        self.saved.refresh_from_db()
+        self.assertEqual(self.saved.name, "Owner-only comparison")
+        self.assertEqual(self.other_client.session["compare"], ["999", "888"])

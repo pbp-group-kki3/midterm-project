@@ -15,12 +15,23 @@ from comparison.services import (
 from comparison.forms import SavedComparisonForm, SavedComparisonEditForm
 from comparison.models import SavedComparison
 # Create your views here.
+@never_cache
 @require_GET
 def compare_products(request, saved_comparison=None):
     # Display saved lineups without replacing the active session selection.
     viewing_saved = saved_comparison is not None
     selected_barcodes = saved_comparison.barcodes if viewing_saved else request.session.get("compare", [])
-    barcodes = list(dict.fromkeys(selected_barcodes))[:3]
+
+    # Validate session data before deduplicating or loading products.
+    valid_selection = isinstance(selected_barcodes, list) and all(
+        isinstance(barcode, str) and barcode.isascii() and barcode.isdigit()
+        for barcode in selected_barcodes
+    )
+    all_barcodes = list(dict.fromkeys(selected_barcodes)) if valid_selection else []
+    barcodes = all_barcodes[:3]
+
+    if not viewing_saved and (not valid_selection or len(all_barcodes) > 3):
+        messages.warning(request, "Your comparison selection is invalid or exceeds three products. Return to Discover and choose the products again.")
 
     products, unavailable_barcodes = load_comparison_products(barcodes)
 
@@ -41,16 +52,12 @@ def compare_products(request, saved_comparison=None):
     show_add_product = not viewing_saved and has_removed and len(barcodes) < 3
     display_column_count = len(products) + int(show_add_product)
 
+    # Enable saving only when the complete selection is valid and available.
     can_save = (
         not viewing_saved
-        and 2 <= len(barcodes) <= 3
+        and valid_selection
+        and 2 <= len(all_barcodes) <= 3
         and len(products) == len(barcodes)
-        and all(
-            isinstance(barcode, str)
-            and barcode.isascii()
-            and barcode.isdigit()
-            for barcode in barcodes
-        )
     )
 
     is_saved = False
@@ -90,6 +97,14 @@ def compare_products(request, saved_comparison=None):
 def remove_product(request, barcode):
     selected_barcodes = request.session.get("compare", [])
 
+    # Reject malformed selections without modifying the current session.
+    if not isinstance(selected_barcodes, list) or not all(
+        isinstance(value, str) and value.isascii() and value.isdigit()
+        for value in selected_barcodes
+    ):
+        messages.warning(request, "Your comparison selection is invalid. Return to Discover and choose the products again.")
+        return redirect("comparison:compare_products")
+
     if barcode in selected_barcodes:
         request.session["compare"] = [
             selected_barcode
@@ -97,7 +112,10 @@ def remove_product(request, barcode):
             if selected_barcode != barcode
         ]
 
-        compare_info = request.session.get("compare_info", {}).copy()
+        # Copy metadata only when it has the expected dictionary structure.
+        compare_info = request.session.get("compare_info", {})
+        compare_info = compare_info.copy() if isinstance(compare_info, dict) else {}
+
         compare_info.pop(barcode, None)
         request.session["compare_info"] = compare_info
 
@@ -110,6 +128,7 @@ def remove_product(request, barcode):
 
     return redirect("comparison:compare_products")
 
+@never_cache
 @require_POST
 def save_comparison(request):
     if not request.user.is_authenticated:
