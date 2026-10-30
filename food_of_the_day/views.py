@@ -3,6 +3,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.conf import settings
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.html import strip_tags
 from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -228,11 +229,12 @@ def toggle_save_meal(request, meal_id):
         recipe = get_recipe(meal.recipe_id)
         snapshot = build_recipe_snapshot(recipe)
 
-        recipe_title = request.POST.get('recipe_title', '').strip()[:255]
-        if not recipe_title and snapshot.get('title'):
-            recipe_title = snapshot['title'][:255]
-        elif not recipe_title and recipe and isinstance(recipe, dict):
-            recipe_title = str(recipe.get('title') or '')[:255]
+        canonical_title = snapshot.get('title') or (str(recipe.get('title') or '') if isinstance(recipe, dict) else '')
+        if canonical_title:
+            recipe_title = canonical_title[:255]
+        else:
+            raw_title = request.POST.get('recipe_title', '')
+            recipe_title = strip_tags(raw_title).strip()[:255]
 
         SavedMeal.objects.create(
             user=request.user,

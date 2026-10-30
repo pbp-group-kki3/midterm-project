@@ -304,7 +304,7 @@
 
       try {
         const formData = new FormData();
-        formData.append('recipe_title', '{{ recipe.title|escapejs }}');
+        formData.append('recipe_title', '{{ recipe.title|default:""|escapejs }}');
         const response = await fetch(`/food-of-the-day/${mealId}/toggle-save/`, {
           method: 'POST',
           headers: {
@@ -405,7 +405,7 @@
 
           const safeText = escapeHTML(data.comment.text);
           const username = escapeHTML(data.comment.user);
-          const initial = username.charAt(0).toUpperCase();
+          const initial = escapeHTML(username.charAt(0).toUpperCase());
 
           // Prepend new comment element with animation
           const newCommentHTML = `
