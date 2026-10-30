@@ -810,7 +810,9 @@ class ProductOverlayAndTrayTests(TestCase):
             HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
 
-        self.assertEqual(response.status_code, 302)
+        # change: a JavaScript click now gets 401 + JSON (login_required_json, step 2) instead of a 302 redirect.
+        # main.js then opens the login page. Still not saved without logging in
+        self.assertEqual(response.status_code, 401)
         self.assertFalse(
             FavoriteProduct.objects.exists()
         )
@@ -1102,4 +1104,97 @@ class InputSafetyTests(TestCase):
         self.assertEqual(len(response.context["q"]), off.MAX_QUERY_LENGTH)
         self.assertNotIn("<b>", response.context["q"])
         fake_search.assert_called_once_with(response.context["q"])
+
+
+# change: step 2, custom security decorators (main/decorators.py)
+AJAX = {"HTTP_X_REQUESTED_WITH": "XMLHttpRequest"}
+
+
+class LoginRequiredJsonTests(TestCase):
+    def test_logged_out_click_with_javascript_gets_401_json(self):
+        response = self.client.post(reverse("main:toggle_favorite", args=["111"]), **AJAX)
+        self.assertEqual(response.status_code, 401)                 # change: 401 = "log in first", not a redirect
+        data = response.json()
+        self.assertIn("message", data)
+        self.assertTrue(data["login_url"].startswith(reverse("login") + "?next="))
+
+    def test_htmx_request_also_gets_json(self):
+        response = self.client.post(reverse("main:add_to_compare", args=["111"]), HTTP_HX_REQUEST="true")
+        self.assertEqual(response.status_code, 401)
+
+    def test_normal_form_still_redirects_to_login(self):
+        response = self.client.post(reverse("main:toggle_favorite", args=["111"]))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("login"), response.url)
+
+
+class RateLimitTests(TestCase):
+    def setUp(self):
+        cache.clear()                                               # change: every test starts with fresh counters
+        from django.test import Client
+        self.client = Client(HTTP_HOST="localhost")                 # change: a real host name, so the limits are switched on
+        self.user = get_user_model().objects.create_user(username="busy", password="test-pass-123")
+        self.other = get_user_model().objects.create_user(username="calm", password="test-pass-123")
+
+    def test_too_many_hearts_get_429_with_a_message(self):
+        from main.decorators import FAVORITE_LIMIT
+        self.client.force_login(self.user)
+        url = reverse("main:toggle_favorite", args=["111"])
+        for _ in range(FAVORITE_LIMIT):
+            self.assertEqual(self.client.post(url, **AJAX).status_code, 200)
+        response = self.client.post(url, **AJAX)
+        self.assertEqual(response.status_code, 429)                 # change: 429 = "too many requests"
+        self.assertIn("message", response.json())
+        self.assertIn("Retry-After", response.headers)
+
+    def test_each_user_has_their_own_limit(self):
+        from main.decorators import FAVORITE_LIMIT
+        url = reverse("main:toggle_favorite", args=["111"])
+        self.client.force_login(self.user)
+        for _ in range(FAVORITE_LIMIT + 1):
+            self.client.post(url, **AJAX)
+        self.client.force_login(self.other)
+        self.assertEqual(self.client.post(url, **AJAX).status_code, 200)   # change: someone else isn't blocked
+
+    @patch("main.views.search_products", return_value=[])
+    def test_too_many_searches_show_a_friendly_page(self, fake_search):
+        from main.decorators import SEARCH_LIMIT
+        for i in range(SEARCH_LIMIT):
+            self.client.get(reverse("main:show_main"), {"q": f"susu {i}"})
+        response = self.client.get(reverse("main:show_main"), {"q": "susu"})
+        self.assertEqual(response.status_code, 429)
+        self.assertTemplateUsed(response, "main/too_many_requests.html")   # change: our own page, not an error page
+        self.assertEqual(fake_search.call_count, SEARCH_LIMIT)            # change: the blocked request never reached the API
+
+    def test_compare_has_a_limit_too(self):
+        from main.decorators import COMPARE_LIMIT
+        self.client.force_login(self.user)
+        for _ in range(COMPARE_LIMIT):
+            self.client.post(reverse("main:remove_from_compare", args=["111"]), **AJAX)
+        response = self.client.post(reverse("main:add_to_compare", args=["111"]), **AJAX)
+        self.assertEqual(response.status_code, 429)                 # change: add and remove share one counter
+
+    def test_other_tests_are_not_counted(self):
+        from main.decorators import FAVORITE_LIMIT
+        from django.test import Client
+        test_client = Client()                                      # change: the default "testserver" client
+        test_client.force_login(self.user)
+        url = reverse("main:toggle_favorite", args=["111"])
+        for _ in range(FAVORITE_LIMIT + 1):
+            response = test_client.post(url, **AJAX)
+        self.assertEqual(response.status_code, 200)
+
+    def test_counter_that_just_expired_starts_again(self):
+        self.client.force_login(self.user)
+        with patch("main.decorators.cache.incr", side_effect=ValueError):   # change: the key vanished between add and incr
+            response = self.client.post(reverse("main:toggle_favorite", args=["111"]), **AJAX)
+        self.assertEqual(response.status_code, 200)
+
+    def test_logged_out_visitors_are_counted_by_ip(self):
+        from main.decorators import client_id
+        from django.test import RequestFactory
+        from django.contrib.auth.models import AnonymousUser
+        request = RequestFactory().get("/", HTTP_X_FORWARDED_FOR="10.0.0.5, 10.0.0.1")
+        request.user = AnonymousUser()
+        self.assertEqual(client_id(request), "ip:10.0.0.5")          # change: the first address is the visitor's own
 
