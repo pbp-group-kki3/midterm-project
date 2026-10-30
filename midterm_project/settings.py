@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from urllib.parse import urlparse, parse_qsl  # change: to read the Neon DATABASE_URL (from our TA)
 
 # Load enviroment variables from .env file
 load_dotenv()
@@ -92,7 +93,24 @@ WSGI_APPLICATION = 'midterm_project.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 # Database configuration
-if PRODUCTION:
+# change: if DATABASE_URL is set (the team's Neon PostgreSQL, from our TA), use it.
+# Otherwise it's the same as before: ITF PostgreSQL when PRODUCTION=True, SQLite on our laptops.
+# The password only lives in .env / PWS Environs, never in this file.
+DATABASE_URL = os.getenv('DATABASE_URL', '').strip().strip('"').strip("'")  # change: drop quotes in case Environs keeps them
+if DATABASE_URL:
+    tmpPostgres = urlparse(DATABASE_URL)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': tmpPostgres.path.replace('/', ''),
+            'USER': tmpPostgres.username,
+            'PASSWORD': tmpPostgres.password,
+            'HOST': tmpPostgres.hostname,
+            'PORT': tmpPostgres.port or 5432,  # change: use the port in the URL if there is one
+            'OPTIONS': dict(parse_qsl(tmpPostgres.query)),  # sslmode=require etc., Neon needs these
+        }
+    }
+elif PRODUCTION:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -173,7 +191,9 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True    # change: closing the browser logs you
 # change: on our laptops (not the deployed site) logins live only in the server's memory,
 # so stopping runserver (Ctrl+C) logs everyone out and empties the compare tray.
 # The deployed site keeps logins in the database, so a deploy doesn't kick real users out
-if not PRODUCTION:
+# change: only on laptops with SQLite. Before, PWS with PRODUCTION=False also kept logins in memory,
+# and each server worker has its own memory, so logins kept "disappearing" on the live site
+if not PRODUCTION and not DATABASE_URL:
     SESSION_ENGINE = "django.contrib.sessions.backends.cache"   # change: uses Django's built-in memory cache, nothing to install
 
 MEDIA_URL = '/media/'
