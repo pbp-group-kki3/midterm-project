@@ -70,3 +70,11 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+else:
+    # change: PWS runs with DEBUG=False, and static() above only works when DEBUG=True,
+    # so uploaded profile photos gave 404 there (the navbar and profile header showed no photo).
+    # PWS has no separate file server, so Django serves /media/ itself, read-only, from MEDIA_ROOT.
+    from django.views.static import serve
+    urlpatterns += [
+        re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+    ]
