@@ -240,18 +240,26 @@ def change_password_view(request):
         current_password = request.POST.get('current_password')
         new_password = request.POST.get('new_password')
         confirm_password = request.POST.get('confirm_password')
+        
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
         if not request.user.check_password(current_password):
+            if is_ajax:
+                return JsonResponse({"status": "error", "message": "Current password is incorrect."}, status=400)
             messages.error(request, "Current password is incorrect.")
             return redirect('profile')
 
         if new_password != confirm_password:
+            if is_ajax:
+                return JsonResponse({"status": "error", "message": "New passwords do not match."}, status=400)
             messages.error(request, "New passwords do not match.")
             return redirect('profile')
 
         try:
             validate_password(new_password, request.user)
         except ValidationError as e:
+            if is_ajax:
+                return JsonResponse({"status": "error", "message": " ".join(e.messages)}, status=400)
             for error in e.messages:
                 messages.error(request, error)
             return redirect('profile')
@@ -260,6 +268,9 @@ def change_password_view(request):
         request.user.save()
         update_session_auth_hash(request, request.user)
         
+        if is_ajax:
+            return JsonResponse({"status": "success", "message": "Password changed successfully."})
+            
         messages.success(request, "Password changed successfully.")
         
     return redirect('profile')
