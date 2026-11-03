@@ -1,83 +1,37 @@
-<!-- Display directly addressable Saved filters and persisted records. -->
-<div class="profile-saved-collection">
-    <nav class="chip-row profile-saved-filters" aria-label="Filter saved items">
-        {% for value, label in saved_categories %}
-            <a
-                href="{% url 'profile_saved' %}?category={{ value|urlencode }}"
-                class="chip{% if saved_category == value %} is-selected{% endif %}"
-                {% if saved_category == value %}aria-current="page"{% endif %}
-            >
-                {{ label }}
-            </a>
-        {% endfor %}
-    </nav>
+<!-- TOAST COMPONENT: Main UI container for floating notifications, uses the native HTML popover API -->
+<div
+    id="toast-component"
+    class="alert alert-info toast toast-hidden" hidden
+    popover="manual"
+>
+    <!-- Icon badge for the toast (e.g., info 'i', success check, etc.) -->
+    <span class="toast-badge" aria-hidden="true">
+        <span id="toast-symbol" class="toast-letter">i</span>
+    </span>
 
-    <div class="profile-saved-list">
-        {% for item in saved_page %}
-            <article class="profile-saved-row">
-                <div class="profile-saved-thumbnail">
-                    <span class="icon icon-saved" aria-hidden="true"></span>
-                </div>
-
-                <div class="profile-saved-copy">
-                    <h3 class="type-label-md">{{ item.title }}</h3>
-                    <p class="type-caption text-brand">{{ item.type }}</p>
-                    <p class="type-body-sm text-secondary">{{ item.metadata }}</p>
-                    <p class="type-caption text-secondary">
-                        Saved {{ item.created_at|date:"j M Y" }}
-                    </p>
-                </div>
-
-                <div class="profile-saved-actions">
-                    <a
-                        class="btn btn-secondary profile-saved-open"
-                        href="{{ item.open_url }}"
-                        aria-label="Open {{ item.title }}"
-                    >
-                        Open
-                    </a>
-
-                </div>
-            </article>
-        {% empty %}
-            <!-- Show an honest empty state instead of prototype records. -->
-            <div class="empty-state">
-                <span class="icon icon-saved" aria-hidden="true"></span>
-                <h3 class="empty-state-title">Nothing saved here yet</h3>
-                <p class="empty-state-text">
-                    Items you save in this category will appear here.
-                </p>
-            </div>
-        {% endfor %}
+    <!-- Message container with accessibility roles for screen readers -->
+    <div class="toast-content" role="status" aria-atomic="true">
+        <span id="toast-title" class="sr-only"></span>
+        <p id="toast-message" class="toast-message"></p>
     </div>
 
-    {% if saved_page.has_other_pages %}
-        <!-- Keep pagination within the selected Saved category. -->
-        <nav
-            class="flex flex-wrap items-center justify-end gap-3"
-            aria-label="Saved pages"
-        >
-            {% if saved_page.has_previous %}
-                <a
-                    class="btn btn-secondary"
-                    href="?category={{ saved_category|urlencode }}&amp;page={{ saved_page.previous_page_number }}"
-                >
-                    Previous
-                </a>
-            {% endif %}
+    <!-- Dismiss button to manually close the toast -->
+    <button
+        type="button"
+        id="toast-close"
+        class="toast-close"
+        aria-label="Dismiss notification"
+    >
+        <span class="icon icon-x" aria-hidden="true"></span>
+    </button>
+</div>
 
-            <span class="type-body-sm">
-                Page {{ saved_page.number }} of {{ saved_page.paginator.num_pages }}
-            </span>
-
-            {% if saved_page.has_next %}
-                <a
-                    class="btn btn-secondary"
-                    href="?category={{ saved_category|urlencode }}&amp;page={{ saved_page.next_page_number }}"
-                >
-                    Next
-                </a>
-            {% endif %}
-        </nav>
-    {% endif %}
+<!-- DJANGO MESSAGES INJECTION: Loops through backend messages and stores them in DOM data attributes. Frontend JavaScript will read these hidden spans to dynamically trigger the toast UI above. -->
+<div id="toast-messages" hidden>
+    {% for message in messages %}
+        <span
+            data-message="{{ message }}"
+            data-type="{% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}error{% elif message.level == DEFAULT_MESSAGE_LEVELS.WARNING %}warning{% elif message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}success{% else %}normal{% endif %}"
+        ></span>
+    {% endfor %}
 </div>

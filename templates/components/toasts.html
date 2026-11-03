@@ -1,17 +1,21 @@
+<!-- TOAST COMPONENT: Main UI container for floating notifications, uses the native HTML popover API -->
 <div
     id="toast-component"
     class="alert alert-info toast toast-hidden" hidden
     popover="manual"
 >
+    <!-- Icon badge for the toast (e.g., info 'i', success check, etc.) -->
     <span class="toast-badge" aria-hidden="true">
         <span id="toast-symbol" class="toast-letter">i</span>
     </span>
 
+    <!-- Message container with accessibility roles for screen readers -->
     <div class="toast-content" role="status" aria-atomic="true">
         <span id="toast-title" class="sr-only"></span>
         <p id="toast-message" class="toast-message"></p>
     </div>
 
+    <!-- Dismiss button to manually close the toast -->
     <button
         type="button"
         id="toast-close"
@@ -22,6 +26,7 @@
     </button>
 </div>
 
+<!-- DJANGO MESSAGES INJECTION: Loops through backend messages and stores them in DOM data attributes. Frontend JavaScript will read these hidden spans to dynamically trigger the toast UI above. -->
 <div id="toast-messages" hidden>
     {% for message in messages %}
         <span
