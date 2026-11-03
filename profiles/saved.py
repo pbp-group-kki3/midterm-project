@@ -4,8 +4,7 @@ from comparison.models import SavedComparison
 from main.models import FavoriteProduct
 from blog.models import SavedArticle
 
-
-# Define the categories supported by the Saved filter links.
+# Valid categories for filtering the Saved items page
 SAVED_CATEGORIES = (
     ("all", "All"),
     ("product", "Products"),
@@ -14,12 +13,11 @@ SAVED_CATEGORIES = (
     ("meal", "Meals"),
 )
 
-
-# Prepare owned persisted records for the shared Saved row template.
+# Helper: Aggregates different data models (Products, Comparisons, Meals, Articles) into one standard list structure for the frontend
 def saved_items(user, category):
     items = []
 
-    # Product removal deletes the favorite record rather than product data.
+    # Map FavoriteProduct records to the standard dictionary format
     if category in ("all", "product"):
         for record in FavoriteProduct.objects.filter(user=user):
             items.append({
@@ -27,7 +25,6 @@ def saved_items(user, category):
                 "type": "Product",
                 "metadata": f"Barcode {record.barcode}",
                 "created_at": record.created_at,
-                # change: ?source=saved tells the product page to show "Back to Saved"
                 "open_url": reverse(
                     "main:product_detail",
                     args=[record.barcode],
@@ -38,7 +35,7 @@ def saved_items(user, category):
                 ),
             })
 
-    # Reuse the existing SavedComparison model.
+    # Map SavedComparison records to the standard dictionary format
     if category in ("all", "comparison"):
         for record in SavedComparison.objects.filter(user=user):
             items.append({
@@ -59,7 +56,7 @@ def saved_items(user, category):
                 ),
             })
 
-    # Saved Meal of the Day records (with snapshot metadata fallback).
+    # Map SavedMeal records, using snapshot metadata if the original meal is missing
     if category in ("all", "meal"):
         try:
             from food_of_the_day.models import SavedMeal
@@ -90,7 +87,6 @@ def saved_items(user, category):
                     "type": "Meal",
                     "metadata": metadata,
                     "created_at": record.created_at,
-                    # change: ?source=saved tells the meal page to show "Back to Saved"
                     "open_url": reverse(
                         "food_of_the_day:detail",
                         args=[record.meal.pk],
@@ -103,7 +99,7 @@ def saved_items(user, category):
         except Exception:
             pass
 
-    # Show owned article snapshots in All and Articles.
+    # Map SavedArticle records to the standard dictionary format
     if category in ("all", "article"):
         for record in SavedArticle.objects.filter(user=user):
             snapshot = record.snapshot_data
@@ -128,7 +124,7 @@ def saved_items(user, category):
                 "can_remove_article": True,
             })
 
-    # Display the newest persisted records first.
+    # Sort everything chronologically so the newest saved item appears first
     return sorted(
         items,
         key=lambda item: item["created_at"],

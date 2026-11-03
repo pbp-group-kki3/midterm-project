@@ -1,9 +1,9 @@
 from profiles.models import Profile
 
-# Reuse the model's allowed diets without a separate None selection.
+# Strips 'none' from the diet choices so it isn't rendered as a clickable filter option
 DIET_CHOICES = [(value, label) for value, label in Profile.DIET_CHOICES if value != "none"]
 
-# Map profile allergy labels to product and recipe API values.
+# Maps internal allergy names to external API tags (OpenFoodFacts='off', Spoonacular='spoon')
 ALLERGY_MAP = {
     "Milk": {"off": "en:milk", "spoon": "dairy"},
     "Peanuts": {"off": "en:peanuts", "spoon": "peanut"},
@@ -16,10 +16,10 @@ ALLERGY_MAP = {
     "Tree nuts": {"off": "en:nuts", "spoon": "tree nut"},
 }
 
-# Use the same allowed allergy choices in signup and preferences.
+# Generates tuples for the form choices dynamically based on the map above
 ALLERGY_CHOICES = [(value, value) for value in ALLERGY_MAP]
 
-# Convert supported legacy strings and current lists into unique allowed values.
+# Helper: Cleans up user input by handling strings/lists, removing invalid entries, and deduplicating
 def normalize_selection(value, choices):
     if isinstance(value, str):
         value = value.split(",")
@@ -39,15 +39,16 @@ def normalize_selection(value, choices):
 
         normalized = allowed.get(item.strip().casefold())
 
+        # Only add valid items that aren't already in the list
         if normalized and normalized not in result:
             result.append(normalized)
 
     return result
 
-# Normalize stored diet preferences without changing the database.
+# Wrapper to safely parse diet values using DIET_CHOICES
 def normalize_diets(value):
     return normalize_selection(value, DIET_CHOICES)
 
-# Normalize stored allergy preferences without changing the database.
+# Wrapper to safely parse allergy values using ALLERGY_CHOICES
 def normalize_allergies(value):
     return normalize_selection(value, ALLERGY_CHOICES)

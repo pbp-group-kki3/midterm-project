@@ -8,7 +8,7 @@ from django.utils import timezone
 from profiles.models import Profile
 from profiles.preferences import ALLERGY_CHOICES, DIET_CHOICES
 
-# Recognize current ISO dates and existing DD/MM/YYYY birth dates.
+# Helper: Attempts to parse birth dates using two common formats (ISO and DD/MM/YYYY)
 def parse_birth_date(value):
     if not value:
         return None
@@ -21,7 +21,7 @@ def parse_birth_date(value):
 
     return None
 
-# Build a validated multiselect diet field using real checkboxes.
+# Helper: Generates a multiselect checkbox field for dietary choices
 def diet_field():
     return forms.MultipleChoiceField(
         choices=DIET_CHOICES,
@@ -31,7 +31,7 @@ def diet_field():
         ),
     )
 
-# Build a validated multiselect allergy field using real checkboxes.
+# Helper: Generates a multiselect checkbox field for allergy choices
 def allergy_field():
     return forms.MultipleChoiceField(
         choices=ALLERGY_CHOICES,
@@ -41,7 +41,7 @@ def allergy_field():
         ),
     )
 
-# Validate account creation and the preferences submitted during signup.
+# Form: Handles step-by-step user registration (Credentials + Preferences + Picture)
 class SignupForm(UserCreationForm):
     email = forms.EmailField(required=True)
     diet = diet_field()
@@ -52,7 +52,7 @@ class SignupForm(UserCreationForm):
         model = User
         fields = ("username", "email", "password1", "password2")
 
-    # Reject an email address already registered to another account.
+    # Validation: Prevents multiple accounts from using the same email address
     def clean_email(self):
         email = self.cleaned_data["email"].strip()
 
@@ -61,15 +61,15 @@ class SignupForm(UserCreationForm):
 
         return email
 
-    # Remove duplicate diet values while preserving selection order.
+    # Validation: Removes duplicate diet selections sent from the frontend
     def clean_diet(self):
         return list(dict.fromkeys(self.cleaned_data["diet"]))
 
-    # Remove duplicate allergy values while preserving selection order.
+    # Validation: Removes duplicate allergy selections sent from the frontend
     def clean_allergies(self):
         return list(dict.fromkeys(self.cleaned_data["allergies"]))
 
-# Validate and save the profile preference fields.
+# Form: Handles updating user dietary and allergy preferences in the profile dashboard
 class PreferencesForm(forms.ModelForm):
     diet = diet_field()
     allergies = allergy_field()
@@ -89,15 +89,15 @@ class PreferencesForm(forms.ModelForm):
         model = Profile
         fields = ("diet", "allergies", "calorie_target")
 
-    # Store each selected diet only once.
+    # Validation: Deduplicates diet updates
     def clean_diet(self):
         return list(dict.fromkeys(self.cleaned_data["diet"]))
 
-    # Store each selected allergy only once.
+    # Validation: Deduplicates allergy updates
     def clean_allergies(self):
         return list(dict.fromkeys(self.cleaned_data["allergies"]))
 
-# Validate personal information without changing the existing model schema.
+# Form: Handles updating personal info (Name, DOB, Location, Picture)
 class AccountForm(forms.ModelForm):
     date_of_birth = forms.DateField(
         required=False,
@@ -132,7 +132,7 @@ class AccountForm(forms.ModelForm):
             ),
         }
 
-    # Prepare existing dates and control the initial read-only appearance.
+    # Setup: Parses existing date of birth and locks fields in read-only mode by default
     def __init__(self, *args, editable=False, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -153,7 +153,7 @@ class AccountForm(forms.ModelForm):
             for name in ("full_name", "date_of_birth", "domicile"):
                 self.fields[name].widget.attrs["disabled"] = True
 
-    # Reject birth dates later than today.
+    # Validation: Ensures the user isn't entering a birth date in the future
     def clean_date_of_birth(self):
         value = self.cleaned_data.get("date_of_birth")
 
@@ -164,7 +164,7 @@ class AccountForm(forms.ModelForm):
 
         return value
 
-    # Require explicit correction or clearing of unrecognized legacy dates.
+    # Validation: Forces the user to fix or clear broken legacy date strings if editing
     def clean(self):
         cleaned = super().clean()
 
@@ -182,7 +182,7 @@ class AccountForm(forms.ModelForm):
 
         return cleaned
 
-    # Save validated dates as ISO text in the existing CharField.
+    # Save: Converts the Python date object into an ISO string for the database CharField
     def save(self, commit=True):
         profile = super().save(commit=False)
         birth_date = self.cleaned_data.get("date_of_birth")

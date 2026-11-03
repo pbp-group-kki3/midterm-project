@@ -8,16 +8,17 @@
 {% block content %}
 
 <!-- LAYOUT -->
-<div class="flex flex-col md:flex-row w-full max-w-6xl mx-auto rounded-xl shadow-lg overflow-hidden min-h-[620px] border border-default">
-    
+<div
+    class="flex flex-col md:flex-row w-full max-w-6xl mx-auto rounded-xl shadow-lg overflow-hidden min-h-[620px] border border-default">
+
     <!-- HERO SECTION -->
     <div class="w-full md:w-5/12 bg-feature text-on-feature p-8 md:p-12 flex flex-col justify-between shrink-0">
-        
+
         <!-- LOGO -->
         <div class="flex items-center gap-2">
             <img src="{% static 'img/logo.svg' %}" alt="SpoonFeed" class="logo">
         </div>
-        
+
         <!-- TEXT -->
         <div class="my-10 md:my-0 flex flex-col gap-4 max-w-md">
             <!-- FIXED: Using styleguide typography class -->
@@ -33,26 +34,30 @@
 
     <!-- FORM SECTION -->
     <div class="w-full md:w-7/12 bg-surface p-6 md:p-12 flex flex-col justify-center">
-        
+
         <!-- PROGRESS INDICATOR -->
+        <!-- Visual display for multi-step form progress -->
         <div class="w-full max-w-md mx-auto mb-8 relative flex items-center justify-center gap-4">
             <div class="absolute top-1/2 left-1/4 right-1/4 h-[2px] bg-muted -translate-y-1/2 z-0"></div>
-            <div id="circle-1" class="avatar avatar-sm bg-brand text-on-brand z-10 font-bold border-2 border-brand">1</div>
+            <div id="circle-1" class="avatar avatar-sm bg-brand text-on-brand z-10 font-bold border-2 border-brand">1
+            </div>
             <div id="circle-2" class="avatar avatar-sm bg-subtle text-secondary z-10 font-bold">2</div>
             <div id="circle-3" class="avatar avatar-sm bg-subtle text-secondary z-10 font-bold">3</div>
         </div>
 
         <!-- FORM -->
-        <form method="POST" action="{% url 'register' %}" enctype="multipart/form-data" id="spoonfeedForm" class="w-full max-w-md mx-auto">
+        <!-- Contains all 3 steps inside one `<form>` tag. Steps are hidden/shown via JS -->
+        <form method="POST" action="{% url 'register' %}" enctype="multipart/form-data" id="spoonfeedForm"
+            class="w-full max-w-md mx-auto">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ next }}">
 
             <!-- Display signup errors that are not attached to one field. -->
             {% for error in signup_form.non_field_errors %}
-                <p class="field-error" role="alert">{{ error }}</p>
+            <p class="field-error" role="alert">{{ error }}</p>
             {% endfor %}
 
-            <!-- STEP 1 -->
+            <!-- STEP 1: Account Credentials -->
             <div id="step-1">
                 <div class="mb-6">
                     <h2 class="type-heading-m text-primary">Create an account</h2>
@@ -60,50 +65,65 @@
                 <div class="form-stack">
                     <div class="field">
                         <label class="field-label type-label-md">Username</label>
-                        <input type="text" name="username" id="input_username" value="{{ data.username|default:'' }}" placeholder="JoeVeggieLover" class="input {% if errors.username %}is-error{% endif %}">
-                        {% if errors.username %}<p class="field-error type-body-sm text-danger" data-server-error>{{ errors.username }}</p>{% endif %}
+                        <input type="text" name="username" id="input_username" value="{{ data.username|default:'' }}"
+                            placeholder="JoeVeggieLover" class="input {% if errors.username %}is-error{% endif %}">
+                        {% if errors.username %}<p class="field-error type-body-sm text-danger" data-server-error>{{
+                            errors.username }}</p>{% endif %}
                         <p class="field-error type-body-sm text-danger hidden js-error" id="err_input_username"></p>
                     </div>
-                    
+
                     <div class="field">
                         <label class="field-label type-label-md">Email</label>
-                        <input type="email" name="email" id="input_email" value="{{ data.email|default:'' }}" placeholder="joe@example.com" class="input {% if errors.email %}is-error{% endif %}">
-                        {% if errors.email %}<p class="field-error type-body-sm text-danger" data-server-error>{{ errors.email }}</p>{% endif %}
+                        <input type="email" name="email" id="input_email" value="{{ data.email|default:'' }}"
+                            placeholder="joe@example.com" class="input {% if errors.email %}is-error{% endif %}">
+                        {% if errors.email %}<p class="field-error type-body-sm text-danger" data-server-error>{{
+                            errors.email }}</p>{% endif %}
                         <p class="field-error type-body-sm text-danger hidden js-error" id="err_input_email"></p>
                     </div>
-                    
+
                     <div class="field">
                         <label class="field-label type-label-md">Password</label>
-                        <input type="password" name="password" id="input_password" placeholder="••••••••" class="input {% if errors.password %}is-error{% endif %}">
-                        {% if errors.password %}<p class="field-error type-body-sm text-danger" data-server-error>{{ errors.password }}</p>{% endif %}
+                        <input type="password" name="password" id="input_password" placeholder="••••••••"
+                            class="input {% if errors.password %}is-error{% endif %}">
+                        {% if errors.password %}<p class="field-error type-body-sm text-danger" data-server-error>{{
+                            errors.password }}</p>{% endif %}
                         <p class="field-error type-body-sm text-danger hidden js-error" id="err_input_password"></p>
                     </div>
-                    
+
                     <div class="field">
                         <label class="field-label type-label-md">Confirm password</label>
-                        <input type="password" name="confirm_password" id="input_confirm_password" placeholder="••••••••" class="input {% if errors.confirm_password %}is-error{% endif %}">
-                        {% if errors.confirm_password %}<p class="field-error type-body-sm text-danger" data-server-error>{{ errors.confirm_password }}</p>{% endif %}
-                        <p class="field-error type-body-sm text-danger hidden js-error" id="err_input_confirm_password"></p>
+                        <input type="password" name="confirm_password" id="input_confirm_password"
+                            placeholder="••••••••" class="input {% if errors.confirm_password %}is-error{% endif %}">
+                        {% if errors.confirm_password %}<p class="field-error type-body-sm text-danger"
+                            data-server-error>{{ errors.confirm_password }}</p>{% endif %}
+                        <p class="field-error type-body-sm text-danger hidden js-error" id="err_input_confirm_password">
+                        </p>
                     </div>
-                    
+
                     <div class="pt-4 flex flex-col gap-4">
-                        <button type="button" onclick="goToStep(2)" id="signup-continue" class="btn btn-primary btn-block">Continue</button>
+                        <!-- Clicking continue triggers AJAX check before showing Step 2 -->
+                        <button type="button" onclick="goToStep(2)" id="signup-continue"
+                            class="btn btn-primary btn-block">Continue</button>
                         <p class="type-body-sm text-center text-secondary">
-                            Already have an account? <a href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% endif %}" class="link font-semibold">Log in</a>
+                            Already have an account? <a
+                                href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% endif %}"
+                                class="link font-semibold">Log in</a>
                         </p>
                     </div>
                 </div>
             </div>
 
-            <!-- STEP 2 -->
+            <!-- STEP 2: Dietary Preferences -->
             <div id="step-2" class="hidden">
                 <div class="mb-6">
                     <h2 class="type-heading-m text-primary">Make it yours</h2>
-                    <p class="type-body-sm text-secondary">Tell us what works for you, so we can help you find food that fits.</p>
+                    <p class="type-body-sm text-secondary">Tell us what works for you, so we can help you find food that
+                        fits.</p>
                 </div>
                 <div class="form-stack">
-                    <!-- Render each diet and allergy checkbox once. -->
+                    <!-- Render each diet and allergy checkbox once. Uses the reusable chip template. -->
                     {% include "profiles/components/preference_fields.html" with form=signup_form %}
+
                     <div class="pt-4 flex flex-col gap-4">
                         <button type="button" onclick="goToStep(3)" class="btn btn-primary btn-block">Continue</button>
                         <div class="flex justify-between w-full">
@@ -114,7 +134,7 @@
                 </div>
             </div>
 
-            <!-- STEP 3 -->
+            <!-- STEP 3: Profile Picture -->
             <div id="step-3" class="hidden">
                 <div class="mb-6">
                     <h2 class="type-heading-m text-primary">You're all set!</h2>
@@ -125,21 +145,29 @@
                         <label class="field-label type-label-md">Profile Picture (Optional)</label>
                         <div class="photo-picker relative group">
                             <!-- AVATAR INCLUSION -->
+                            <!-- Placeholder container that gets hidden if user chooses a file -->
                             <span id="imagePreviewContainer">
                                 {% include 'components/avatar.html' with name="Upload" size="xl" %}
                             </span>
-                            <img id="uploadedImagePreview" src="" alt="Profile Preview" class="hidden avatar avatar-xl object-cover">
-                            
-                            <label class="btn btn-secondary btn-sm btn-block cursor-pointer mt-2" for="pictureInput">Add photo</label>
-                            <input type="file" name="picture" id="pictureInput" accept="image/*" class="hidden" onchange="previewProfilePicture(event)">
+
+                            <!-- Local image preview target, unhidden by JS when file selected -->
+                            <img id="uploadedImagePreview" src="" alt="Profile Preview"
+                                class="hidden avatar avatar-xl object-cover">
+
+                            <label class="btn btn-secondary btn-sm btn-block cursor-pointer mt-2" for="pictureInput">Add
+                                photo</label>
+                            <input type="file" name="picture" id="pictureInput" accept="image/*" class="hidden"
+                                onchange="previewProfilePicture(event)">
+
                             <!-- Display server-side profile-picture validation errors. -->
                             {% for error in signup_form.picture.errors %}
-                                <p class="field-error" role="alert">{{ error }}</p>
+                            <p class="field-error" role="alert">{{ error }}</p>
                             {% endfor %}
                             <span class="photo-picker-hint">Optional</span>
                         </div>
                     </div>
                     <div class="pt-4 flex flex-col gap-4">
+                        <!-- Final submit button pushes all steps via POST -->
                         <button type="submit" class="btn btn-primary btn-block">Create account</button>
                         <div class="flex justify-start">
                             <button type="button" onclick="goToStep(2)" class="link">Back</button>
@@ -159,7 +187,7 @@
     let currentStep = 1;
     let step1Request = null;
 
-    // Display a client-side error beside its signup input.
+    // Display a client-side error beside its signup input by altering classes and injecting text.
     function showError(input, message) {
         input.classList.add("is-error");
         const error = document.getElementById(`err_${input.id}`);
@@ -170,9 +198,10 @@
         }
     }
 
-    // Check account fields before allowing the user to continue.
+    // Check account fields before allowing the user to continue. Basic client-side validation.
     function validateStep1() {
         document.querySelectorAll(".js-error").forEach((error) => {
+            // Keep server errors showing, hide pure JS errors
             if (!error.hasAttribute('data-server-error')) error.classList.add("hidden");
         });
 
@@ -191,6 +220,7 @@
             if (serverError) valid = false;
         });
 
+        // Basic front-end sanity checks
         if (!username.value.trim()) {
             showError(username, "Username is required.");
             valid = false;
@@ -214,7 +244,7 @@
         return valid;
     }
 
-    // Show one signup step and update its progress indicator.
+    // Show one signup step and update its progress indicator dynamically.
     function displayStep(step) {
         for (let number = 1; number <= 3; number += 1) {
             document.getElementById(`step-${number}`).classList.toggle(
@@ -222,6 +252,7 @@
                 number !== step
             );
 
+            // Toggle CSS classes on the step circles
             const circle = document.getElementById(`circle-${number}`);
             const active = number <= step;
 
@@ -235,24 +266,28 @@
         currentStep = step;
     }
 
-    // Ask the existing signup endpoint to validate account details before Step 2.
+    // Ask the existing signup endpoint to validate account details before advancing to Step 2.
     async function goToStep(step) {
         if (currentStep === 1 && step > 1) {
+            // Halt if already requesting, or if client-side validation failed
             if (step1Request || !validateStep1()) return;
 
             const form = document.getElementById('spoonfeedForm');
             const button = document.getElementById('signup-continue');
             const controller = new AbortController();
             const body = new FormData();
+
+            // Lock UI while checking
             step1Request = controller;
             button.disabled = true;
             button.textContent = 'Checking...';
             button.setAttribute('aria-busy', 'true');
 
-            // Send only Step 1 fields and CSRF; optional photos are uploaded on submit.
+            // Send only Step 1 fields and CSRF; optional photos are uploaded on final submit.
             form.querySelectorAll('#step-1 input[name]').forEach(input => body.append(input.name, input.value));
             body.append('csrfmiddlewaretoken', form.elements.csrfmiddlewaretoken.value);
-            body.append('validate_step', '1');
+            body.append('validate_step', '1'); // Special flag for views.py logic
+
             let timedOut = false;
             const timeout = window.setTimeout(() => {
                 timedOut = true;
@@ -260,33 +295,40 @@
             }, 15000);
 
             try {
+                // Issue the background request
                 const response = await fetch(form.action, {
                     method: 'POST', body, signal: controller.signal,
                     credentials: 'same-origin', cache: 'no-store',
-                    headers: {'Accept': 'application/json'},
+                    headers: { 'Accept': 'application/json' },
                 });
                 const data = await response.json();
                 if (controller.signal.aborted) return;
 
+                // Handle server rejection (e.g. Email already in use)
                 if (!response.ok || !data.ok) {
                     if (!data.errors || !Object.keys(data.errors).length) throw new Error('Validation unavailable');
-                    const names = {password1: 'password', password2: 'confirm_password'};
+
+                    // Maps Django backend names back to HTML input IDs
+                    const names = { password1: 'password', password2: 'confirm_password' };
                     let firstInput;
+
                     Object.entries(data.errors).forEach(([name, errors]) => {
                         const input = document.getElementById(`input_${names[name] || name}`)
                             || document.getElementById('input_email');
                         showError(input, errors.map(error => error.message).join(' '));
+                        // Flags this as a server error so client logic doesn't hide it immediately
                         document.getElementById(`err_${input.id}`).setAttribute('data-server-error', 'true');
                         firstInput ||= input;
                     });
                     firstInput?.focus();
-                    return;
+                    return; // Stops progression to Step 2
                 }
             } catch (error) {
                 if (controller.signal.aborted && !timedOut) return;
                 showError(document.getElementById('input_email'), "We couldn't check your details. Please try Continue again.");
                 return;
             } finally {
+                // Unlock UI regardless of outcome
                 window.clearTimeout(timeout);
                 step1Request = null;
                 button.disabled = false;
@@ -302,7 +344,7 @@
         });
     }
 
-    // Preview the chosen picture without uploading it immediately.
+    // Preview the chosen picture locally without uploading it immediately.
     function previewProfilePicture(event) {
         const file = event.target.files[0];
 
@@ -312,6 +354,7 @@
 
         const reader = new FileReader();
 
+        // When file is loaded into memory, inject base64 data into the image src
         reader.addEventListener("load", () => {
             const image = document.getElementById("uploadedImagePreview");
             image.src = reader.result;
@@ -325,7 +368,7 @@
         reader.readAsDataURL(file);
     }
 
-    // Clear stale feedback only for the input the user is editing.
+    // Clear stale feedback only for the input the user is actively editing.
     document.querySelectorAll('#step-1 .input').forEach((input) => {
         input.addEventListener('input', () => {
             // Ignore a response for account details that have since changed.
@@ -333,7 +376,7 @@
             input.classList.remove('is-error');
             input.closest('.field').querySelectorAll('.field-error').forEach((error) => {
                 error.classList.add('hidden');
-                error.removeAttribute('data-server-error');
+                error.removeAttribute('data-server-error'); // Allows new client validation to take over
             });
         });
     });

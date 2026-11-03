@@ -8,19 +8,22 @@
 {% block content %}
 
 <!-- LAYOUT -->
-<div class="flex flex-col md:flex-row w-full max-w-6xl mx-auto rounded-xl shadow-lg overflow-hidden min-h-[550px] border border-default">
-    
+<!-- Main container with a two-column flex layout on desktop, stacking on mobile -->
+<div
+    class="flex flex-col md:flex-row w-full max-w-6xl mx-auto rounded-xl shadow-lg overflow-hidden min-h-[550px] border border-default">
+
     <!-- HERO SECTION -->
+    <!-- Left column: Branding and promotional text -->
     <div class="w-full md:w-5/12 bg-feature text-on-feature p-8 md:p-12 flex flex-col justify-between shrink-0">
-        
+
         <!-- LOGO -->
         <div class="flex items-center gap-2">
             <img src="{% static 'img/logo.svg' %}" alt="SpoonFeed" class="logo">
         </div>
-        
+
         <!-- TEXT -->
         <div class="my-10 md:my-0 flex flex-col gap-4 max-w-md">
-            <!-- Updated to styleguide typography -->
+            <!-- Styleguide topography -->
             <h1 class="type-serif text-on-feature text-3xl">
                 Healthy &amp; Sustainable Living, Made Easy.
             </h1>
@@ -32,15 +35,17 @@
     </div>
 
     <!-- FORM SECTION -->
+    <!-- Right column: The actual login form -->
     <div class="w-full md:w-7/12 bg-surface p-6 md:p-12 flex flex-col justify-center">
         <div class="w-full max-w-md mx-auto">
             <div class="mb-6">
-                <!-- Updated to styleguide typography -->
+                <!-- Styleguide topography -->
                 <h2 class="type-heading-m text-primary">Log in</h2>
                 <p class="type-body-sm text-secondary">Log in to save products, compare them and build a meal plan.</p>
             </div>
 
             <!-- ALERTS -->
+            <!-- Renders if authentication failed -->
             {% if form.errors or error %}
             <div class="alert alert-danger mb-6 shadow-sm flex items-center">
                 <span class="type-body-sm font-medium">Wrong username or password. Please try again.</span>
@@ -51,16 +56,20 @@
             <form method="POST" action="{% url 'login' %}" class="form-stack">
                 {% csrf_token %}
                 <!-- Preserve the safe destination supplied by the login view. -->
+                <!-- Crucial for forwarding users to their intended page post-login -->
                 <input type="hidden" name="next" value="{{ next }}">
                 <div class="field">
                     <label for="username" class="field-label type-label-md">Username</label>
-                    <input type="text" id="username" name="username" placeholder="username" required class="input {% if form.errors %}is-error{% endif %}" value="{{ form.username.value|default_if_none:'' }}"/>
+                    <input type="text" id="username" name="username" placeholder="username" required
+                        class="input {% if form.errors %}is-error{% endif %}"
+                        value="{{ form.username.value|default_if_none:'' }}" />
                 </div>
                 <div class="field">
                     <label for="password" class="field-label type-label-md">Password</label>
-                    <input type="password" id="password" name="password" placeholder="••••••••" required class="input {% if form.errors %}is-error{% endif %}"/>
+                    <input type="password" id="password" name="password" placeholder="••••••••" required
+                        class="input {% if form.errors %}is-error{% endif %}" />
                 </div>
-                
+
                 <!-- SUBMIT -->
                 <div class="pt-2">
                     <button type="submit" class="btn btn-accent btn-pill btn-block">Log in</button>
@@ -68,8 +77,10 @@
             </form>
 
             <!-- FOOTER -->
+            <!-- Link to registration, passing the "next" parameter along -->
             <p class="type-body-sm text-center text-secondary mt-6">
-                No account yet? <a href="{% url 'register' %}{% if next %}?next={{ next|urlencode }}{% endif %}" class="link font-semibold">Sign up</a>
+                No account yet? <a href="{% url 'register' %}{% if next %}?next={{ next|urlencode }}{% endif %}"
+                    class="link font-semibold">Sign up</a>
             </p>
         </div>
     </div>
@@ -79,6 +90,7 @@
 {% block extra_js %}
 <script>
     // Revalidate a login page restored from the browser's back-forward cache.
+    // Forces a hard reload if the user uses the browser back button to return here
     window.addEventListener("pageshow", (event) => {
         if (event.persisted) {
             window.location.reload();

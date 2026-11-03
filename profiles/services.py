@@ -6,9 +6,9 @@ from profiles.preferences import (
     normalize_diets,
 )
 
-# PREFERENCES HELPER
+# HELPER: Extracts user preferences and maps them to external API requirements
 def get_preferences(user):
-    # DEFAULT PREFERENCES
+    # Returns safe empty defaults if the user isn't logged in
     defaults = {
         "diet": [],
         "allergies": [],
@@ -17,38 +17,39 @@ def get_preferences(user):
         "exclude_ingredients": "",
     }
 
-    # AUTHENTICATION CHECK
+    # Stop early if not authenticated
     if not user.is_authenticated:
         return defaults
 
-    # PROFILE RETRIEVAL
+    # Safely fetch the profile
     try:
         profile = user.profile
     except ObjectDoesNotExist:
         return defaults
 
-    # DIET AND ALLERGIES DATA
+    # Clean stored diets and allergies
     diets = normalize_diets(profile.diet)
     allergies = normalize_allergies(profile.allergies)
 
-    # Convert selected allergies to Open Food Facts tags.
+    # Convert allergy list to Open Food Facts (OFF) tags using the ALLERGY_MAP
     off_tags = list(dict.fromkeys(
         ALLERGY_MAP[allergy]["off"]
         for allergy in allergies
     ))
 
-    # Convert selected allergies to Spoonacular intolerance values.
+    # Convert allergy list to Spoonacular tags using the ALLERGY_MAP
     spoon_intolerances = list(dict.fromkeys(
         ALLERGY_MAP[allergy]["spoon"]
         for allergy in allergies
     ))
 
-    # RETURN DATA
+    # Package and return mapped preferences
     return {
         "diet": diets,
         "allergies": allergies,
         "off_tags": off_tags,
         "spoonacular_intolerances": spoon_intolerances,
+        # Adds specific ingredient exclusion rules based on the 'halal' diet tag
         "exclude_ingredients": (
             "pork,bacon,ham,wine,beer"
             if "halal" in diets

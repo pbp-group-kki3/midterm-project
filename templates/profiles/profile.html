@@ -8,14 +8,17 @@
 {% block content %}
 
 <!-- PROFILE HEADER -->
+<!-- Renders the global user banner at the top of the profile dashboard -->
 <header class="page-header max-w-6xl mx-auto">
     <div class="page-header-user min-w-0">
         <span class="avatar avatar-lg">
             {% if profile.profile_picture %}
-                {# change: same letter fallback as the navbar if the photo file is missing #}
-                <img src="{{ profile.profile_picture.url }}" alt="{{ request.user.username }}" onerror="this.replaceWith(document.createTextNode('{{ request.user.username|first|upper|escapejs }}'))">
+            {# change: same letter fallback as the navbar if the photo file is missing #}
+            <!-- Tries to load avatar, gracefully falls back to text node of their first initial if the image path is broken -->
+            <img src="{{ profile.profile_picture.url }}" alt="{{ request.user.username }}"
+                onerror="this.replaceWith(document.createTextNode('{{ request.user.username|first|upper|escapejs }}'))">
             {% else %}
-                {{ request.user.username|slice:":1"|upper }}
+            {{ request.user.username|slice:":1"|upper }}
             {% endif %}
         </span>
         <div class="min-w-0">
@@ -34,42 +37,34 @@
     <aside class="md:shrink-0 w-full md:w-56 flex flex-col gap-6">
         <!-- Use real section URLs so navigation survives refresh and login. -->
         <nav class="side-nav" aria-label="Profile sections">
-            <a
-                href="{% url 'profile' %}"
-                id="nav-account"
-                class="side-nav-link{% if active_section == 'account' %} is-active{% endif %}"
-                {% if active_section == "account" %}aria-current="page"{% endif %}
-            >
+            <!-- Account Navigation Tab -->
+            <a href="{% url 'profile' %}" id="nav-account"
+                class="side-nav-link{% if active_section == 'account' %} is-active{% endif %}" {% if
+                active_section=="account" %}aria-current="page" {% endif %}>
                 <span class="icon icon-user" aria-hidden="true"></span>
                 Account
             </a>
 
-            <a
-                href="{% url 'profile' %}?section=preferences"
-                id="nav-preferences"
-                class="side-nav-link{% if active_section == 'preferences' %} is-active{% endif %}"
-                {% if active_section == "preferences" %}aria-current="page"{% endif %}
-            >
+            <!-- Preferences Navigation Tab -->
+            <a href="{% url 'profile' %}?section=preferences" id="nav-preferences"
+                class="side-nav-link{% if active_section == 'preferences' %} is-active{% endif %}" {% if
+                active_section=="preferences" %}aria-current="page" {% endif %}>
                 <span class="icon icon-preferences" aria-hidden="true"></span>
                 Preferences
             </a>
 
-            <a
-                href="{% url 'profile_saved' %}"
-                id="nav-saved"
-                class="side-nav-link{% if active_section == 'saved' %} is-active{% endif %}"
-                {% if active_section == "saved" %}aria-current="page"{% endif %}
-            >
+            <!-- Saved Navigation Tab -->
+            <a href="{% url 'profile_saved' %}" id="nav-saved"
+                class="side-nav-link{% if active_section == 'saved' %} is-active{% endif %}" {% if
+                active_section=="saved" %}aria-current="page" {% endif %}>
                 <span class="icon icon-saved" aria-hidden="true"></span>
                 Saved
             </a>
 
-            <a
-                href="{% url 'profile' %}?section=history"
-                id="nav-history"
-                class="side-nav-link{% if active_section == 'history' %} is-active{% endif %}"
-                {% if active_section == "history" %}aria-current="page"{% endif %}
-            >
+            <!-- History Navigation Tab -->
+            <a href="{% url 'profile' %}?section=history" id="nav-history"
+                class="side-nav-link{% if active_section == 'history' %} is-active{% endif %}" {% if
+                active_section=="history" %}aria-current="page" {% endif %}>
                 <span class="icon icon-history" aria-hidden="true"></span>
                 History
             </a>
@@ -77,13 +72,9 @@
 
         <div class="border-t border-subtle pt-6">
             <!-- Ask for confirmation before submitting the protected logout request. -->
-            <form
-                method="POST"
-                action="{% url 'logout' %}"
-                data-confirm-title="Log out?"
-                data-confirm-text="You can log in again whenever you need."
-                data-confirm-label="Log out"
-            >
+            <!-- Uses data attributes that the JS intercepts to trigger the generic dialog -->
+            <form method="POST" action="{% url 'logout' %}" data-confirm-title="Log out?"
+                data-confirm-text="You can log in again whenever you need." data-confirm-label="Log out">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-secondary btn-block">Log out</button>
             </form>
@@ -94,112 +85,136 @@
     <div class="min-w-0 flex-1">
         <!-- ACCOUNT SECTION -->
         <!-- Display the Account section when selected by the server. -->
-        <section id="sec-account" class="profile-section space-y-6{% if active_section != 'account' %} hidden{% endif %}">
+        <!-- Hides this section block if the active_section context variable is not 'account' -->
+        <section id="sec-account"
+            class="profile-section space-y-6{% if active_section != 'account' %} hidden{% endif %}">
             <!-- Keep the section's Edit action beside its own heading. -->
             <div class="profile-section-header">
                 <div>
                     <h2 class="type-heading-m text-primary">Profile</h2>
                     <p class="type-body-sm text-secondary">Your personal information and account settings.</p>
                 </div>
-                <button type="button" onclick="toggleEditMode()" id="edit-profile-btn" class="btn btn-secondary" {% if account_editing %}hidden{% endif %}>
-            Edit profile
-            <span class="icon icon-edit" aria-hidden="true"></span>
-        </button>
+                <!-- Triggers JS to unlock inputs and show save controls -->
+                <button type="button" onclick="toggleEditMode()" id="edit-profile-btn" class="btn btn-secondary" {% if
+                    account_editing %}hidden{% endif %}>
+                    Edit profile
+                    <span class="icon icon-edit" aria-hidden="true"></span>
+                </button>
             </div>
 
             <!-- ENTIRE ACCOUNT TAB IS A FORM -->
-            <form method="POST" action="{% url 'profile_edit' %}" enctype="multipart/form-data" class="space-y-6" id="profile-account-form" data-editing="{% if account_editing %}true{% else %}false{% endif %}">
+            <!-- Form tracks editing state for JS interaction -->
+            <form method="POST" action="{% url 'profile_edit' %}" enctype="multipart/form-data" class="space-y-6"
+                id="profile-account-form" data-editing="{% if account_editing %}true{% else %}false{% endif %}">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="update_account">
-                
+
                 <!-- CARD 1: PERSONAL INFORMATION -->
                 <div class="card relative">
                     <h3 class="type-card-title flex items-center gap-2">
                         Personal Information
                         <span class="badge">Optional</span>
                     </h3>
-                    
+
                     <div class="flex flex-col md:flex-row gap-8 items-start mt-4">
                         <!-- Photo Picker (Left) -->
                         <div class="photo-picker shrink-0">
                             <span class="avatar avatar-xl" id="avatar-preview-container">
                                 {% if profile.profile_picture %}
-                                    {# change: same letter fallback here too #}
-                                    <img src="{{ profile.profile_picture.url }}" alt="{{ request.user.username }}" class="w-full h-full object-cover" onerror="this.replaceWith(document.createTextNode('{{ request.user.username|first|upper|escapejs }}'))">
+                                {# change: same letter fallback here too #}
+                                <img src="{{ profile.profile_picture.url }}" alt="{{ request.user.username }}"
+                                    class="w-full h-full object-cover"
+                                    onerror="this.replaceWith(document.createTextNode('{{ request.user.username|first|upper|escapejs }}'))">
                                 {% else %}
-                                    {{ request.user.username|slice:":1"|upper }}
+                                {{ request.user.username|slice:":1"|upper }}
                                 {% endif %}
                             </span>
-                            
+
                             <!-- Hidden until Edit Mode -->
-                            <label class="btn btn-secondary btn-sm btn-block cursor-pointer edit-mode-field{% if not account_editing %} hidden{% endif %} mt-2" for="profile_picture_input">Change photo</label>
-                            <input type="file" name="profile_picture" id="profile_picture_input" accept="image/*" class="hidden" onchange="previewProfilePicture(event)">
+                            <!-- Uses edit-mode-field class to be toggled by JS -->
+                            <label
+                                class="btn btn-secondary btn-sm btn-block cursor-pointer edit-mode-field{% if not account_editing %} hidden{% endif %} mt-2"
+                                for="profile_picture_input">Change photo</label>
+                            <!-- Input triggers local file preview script -->
+                            <input type="file" name="profile_picture" id="profile_picture_input" accept="image/*"
+                                class="hidden" onchange="previewProfilePicture(event)">
 
                             <!-- Display errors for an invalid uploaded profile picture. -->
                             {% for error in account_form.profile_picture.errors %}
-                                <p class="field-error" role="alert">{{ error }}</p>
+                            <p class="field-error" role="alert">{{ error }}</p>
                             {% endfor %}
-                            
+
+                            <!-- Shows remove button only if there is a picture to remove. Triggers external hidden form via data-confirm-form -->
                             {% if profile.profile_picture %}
-                                <button type="button" data-confirm-form="remove-picture-form" class="btn btn-danger-subtle btn-sm btn-block edit-mode-field{% if not account_editing %} hidden{% endif %} mt-2" aria-haspopup="dialog" aria-controls="profile-confirm-dialog">Remove</button>
+                            <button type="button" data-confirm-form="remove-picture-form"
+                                class="btn btn-danger-subtle btn-sm btn-block edit-mode-field{% if not account_editing %} hidden{% endif %} mt-2"
+                                aria-haspopup="dialog" aria-controls="profile-confirm-dialog">Remove</button>
                             {% endif %}
                         </div>
 
                         <!-- Form Inputs (Right) -->
                         <div class="form-stack flex-1 w-full">
                             <div class="field">
-                                <label class="field-label" for="{{ account_form.full_name.id_for_label }}">Full name</label>
+                                <label class="field-label" for="{{ account_form.full_name.id_for_label }}">Full
+                                    name</label>
                                 {{ account_form.full_name }}
 
                                 {% for error in account_form.full_name.errors %}
-                                    <p class="field-error" role="alert">{{ error }}</p>
+                                <p class="field-error" role="alert">{{ error }}</p>
                                 {% endfor %}
                             </div>
                             <div class="field">
-                                <label class="field-label" for="{{ account_form.date_of_birth.id_for_label }}">Date of birth</label>
+                                <label class="field-label" for="{{ account_form.date_of_birth.id_for_label }}">Date of
+                                    birth</label>
                                 {{ account_form.date_of_birth }}
 
+                                <!-- Exposes legacy clearing checkbox if backend detects unparseable string -->
                                 {% if account_form.legacy_birth_date %}
-                                    <p class="field-helper">
-                                        Existing value: {{ account_form.legacy_birth_date }}.
-                                        Choose a valid date or explicitly clear this value.
-                                    </p>
+                                <p class="field-helper">
+                                    Existing value: {{ account_form.legacy_birth_date }}.
+                                    Choose a valid date or explicitly clear this value.
+                                </p>
 
-                                    <label class="checkbox edit-mode-field{% if not account_editing %} hidden{% endif %}">
-                                        {{ account_form.clear_birth_date }}
-                                        {{ account_form.clear_birth_date.label }}
-                                    </label>
+                                <label class="checkbox edit-mode-field{% if not account_editing %} hidden{% endif %}">
+                                    {{ account_form.clear_birth_date }}
+                                    {{ account_form.clear_birth_date.label }}
+                                </label>
                                 {% endif %}
 
                                 {% for error in account_form.date_of_birth.errors %}
-                                    <p class="field-error" role="alert">{{ error }}</p>
+                                <p class="field-error" role="alert">{{ error }}</p>
                                 {% endfor %}
                             </div>
                             <div class="field">
-                                <label class="field-label" for="{{ account_form.domicile.id_for_label }}">Domicile</label>
+                                <label class="field-label"
+                                    for="{{ account_form.domicile.id_for_label }}">Domicile</label>
                                 {{ account_form.domicile }}
 
                                 {% for error in account_form.domicile.errors %}
-                                    <p class="field-error" role="alert">{{ error }}</p>
+                                <p class="field-error" role="alert">{{ error }}</p>
                                 {% endfor %}
                             </div>
                         </div>
                     </div>
 
                     <!-- SAVE / CANCEL ACTIONS (Hidden until Edit Mode) -->
-                    <div id="edit-actions" class="profile-section-actions edit-mode-field{% if not account_editing %} hidden{% endif %} mt-4">
+                    <!-- Canceling reloads the page to clear dirty form states -->
+                    <div id="edit-actions"
+                        class="profile-section-actions edit-mode-field{% if not account_editing %} hidden{% endif %} mt-4">
                         <a href="{% url 'profile' %}" class="btn btn-secondary">Cancel</a>
                         <button type="submit" class="btn btn-primary">Save changes</button>
                     </div>
                 </div>
-                
+
                 <!-- CARD 2: ACCOUNT SETTINGS -->
+                <!-- Visually presents core creds, password change triggers dialog popup -->
                 <div class="card">
                     <h3 class="type-card-title">Account settings</h3>
                     <div class="form-stack mt-4">
                         <div class="field">
                             <label class="field-label type-label-md">Username</label>
-                            <input type="text" name="username" value="{{ request.user.username }}" disabled class="input">
+                            <input type="text" name="username" value="{{ request.user.username }}" disabled
+                                class="input">
                         </div>
                         <div class="field">
                             <label class="field-label type-label-md">Email</label>
@@ -209,7 +224,8 @@
                             <label class="field-label type-label-md">Password</label>
                             <div class="input-group flex items-center justify-between">
                                 <input class="input" type="password" value="••••••••••••" readonly>
-                                <button type="button" data-profile-dialog="password-dialog" class="link" aria-haspopup="dialog" aria-controls="password-dialog">Change password</button>
+                                <button type="button" data-profile-dialog="password-dialog" class="link"
+                                    aria-haspopup="dialog" aria-controls="password-dialog">Change password</button>
                             </div>
                         </div>
                     </div>
@@ -217,10 +233,12 @@
             </form>
 
             <!-- CARD 3: ACCOUNT DELETION (Standalone Block) -->
+            <!-- Isolated from main form to prevent accidental triggers. Opens a separate confirmation dialog -->
             <div class="card border-danger">
                 <h3 class="type-card-title text-danger">Account Deletion</h3>
                 <p class="type-body-sm text-secondary mb-4">This action cannot be undone.</p>
-                <button type="button" data-profile-dialog="delete-dialog" class="btn btn-danger" aria-haspopup="dialog" aria-controls="delete-dialog">
+                <button type="button" data-profile-dialog="delete-dialog" class="btn btn-danger" aria-haspopup="dialog"
+                    aria-controls="delete-dialog">
                     Delete account
                 </button>
             </div>
@@ -228,36 +246,47 @@
 
         <!-- PREFERENCES SECTION -->
         <!-- Display the Preferences section when selected by the server. -->
-        <section id="sec-preferences" class="profile-section space-y-6{% if active_section != 'preferences' %} hidden{% endif %}">
+        <section id="sec-preferences"
+            class="profile-section space-y-6{% if active_section != 'preferences' %} hidden{% endif %}">
             <div class="profile-section-header">
                 <div>
                     <h2 class="type-heading-m text-primary">Preferences</h2>
                     <p class="type-body-sm text-secondary">Filter products and build personalized meal plans.</p>
                 </div>
-                <button type="button" onclick="toggleEditMode('preferences')" id="edit-preferences-btn" class="btn btn-secondary" {% if preferences_editing %}hidden{% endif %}>
+                <button type="button" onclick="toggleEditMode('preferences')" id="edit-preferences-btn"
+                    class="btn btn-secondary" {% if preferences_editing %}hidden{% endif %}>
                     Edit preferences
                     <span class="icon icon-edit" aria-hidden="true"></span>
                 </button>
             </div>
-            <form method="POST" action="{% url 'profile_edit' %}" class="space-y-6" id="profile-preferences-form" data-editing="{% if preferences_editing %}true{% else %}false{% endif %}">
+            <!-- Form structure parallel to Account, but handles diet/allergies -->
+            <form method="POST" action="{% url 'profile_edit' %}" class="space-y-6" id="profile-preferences-form"
+                data-editing="{% if preferences_editing %}true{% else %}false{% endif %}">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="update_preferences">
+                <!-- Fieldset disabling allows toggling all contained checkboxes via one JS command -->
                 <fieldset id="preferences-fields" class="space-y-6" {% if not preferences_editing %}disabled{% endif %}>
+
+                    <!-- Imports the component that loops through form choices to build the UI chips -->
                     {% include "profiles/components/preference_fields.html" with form=preferences_form panels=True %}
+
                     <div class="card form-stack">
                         <h3 class="type-h3">Daily calories</h3>
                         <p class="type-body-sm text-secondary">Used to pick recipes for your meal plan.</p>
                         <div class="field">
-                            <label class="field-label" for="{{ preferences_form.calorie_target.id_for_label }}">Daily Calorie Target</label>
+                            <label class="field-label" for="{{ preferences_form.calorie_target.id_for_label }}">Daily
+                                Calorie Target</label>
                             {{ preferences_form.calorie_target }}
                             {% for error in preferences_form.calorie_target.errors %}
-                                <p class="field-error" role="alert">{{ error }}</p>
+                            <p class="field-error" role="alert">{{ error }}</p>
                             {% endfor %}
-                            <p class="field-helper text-tertiary">Leave empty to use 2,000 kcal, the general reference on nutrition labels.</p>
+                            <p class="field-helper text-tertiary">Leave empty to use 2,000 kcal, the general reference
+                                on nutrition labels.</p>
                         </div>
                     </div>
                 </fieldset>
-                <div class="profile-section-actions preferences-edit-field{% if not preferences_editing %} hidden{% endif %}">
+                <div
+                    class="profile-section-actions preferences-edit-field{% if not preferences_editing %} hidden{% endif %}">
                     <a href="{% url 'profile' %}?section=preferences" class="btn btn-secondary">Cancel</a>
                     <button type="submit" class="btn btn-primary">Save changes</button>
                 </div>
@@ -272,119 +301,141 @@
                 <p class="type-body-sm text-secondary">Everything you've saved, all in one place.</p>
             </div>
 
+            <!-- Renders the separate HTML component responsible for listing items -->
             {% include "profiles/components/saved_collection.html" %}
         </section>
 
         <!-- HISTORY SECTION -->
-        <section id="sec-history" class="profile-section space-y-6{% if active_section != 'history' %} hidden{% endif %}">
+        <section id="sec-history"
+            class="profile-section space-y-6{% if active_section != 'history' %} hidden{% endif %}">
             <div class="flex flex-col gap-2">
                 <h2 class="type-heading-m text-primary">History</h2>
                 <p class="type-body-sm text-secondary">Products you've looked at recently.</p>
             </div>
 
             {% if history_items %}
-                <!-- Group history items by their viewed_at date -->
-                {% regroup history_items by viewed_at.date as grouped_history %}
-                
-                <div class="flex flex-col gap-8">
-                    {% for group in grouped_history %}
-                        <div class="flex flex-col gap-4">
-                            <!-- Date Group Header -->
-                            <h3 class="type-label-md text-primary font-semibold">
-                                {{ group.grouper|date:"l, F j" }}
-                            </h3>
-                            
-                            <div class="flex flex-col gap-3">
-                                {% for item in group.list %}
-                                    <!-- History Item Card -->
-                                    <div class="card flex items-center justify-between p-4 bg-white border border-subtle rounded-xl shadow-sm">
-                                        <div class="flex items-center gap-4 min-w-0">
-                                            <!-- Left Icon -->
-                                            <div class="w-12 h-12 bg-surface flex items-center justify-center rounded-lg shrink-0 text-secondary">
-                                                <span class="icon icon-saved" aria-hidden="true"></span>
-                                            </div>
-                                            
-                                            <!-- Details -->
-                                            <div class="flex flex-col min-w-0">
-                                                <span class="font-bold text-primary truncate">{{ item.product_name|default:"Unknown Product" }}</span>
-                                                <span class="text-xs text-secondary">Product</span>
-                                                <span class="text-xs text-tertiary">Viewed: {{ item.viewed_at|time:"H:i" }}</span>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Actions -->
-                                        <div class="flex items-center gap-2 shrink-0 ml-4">
-                                            <!-- Open Button -->
-                                            <a href="{% url 'main:product_detail' item.barcode %}" class="btn btn-secondary">Open</a>
-                                            
-                                        <!-- Delete Item Button (Updated with confirmation attributes) -->
-                                        <form method="POST" action="{% url 'history_item_delete' item.id %}" class="inline ajax-delete"
-                                            data-confirm-title="Remove this item?" 
-                                            data-confirm-text="This product will be removed from your history." 
-                                            data-confirm-label="Remove">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn border-danger text-danger bg-transparent hover:bg-danger-subtle p-2 rounded-lg" aria-label="Remove item">
-                                                <span class="icon icon-x" aria-hidden="true"></span>
-                                            </button>
-                                        </form>
-                                        </div>
-                                    </div>
-                                {% endfor %}
+            <!-- Group history items by their viewed_at date -->
+            <!-- Uses Django's regroup to create headers for "Today", "Yesterday", etc -->
+            {% regroup history_items by viewed_at.date as grouped_history %}
+
+            <div class="flex flex-col gap-8">
+                {% for group in grouped_history %}
+                <div class="flex flex-col gap-4">
+                    <!-- Date Group Header -->
+                    <h3 class="type-label-md text-primary font-semibold">
+                        {{ group.grouper|date:"l, F j" }}
+                    </h3>
+
+                    <div class="flex flex-col gap-3">
+                        {% for item in group.list %}
+                        <!-- History Item Card -->
+                        <div
+                            class="card flex items-center justify-between p-4 bg-white border border-subtle rounded-xl shadow-sm">
+                            <div class="flex items-center gap-4 min-w-0">
+                                <!-- Left Icon -->
+                                <div
+                                    class="w-12 h-12 bg-surface flex items-center justify-center rounded-lg shrink-0 text-secondary">
+                                    <span class="icon icon-saved" aria-hidden="true"></span>
+                                </div>
+
+                                <!-- Details -->
+                                <div class="flex flex-col min-w-0">
+                                    <span class="font-bold text-primary truncate">{{ item.product_name|default:"Unknown
+                                        Product" }}</span>
+                                    <span class="text-xs text-secondary">Product</span>
+                                    <span class="text-xs text-tertiary">Viewed: {{ item.viewed_at|time:"H:i" }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="flex items-center gap-2 shrink-0 ml-4">
+                                <!-- Open Button -->
+                                <a href="{% url 'main:product_detail' item.barcode %}"
+                                    class="btn btn-secondary">Open</a>
+
+                                <!-- Delete Item Button  -->
+                                <!-- PERSONAL: Note the ajax-delete class that JS listens for -->
+                                <form method="POST" action="{% url 'history_item_delete' item.id %}"
+                                    class="inline ajax-delete" data-confirm-title="Remove this item?"
+                                    data-confirm-text="This product will be removed from your history."
+                                    data-confirm-label="Remove">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                        class="btn border-danger text-danger bg-transparent hover:bg-danger-subtle p-2 rounded-lg"
+                                        aria-label="Remove item">
+                                        <span class="icon icon-x" aria-hidden="true"></span>
+                                    </button>
+                                </form>
                             </div>
                         </div>
-                    {% endfor %}
-                </div>
-
-                <!-- Clear History Button -->
-                <div class="pt-4">
-                    <form method="POST" action="{% url 'history_clear' %}" class="ajax-clear-history" data-confirm-title="Clear all history?" data-confirm-text="This will remove all your recently viewed products." data-confirm-label="Clear">                     
-                           {% csrf_token %}
-                        <button type="submit" class="btn btn-secondary bg-surface text-primary">Clear history</button>
-                    </form>
-                </div>
-            {% else %}
-                <!-- Empty State -->
-                <div class="card flex flex-col items-center justify-center py-12 text-center">
-                    <div class="empty-state max-w-sm">
-                        <span class="icon icon-history text-tertiary text-4xl mb-2" aria-hidden="true"></span>
-                        <h3 class="empty-state-title type-card-title text-primary">No history yet</h3>
-                        <p class="empty-state-text type-body-sm text-secondary">Products you view will show up here.</p>
+                        {% endfor %}
                     </div>
                 </div>
+                {% endfor %}
+            </div>
+
+            <!-- Clear History Button -->
+            <!-- Triggers universal confirmation dialog via attributes, processed by AJAX -->
+            <div class="pt-4">
+                <form method="POST" action="{% url 'history_clear' %}" class="ajax-clear-history"
+                    data-confirm-title="Clear all history?"
+                    data-confirm-text="This will remove all your recently viewed products." data-confirm-label="Clear">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-secondary bg-surface text-primary">Clear history</button>
+                </form>
+            </div>
+            {% else %}
+            <!-- Empty State -->
+            <div class="card flex flex-col items-center justify-center py-12 text-center">
+                <div class="empty-state max-w-sm">
+                    <span class="icon icon-history text-tertiary text-4xl mb-2" aria-hidden="true"></span>
+                    <h3 class="empty-state-title type-card-title text-primary">No history yet</h3>
+                    <p class="empty-state-text type-body-sm text-secondary">Products you view will show up here.</p>
+                </div>
+            </div>
             {% endif %}
         </section>
     </div>
 </div>
 
 <!-- Keep photo removal separate from the account-information form. -->
-<form id="remove-picture-form" class="ajax-remove-picture" method="post" action="{% url 'profile_picture_delete' %}" data-confirm-title="Remove your profile picture?" data-confirm-text="Your account and other profile information will stay unchanged." data-confirm-label="Remove" hidden>
-        {% csrf_token %}
+<!-- Target for the avatar removal button inside the main form. Placed here to avoid nested HTML forms -->
+<form id="remove-picture-form" class="ajax-remove-picture" method="post" action="{% url 'profile_picture_delete' %}"
+    data-confirm-title="Remove your profile picture?"
+    data-confirm-text="Your account and other profile information will stay unchanged." data-confirm-label="Remove"
+    hidden>
+    {% csrf_token %}
 </form>
 
 <!-- CHANGE PASSWORD DIALOG -->
+<!-- Uses native HTML5 <dialog> element. Controlled by JS openDialog() -->
 <dialog class="dialog dialog-form profile-confirm-dialog" id="password-dialog" aria-labelledby="password-dialog-title">
     <h2 class="type-title text-primary" id="password-dialog-title">Change password</h2>
     <p class="type-body-sm text-secondary mb-4">Enter your current password and choose a new one.</p>
-    
+
     <!--  ID here so JS can target it -->
     <form id="password-change-form" method="POST" action="{% url 'change_password' %}">
         {% csrf_token %}
         <div class="dialog-body form-stack">
-            
+
             <!-- AJAX Error Container -->
+            <!-- Placeholder populated by JSON error response if current password is wrong -->
             <div id="password-dialog-error" class="text-danger type-body-sm mb-4 hidden font-medium"></div>
 
             <div class="field">
                 <label class="field-label type-label-md" for="current_password">Current password</label>
-                <input class="input" type="password" id="current_password" name="current_password" placeholder="Password" required>
+                <input class="input" type="password" id="current_password" name="current_password"
+                    placeholder="Password" required>
             </div>
             <div class="field">
                 <label class="field-label type-label-md" for="new_password">New password</label>
-                <input class="input" type="password" id="new_password" name="new_password" placeholder="Password" required>
+                <input class="input" type="password" id="new_password" name="new_password" placeholder="Password"
+                    required>
             </div>
             <div class="field">
                 <label class="field-label type-label-md" for="confirm_password">Confirm new password</label>
-                <input class="input" type="password" id="confirm_password" name="confirm_password" placeholder="Password" required>
+                <input class="input" type="password" id="confirm_password" name="confirm_password"
+                    placeholder="Password" required>
             </div>
         </div>
         <div class="dialog-actions flex justify-end gap-3 mt-6">
@@ -395,16 +446,20 @@
 </dialog>
 
 <!-- DELETE DIALOG -->
-<dialog class="dialog profile-confirm-dialog" id="delete-dialog" aria-labelledby="delete-account-title" aria-describedby="delete-account-description">
+<!-- Specialized destructive dialog for full account deletion -->
+<dialog class="dialog profile-confirm-dialog" id="delete-dialog" aria-labelledby="delete-account-title"
+    aria-describedby="delete-account-description">
     <div class="dialog-header flex justify-between items-center mb-2">
         <h2 class="type-title text-primary" id="delete-account-title">Delete your account?</h2>
         <button class="icon-btn icon-btn-plain" aria-label="Close" onclick="this.closest('dialog').close()">
             <span class="icon icon-x" aria-hidden="true"></span>
         </button>
     </div>
-    <p class="type-body-sm text-secondary mb-6" id="delete-account-description">This removes your profile, saved items, history and meal plans. It cannot be undone.</p>
+    <p class="type-body-sm text-secondary mb-6" id="delete-account-description">This removes your profile, saved items,
+        history and meal plans. It cannot be undone.</p>
     <div class="dialog-actions flex justify-end gap-3">
         <button type="button" class="btn btn-secondary" onclick="this.closest('dialog').close()">Cancel</button>
+        <!-- Hard standard POST submit -->
         <form method="POST" action="{% url 'profile_delete' %}">
             {% csrf_token %}
             <button class="btn btn-danger">Delete account</button>
@@ -413,7 +468,9 @@
 </dialog>
 
 <!-- Confirm protected actions without duplicating their POST forms. -->
-<dialog class="dialog profile-confirm-dialog" id="profile-confirm-dialog" aria-labelledby="profile-confirm-title" aria-describedby="profile-confirm-description">
+<!-- This is a universal empty dialog. JS injects the title and text based on the button's data attributes -->
+<dialog class="dialog profile-confirm-dialog" id="profile-confirm-dialog" aria-labelledby="profile-confirm-title"
+    aria-describedby="profile-confirm-description">
     <div class="dialog-header">
         <h2 class="dialog-title" id="profile-confirm-title"></h2>
         {% include 'components/dialog_close.html' %}
@@ -433,6 +490,7 @@
 <script>
     const PROFILE_SECTIONS = ['account', 'preferences', 'saved', 'history'];
 
+    // Hides/Shows DOM sections and updates ARIA attributes on the sidebar links
     function showSection(sectionId) {
         if (!PROFILE_SECTIONS.includes(sectionId)) sectionId = 'account';
         PROFILE_SECTIONS.forEach(name => {
@@ -447,11 +505,12 @@
             }
         });
     }
-    
+
     // Preserve the server-selected section unless an older hash link is used.
     if (location.hash) showSection(location.hash.slice(1));
 
     // Enable the selected section without changing its saved values.
+    // Flips the disabled attribute on inputs and reveals the hidden Save/Cancel actions
     function toggleEditMode(sectionId = 'account') {
         showSection(sectionId);
         const account = sectionId === 'account';
@@ -468,11 +527,12 @@
         form.querySelector(account ? '.profile-input' : 'input[name="diet"]')?.focus();
     }
 
+    // Swaps the image src with a local base64 blob when user selects a file, before form submission
     function previewProfilePicture(event) {
         const file = event.target.files[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 const container = document.getElementById('avatar-preview-container');
                 container.innerHTML = `<img src="${e.target.result}" alt="Preview" class="w-full h-full object-cover">`;
             }
@@ -486,6 +546,7 @@
     let pendingForm = null;
     let confirmedForm = null;
 
+    // Handles the accessibility of opening a dialog and tracking where focus should return when closed
     function openDialog(dialog, trigger) {
         if (dialog.open) return;
         returnTargets.set(dialog, trigger);
@@ -493,6 +554,7 @@
         dialog.querySelector('.dialog-actions .btn-secondary')?.focus();
     }
 
+    // Reads data attributes from the form and populates the generic confirmation dialog
     function requestConfirmation(form, trigger) {
         if (confirmation.open) return;
         pendingForm = form;
@@ -502,6 +564,7 @@
         openDialog(confirmation, trigger);
     }
 
+    // Listens for submits across the page. If it's a form requiring confirmation, intercepts it.
     document.addEventListener('submit', event => {
         const form = event.target;
         // Read-only sections must not submit through an implicit Enter key action.
@@ -509,50 +572,63 @@
             event.preventDefault();
             return;
         }
+        // Allows the form to naturally submit if it's already been confirmed by the dialog
         if (!form.dataset.confirmTitle || form === confirmedForm) return;
+
         event.preventDefault();
         requestConfirmation(form, event.submitter || document.activeElement);
     });
 
+    // Listens for clicks on buttons meant to open dialogs or trigger forms that require confirmation
     document.addEventListener('click', event => {
         const trigger = event.target.closest('[data-profile-dialog], [data-confirm-form]');
         if (!trigger) return;
+
         if (trigger.dataset.confirmForm) {
+            // A button targeting an external form to be confirmed
             requestConfirmation(document.getElementById(trigger.dataset.confirmForm), trigger);
         } else {
+            // A button just opening a specific dialog
             openDialog(document.getElementById(trigger.dataset.profileDialog), trigger);
         }
     });
 
+    // Main execution hub for when the user clicks "Confirm" in the generic dialog
     document.getElementById('profile-confirm-submit').addEventListener('click', async () => {
         if (!pendingForm) return;
         const form = pendingForm;
         confirmation.close();
 
-        if (form.classList.contains('ajax-delete-item') || 
-            form.classList.contains('ajax-clear-history') || 
-            form.classList.contains('ajax-remove-picture')||
+        // Checks if the intercepted form should be processed via AJAX instead of standard POST
+        if (form.classList.contains('ajax-delete-item') ||
+            form.classList.contains('ajax-clear-history') ||
+            form.classList.contains('ajax-remove-picture') ||
             form.classList.contains('ajax-remove-saved')) {
-            
+
             const formData = new FormData(form);
             try {
+                // Execute backend POST action silently
                 const response = await fetch(form.action, {
                     method: 'POST',
                     body: formData,
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
-                
+
                 if (response.ok) {
                     const data = await response.json();
 
+                    // If we just deleted a history item...
                     if (form.classList.contains('ajax-delete-item')) {
                         const card = form.closest('.card');
+
+                        // Fade and shrink animation before removing from DOM
                         card.style.transition = 'all 0.3s ease';
                         card.style.opacity = '0';
                         card.style.transform = 'scale(0.95)';
-                        
+
                         setTimeout(() => {
                             card.remove();
+                            // Check if this was the last item. If so, inject the empty state UI.
                             const remainingItems = document.querySelectorAll('#sec-history .card');
                             if (remainingItems.length === 0) {
                                 document.getElementById('sec-history').innerHTML = `
@@ -571,10 +647,12 @@
                         }, 300);
                     }
 
+                    // If we just cleared ALL history...
                     if (form.classList.contains('ajax-clear-history')) {
                         const historyContainer = form.closest('section');
                         historyContainer.style.opacity = '0';
                         setTimeout(() => {
+                            // Swap entire container contents for the empty state UI
                             historyContainer.innerHTML = `
                                 <div class="flex flex-col gap-2">
                                     <h2 class="type-heading-m text-primary">History</h2>
@@ -591,23 +669,26 @@
                         }, 300);
                     }
 
+                    // If we just removed our profile picture...
                     if (form.classList.contains('ajax-remove-picture')) {
-                        // Replace the large preview avatar
+                        // Replace the large preview avatar with the initial returned from the server JSON
                         const container = document.getElementById('avatar-preview-container');
                         container.innerHTML = data.initial;
-                        
+
+                        // Updates small avatars across the page (like the top right nav)
                         document.querySelectorAll('.user-chip .avatar, .page-header-user .avatar').forEach(el => {
                             if (el.id !== 'avatar-preview-container') {
                                 el.innerHTML = data.initial;
-                                el.querySelector('img')?.remove(); 
+                                el.querySelector('img')?.remove();
                             }
                         });
 
                         document.querySelector('[data-confirm-form="remove-picture-form"]')?.classList.add('hidden');
                     }
 
+                    // If we just unsaved a product/meal/article...
                     if (form.classList.contains('ajax-remove-saved')) {
-                        const card = form.closest('.card'); 
+                        const card = form.closest('.card');
                         if (card) {
                             card.style.transition = 'all 0.3s ease';
                             card.style.opacity = '0';
@@ -617,7 +698,7 @@
                             }, 300);
                         }
                     }
-                    
+
                 }
             } catch (error) {
                 console.error("AJAX request failed", error);
@@ -627,16 +708,18 @@
         }
 
         // Standard forms (like Logout or Account Deletion) bypass AJAX
+        // Temporarily sets flag so the event listener doesn't intercept it again
         confirmedForm = form;
         form.requestSubmit();
         confirmedForm = null;
     });
 
+    // Cleanup: Restores focus to the element that originally opened the dialog for screen reader accessibility
     document.querySelectorAll('dialog').forEach(dialog => {
         dialog.addEventListener('close', () => {
             if (dialog === confirmation) pendingForm = null;
             const target = returnTargets.get(dialog);
-            if (target?.isConnected) target.focus({preventScroll: true});
+            if (target?.isConnected) target.focus({ preventScroll: true });
         });
     });
 

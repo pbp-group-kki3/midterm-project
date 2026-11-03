@@ -28,14 +28,18 @@ from profiles.saved import SAVED_CATEGORIES, saved_items
 @never_cache
 def register_view(request):
     # Reuse LoginView's same-host and loop checks for a signup return destination.
+    # Handles redirecting the user back to where they came from after a successful login/signup
     login_view = ProfileLoginView()
     login_view.setup(request)
     next_url = login_view.get_redirect_url()
+    
+    # Block logged-in users from accessing the registration page
     if request.user.is_authenticated:
         return redirect(next_url or "main:show_main")
 
     if request.method == "POST":
         # Adapt the existing template's password names to UserCreationForm.
+        # Copies the immutable POST QueryDict so we can manipulate field names
         data = request.POST.copy()
         data["password1"] = request.POST.get("password", "")
         data["password2"] = request.POST.get("confirm_password", "")
@@ -44,6 +48,7 @@ def register_view(request):
         form_is_valid = form.is_valid()
 
         # Continue validates Step 1 without creating or authenticating an account.
+        # This intercepts the AJAX call from the frontend to check if the email/username is taken
         if request.POST.get("validate_step") == "1":
             return JsonResponse({
                 "ok": form_is_valid,
@@ -51,6 +56,7 @@ def register_view(request):
             }, status=200 if form_is_valid else 400)
 
         if form_is_valid:
+            # transaction.atomic() ensures the User and Profile are saved together, or neither are.
             with transaction.atomic():
                 user = form.save()
                 profile = user.profile
@@ -77,6 +83,7 @@ def register_view(request):
     errors = {error_names.get(name, name): " ".join(field_errors) for name, field_errors in form.errors.items()}
 
     # Reopen the signup step containing the validation error.
+    # Logic to auto-open step 2 or 3 if validation fails on those specific inputs
     registration_step = 1
 
     if errors and not any(name in errors for name in ("username", "email", "password", "confirm_password")):
@@ -91,6 +98,7 @@ def register_view(request):
     })
 
 # Build the shared profile context for normal pages and validation errors.
+# Reusable helper to package all forms and history/saved data for the profile dashboard
 def _profile_context(
     request,
     section="account",
@@ -100,9 +108,11 @@ def _profile_context(
     profile = request.user.profile
     category = request.GET.get("category", "all")
 
+    # Prevents arbitrary string lookups for categories
     if category not in dict(SAVED_CATEGORIES):
         raise Http404("Unknown saved category.")
 
+    # Initialize forms if they weren't passed in (e.g. initial page load)
     if account_form is None:
         account_form = AccountForm(instance=profile)
 
@@ -116,6 +126,7 @@ def _profile_context(
         )
 
     # Load Saved records only while displaying the Saved section.
+    # Prevents unnecessary database queries when viewing other tabs
     records = saved_items(request.user, category) if section == "saved" else []
     saved_page = Paginator(records, 12).get_page(request.GET.get("page"))
 
@@ -143,6 +154,7 @@ def _profile_context(
 def profile_view(request):
     section = request.GET.get("section", "account")
 
+    # Dedicated route override for 'saved'
     if section == "saved":
         return redirect("profile_saved")
 
@@ -158,6 +170,7 @@ def profile_view(request):
 def profile_saved(request):
     context = _profile_context(request, section="saved")
 
+    # Returns just the HTML fragment if loaded via AJAX for dynamic tab switching
     if request.headers.get("X-Blog-Saved-Fragment") == "1":
         return render(
             request,
@@ -174,6 +187,7 @@ def profile_edit(request):
     profile = request.user.profile
     action = request.POST.get("action")
 
+    # Handles the submission from the "Account Information" tab
     if action == "update_account":
         form = AccountForm(
             request.POST,
@@ -194,6 +208,7 @@ def profile_edit(request):
             status=400,
         )
 
+    # Handles the submission from the "Preferences" tab
     if action == "update_preferences":
         form = PreferencesForm(request.POST, instance=profile)
 
@@ -224,6 +239,7 @@ def profile_picture_delete(request):
         
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         # Send the user's initial back so JS can build the default avatar
+        # Allows for seamless live-updating on the frontend without a refresh
         return JsonResponse({
             "status": "success", 
             "initial": request.user.username[0].upper()
@@ -253,6 +269,7 @@ def change_password_view(request):
         
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
+        # Safely checks the current password against the stored hash
         if not request.user.check_password(current_password):
             if is_ajax:
                 return JsonResponse({"status": "error", "message": "Current password is incorrect."}, status=400)
@@ -266,6 +283,7 @@ def change_password_view(request):
             return redirect('profile')
 
         try:
+            # Uses Django's built in password validators (length, common passwords, etc)
             validate_password(new_password, request.user)
         except ValidationError as e:
             if is_ajax:
@@ -276,6 +294,7 @@ def change_password_view(request):
 
         request.user.set_password(new_password)
         request.user.save()
+        # Required to keep the user logged in after their password hash changes
         update_session_auth_hash(request, request.user)
         
         if is_ajax:
@@ -289,11 +308,13 @@ def change_password_view(request):
 @login_required
 @require_POST
 def profile_saved_remove(request, kind, pk):
+    # Mapping dict prevents unsafe arbitrary model access
     models = {
         "product": FavoriteProduct,
         "comparison": SavedComparison,
     }
     
+    # Conditional import ensures it doesn't break if the food_of_the_day app is missing
     try:
         from food_of_the_day.models import SavedMeal
         models["meal"] = SavedMeal
@@ -305,6 +326,7 @@ def profile_saved_remove(request, kind, pk):
     if model is None:
         raise Http404("This saved type cannot be removed here.")
 
+    # Requires the record to belong to the requesting user for security
     record = get_object_or_404(model, pk=pk, user=request.user)
     record.delete()
 
@@ -337,6 +359,7 @@ def profile_saved_comparison(request, pk):
     if record is None:
         return render(request, "comparison/saved_unavailable.html", status=404)
 
+    # Validates that the barcodes list is safely structured before rendering
     barcodes = record.barcodes
     valid_selection = (
         isinstance(barcodes, list)
@@ -370,6 +393,7 @@ class ProfileLoginView(LoginView):
             return ""
 
         normalized_path = normpath(unquote(path))
+        # Hardcoded paths that the user should never be automatically forwarded back to
         blocked_paths = {normpath(reverse("login")), normpath(reverse("logout")), normpath(reverse("register"))}
 
         if normalized_path in blocked_paths:
@@ -382,6 +406,7 @@ class ProfileLoginView(LoginView):
 @require_POST
 def history_item_delete(request, item_id):
     # Filter by both id and user to prevent unauthorized deletions
+    # Eliminates risk of IDOR (Insecure Direct Object Reference) vulnerabilities
     ViewHistory.objects.filter(id=item_id, user=request.user).delete()
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({"status": "success", "message": "Item deleted."})
@@ -393,6 +418,7 @@ def history_item_delete(request, item_id):
 @login_required
 @require_POST
 def history_clear(request):
+    # Mass delete all ViewHistory objects tied to the active user
     ViewHistory.objects.filter(user=request.user).delete()
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({"status": "success"})
