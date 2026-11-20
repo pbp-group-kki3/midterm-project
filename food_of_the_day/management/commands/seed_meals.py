@@ -1,3 +1,17 @@
+"""
+Django management command to seed Meal of the Day recommendations.
+
+Usage:
+  python manage.py seed_meals
+  python manage.py seed_meals --days 30
+  python manage.py seed_meals --clear
+
+Benefits:
+- Populates up to 365 days of recommendations without consuming any Spoonacular API points.
+- Cycles through 100 handpicked, verified sustainable recipes.
+- Respects existing custom admin entries by default unless --clear is specified.
+"""
+
 import datetime
 from django.core.management.base import BaseCommand
 from django.utils import timezone

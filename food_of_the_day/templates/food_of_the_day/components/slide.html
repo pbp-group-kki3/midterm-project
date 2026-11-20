@@ -7,6 +7,7 @@
     <div class="feature-card-text">
       <div class="motd-header-group">
         <span class="feature-card-overline">Meal of the day</span>
+        <!-- <span class="type-caption">{{ meal.total_saves }} saves</span> -->
         <span class="type-caption block text-on-feature-muted opacity-80 mt-1">
           {{ meal.date|date:"l, j F" }}
         </span>
@@ -69,6 +70,7 @@
   </section>
 
   <!-- Expandable Recipe Details Panel for Authenticated Users (Index/embed only) -->
+  {# Note: 'and not is_detail' prevents duplicate panels from rendering when slide is included on detail.html #}
   {% if user.is_authenticated and not is_detail %}
     <div id="recipe-expanded-panel" class="hidden transition-all duration-300">
       {% include 'food_of_the_day/components/recipe_panel.html' %}
@@ -77,8 +79,13 @@
 
   {% if user.is_authenticated %}
     <script>
+      /**
+       * Toggles the expandable recipe drawer on the index page or homepage carousel.
+       * If on the detail page, smoothly scrolls down to the main #recipe-panel instead.
+       */
       function toggleRecipePanel() {
         const panel = document.getElementById('recipe-expanded-panel');
+        // Detail page fallback: smooth scroll directly to the standalone recipe container
         if (!panel) {
           const detailPanel = document.getElementById('recipe-panel');
           if (detailPanel) detailPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -88,6 +95,7 @@
         const text = document.getElementById('recipe-toggle-text');
         const arrow = document.getElementById('recipe-toggle-arrow');
 
+        // Toggle visibility and update button text/arrow icons
         if (panel.classList.contains('hidden')) {
           panel.classList.remove('hidden');
           if (text) text.innerText = 'Hide recipe';
