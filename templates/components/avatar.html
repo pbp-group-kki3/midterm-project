@@ -11,7 +11,8 @@
 {% endcomment %}
 <span class="avatar{% if size %} avatar-{{ size }}{% endif %}">
     {% if photo %}
-        <img src="{{ photo }}" alt="{{ name }}">
+        {# change: if the photo file is missing (e.g. after a PWS redeploy), fall back to the first letter #}
+        <img src="{{ photo }}" alt="{{ name }}" onerror="this.replaceWith(document.createTextNode('{{ name|first|upper|escapejs }}'))">
     {% else %}
         {{ name|first|upper }}
     {% endif %}

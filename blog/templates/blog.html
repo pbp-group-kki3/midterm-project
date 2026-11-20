@@ -40,7 +40,7 @@
     <article class="blog-featured-card">
         <div class="blog-featured-img">
             {% if featured_article.cover_image %}
-                <img src="{{ featured_article.cover_image.url }}" alt="{{ featured_article.title }}">
+                <img src="{{ featured_article.cover_image.url }}" alt="{{ featured_article.title }}" onerror="this.remove()">{# change: hide if the file is missing #}
             {% else %}
                 Cover image, 3:2
             {% endif %}
@@ -69,7 +69,7 @@
                     <a href="{{ article.get_absolute_url }}" class="media-card">
                         <div class="media-card-img">
                             {% if article.cover_image %}
-                                <img src="{{ article.cover_image.url }}" alt="">
+                                <img src="{{ article.cover_image.url }}" alt="" onerror="this.remove()">{# change: hide if the file is missing #}
                             {% else %}
                                 Cover image
                             {% endif %}
@@ -103,7 +103,7 @@
                 <a href="{{ article.get_absolute_url }}" class="media-card">
                     <div class="media-card-img">
                         {% if article.cover_image %}
-                            <img src="{{ article.cover_image.url }}" alt="">
+                            <img src="{{ article.cover_image.url }}" alt="" onerror="this.remove()">{# change: hide if the file is missing #}
                         {% else %}
                             Cover image
                         {% endif %}

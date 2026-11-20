@@ -49,10 +49,14 @@ def save_article_snapshot(article, user):
                     extension = Path(article.cover_image.name).suffix.lower()
                     filename = f"{uuid4().hex}{extension}"
 
-                    with article.cover_image.open("rb") as source:
-                        record.cover_image.save(filename, File(source), save=False)
-
-                    copied_name = record.cover_image.name
+                    # change: PWS deletes uploaded files on every redeploy, so the cover file can be gone.
+                    # Then we save the article without a cover instead of crashing with a server error.
+                    try:
+                        with article.cover_image.open("rb") as source:
+                            record.cover_image.save(filename, File(source), save=False)
+                        copied_name = record.cover_image.name
+                    except (FileNotFoundError, OSError):
+                        record.cover_image = None
 
                 record.save()
 

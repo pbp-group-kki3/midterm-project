@@ -342,6 +342,14 @@
     document.getElementById("spoonfeedForm").addEventListener(
         "submit",
         (event) => {
+            // change: Enter in a text box submits the whole form, even from step 1.
+            // Before the last step, treat it like pressing Continue instead of creating the account,
+            // so preferences (step 2) and the photo (step 3) can't be skipped by accident
+            if (currentStep !== 3) {
+                event.preventDefault();          // change: don't create the account yet
+                goToStep(currentStep + 1);       // change: go to the next step (step 1 is still checked by the server first)
+                return;
+            }
             if (!validateStep1()) {
                 event.preventDefault();
                 displayStep(1);
