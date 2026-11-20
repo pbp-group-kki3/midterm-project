@@ -77,9 +77,11 @@ urlpatterns = [
     path('api/health/', api_health, name='api_health'),
     path('api/food-of-the-day/', include('food_of_the_day.api_urls')),
     # Teammates uncomment as they add their <app>/api_urls.py:
-    # path('api/auth/', include('profiles.api_urls')),
+    path('api/auth/', include('profiles.api_urls')),
     # path('api/products/', include('main.api_urls')),
-    # path('api/meal-plans/', include('meal_plan.api_urls')),
+    # path('api/auth/', include('profiles.api_urls')),
+    path('api/products/', include('main.api_urls')),
+    path('api/meal-plans/', include('meal_plan.api_urls')),
     # path('api/comparisons/', include('comparison.api_urls')),
     path('api/blog/', include('blog.api_urls')),
 ]
