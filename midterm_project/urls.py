@@ -14,7 +14,8 @@ Including another URLconf
 1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 from django.contrib import admin
 from django.urls import path, re_path, include
 from django.conf import settings
@@ -36,6 +37,12 @@ from profiles.views import (
     history_item_delete,
     history_clear,
 )
+
+@api_view(['GET'])
+def api_health(request):
+    return Response({'status': 'ok', 'message': 'DRF API is live'})
+
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('main.urls')),
@@ -66,6 +73,15 @@ urlpatterns = [
     path("profiles/saved/<str:kind>/<int:pk>/remove/", profile_saved_remove, name="profile_saved_remove"),
     path('profiles/history/delete/<int:item_id>/', history_item_delete, name='history_item_delete'),
     path('profiles/history/clear/', history_clear, name='history_clear'),
+
+    path('api/health/', api_health, name='api_health'),
+    path('api/food-of-the-day/', include('food_of_the_day.api_urls')),
+    # Teammates uncomment as they add their <app>/api_urls.py:
+    # path('api/auth/', include('profiles.api_urls')),
+    # path('api/products/', include('main.api_urls')),
+    # path('api/meal-plans/', include('meal_plan.api_urls')),
+    # path('api/comparisons/', include('comparison.api_urls')),
+    # path('api/blog/', include('blog.api_urls')),
 ]
 
 if settings.DEBUG:

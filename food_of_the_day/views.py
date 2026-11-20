@@ -1,3 +1,15 @@
+"""
+Views for the Meal of the Day (food_of_the_day) module.
+
+This module provides:
+1. `index`: Main page displaying today's featured meal hero, collapsible recipe drawer,
+   and an archive gallery of past recommendations.
+2. `detail`: Standalone recipe detail page with complete instructions, nutrition, and comments.
+3. `slide_partial`: Lightweight HTML partial for the homepage carousel.
+4. `add_comment`: Authenticated, anti-spam protected endpoint supporting both AJAX JSON and HTTP redirects.
+5. `toggle_save_meal`: Asynchronous bookmark toggle storing immutable snapshots into the user's profile.
+"""
+
 import datetime
 from django.shortcuts import render, get_object_or_404, redirect
 from django.conf import settings
@@ -21,14 +33,14 @@ from food_of_the_day.services import (
     extract_ingredients,
     extract_instructions,
     is_safe_external_url,
-    get_todays_meal,  # change: creates today's meal when it's missing
+    get_todays_meal,
 )
 
 
 def _get_safe_redirect_url(request, default_path):
     """
-    Validates the HTTP_REFERER to prevent Open Redirect attacks.
-    Only allows redirects back to the exact same host.
+    Validates HTTP_REFERER to prevent Open Redirect attacks.
+    Only allows redirects back to the exact same host and scheme.
     """
     referer = request.META.get('HTTP_REFERER')
     if referer and url_has_allowed_host_and_scheme(
@@ -41,13 +53,25 @@ def _get_safe_redirect_url(request, default_path):
 
 
 def _prepare_meal_context(meal, request):
-    """Helper to assemble all recipe and comment context for a given MealOfTheDay."""
+    """
+    Central Data Aggregator: Assembles recipe details, nutrition, comments,
+    and bookmark states for a given MealOfTheDay instance.
+    
+    Data Flow:
+    1. Look up recipe by recipe_id (cached from Spoonacular).
+    2. If Spoonacular is down or rate-limited, fall back to existing DB snapshots.
+    3. Sanitize external image and source URLs against XSS (no javascript: or data:).
+    4. Extract structured nutritional metrics (calories, key nutrients, Did You Know?).
+    5. Query user-specific bookmark status (is_saved boolean).
+    """
     if not meal:
         return {'meal': None, 'recipe': None}
 
+    # Step 1: Query Spoonacular cache / API
     recipe = get_recipe(meal.recipe_id)
+
+    # Step 2: Graceful offline fallback using immutable saved snapshots
     if not recipe or not isinstance(recipe, dict):
-        # Graceful fallback: check if a saved snapshot exists in DB (e.g. Spoonacular offline/rate-limited)
         saved_snap = (
             SavedMeal.objects.filter(meal=meal).exclude(snapshot_data={}).values_list('snapshot_data', flat=True).first()
             or SavedMeal.objects.filter(recipe_id=meal.recipe_id).exclude(snapshot_data={}).values_list('snapshot_data', flat=True).first()
@@ -55,6 +79,7 @@ def _prepare_meal_context(meal, request):
         if saved_snap and isinstance(saved_snap, dict):
             recipe = saved_snap
 
+    # If recipe data is completely absent from both API and DB
     if not recipe or not isinstance(recipe, dict):
         return {
             'meal': meal,
@@ -62,7 +87,7 @@ def _prepare_meal_context(meal, request):
             'error_message': 'Recipe details from Spoonacular are currently unavailable.',
         }
 
-    # URL sanitization to guard against javascript: or data: XSS vectors
+    # Step 3: URL sanitization to guard against javascript: or data: XSS vectors
     raw_source_url = recipe.get('sourceUrl')
     source_url = raw_source_url if is_safe_external_url(raw_source_url) else 'https://spoonacular.com'
 
@@ -75,6 +100,7 @@ def _prepare_meal_context(meal, request):
         'sourceUrl': source_url,
     }
 
+    # Step 4: Extract nutrition, ingredients, and instructions
     calories = extract_calories(recipe)
     key_nutrients = extract_key_nutrients(recipe)
     did_you_know = get_did_you_know(recipe)
@@ -82,6 +108,7 @@ def _prepare_meal_context(meal, request):
     instructions = extract_instructions(recipe)
     comments = meal.comments.select_related('user').all()
 
+    # Step 5: Check authenticated user's bookmark state
     is_saved = False
     if request and hasattr(request, 'user') and request.user.is_authenticated:
         is_saved = SavedMeal.objects.filter(user=request.user, meal=meal).exists()
@@ -109,14 +136,17 @@ def _prepare_meal_context(meal, request):
 @never_cache
 def index(request):
     """
-    Main page for the Meal of the Day module.
-    Displays today's featured meal, detail panel (if authenticated), and comments.
+    Main landing page for Meal of the Day.
+    Displays:
+    - Today's featured meal hero card with expandable recipe drawer.
+    - Gallery of past featured meals for browsing previous recommendations.
     """
     today = timezone.localdate()
-    today_meal = get_todays_meal()  # change: never empty now, even on a fresh database
+    # Auto-seed logic ensures a meal is always present, even on fresh deployments
+    today_meal = get_todays_meal()
     context = _prepare_meal_context(today_meal, request)
 
-    # Archive of past meals for exploration
+    # Archive of past meals (ordered newest to oldest)
     past_meals = MealOfTheDay.objects.filter(date__lt=today).order_by('-date')[:6]
     context['past_meals'] = past_meals
     context['is_today'] = True
@@ -127,12 +157,13 @@ def index(request):
 @never_cache
 def detail(request, meal_id):
     """
-    Detailed view for any featured meal by its database ID.
+    Dedicated detail view for any featured meal by its database ID.
+    Renders full steps, ingredients, nutrition facts, and community discussion.
     """
     meal = get_object_or_404(MealOfTheDay, id=meal_id)
     context = _prepare_meal_context(meal, request)
     context['is_today'] = (meal.date == timezone.localdate())
-    context['is_detail'] = True
+    context['is_detail'] = True  # Informs slide.html not to render duplicate panels
 
     return render(request, 'food_of_the_day/detail.html', context)
 
@@ -140,11 +171,10 @@ def detail(request, meal_id):
 @never_cache
 def slide_partial(request):
     """
-    Renders only the home page slide component.
-    Used for the second slide on the home page carousel or AJAX fetch.
+    Renders only the home page hero slide component.
+    Embedded in the main homepage carousel via templatetag or fetched via AJAX.
     """
-    today = timezone.localdate()
-    today_meal = get_todays_meal()  # change: never empty now, even on a fresh database
+    today_meal = get_todays_meal()
     context = _prepare_meal_context(today_meal, request)
     return render(request, 'food_of_the_day/components/slide.html', context)
 
@@ -153,8 +183,10 @@ def slide_partial(request):
 def add_comment(request, meal_id):
     """
     Handles comment submission on a featured meal.
-    Requires user authentication, validates input, checks for spam duplicates,
-    and protects against Open Redirect attacks.
+    Features:
+    - Requires authentication (redirects or returns 401 JSON for AJAX).
+    - Enforces anti-spam flood protection (10-second cooldown per duplicate comment).
+    - Returns JSON payload when called asynchronously via AJAX, or redirects safely.
     """
     if not request.user.is_authenticated:
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -184,11 +216,13 @@ def add_comment(request, meal_id):
             messages.warning(request, 'You recently posted this comment. Please wait a moment before posting again.')
             return redirect(_get_safe_redirect_url(request, fallback_url))
 
+        # Save valid comment
         comment = form.save(commit=False)
         comment.user = request.user
         comment.meal = meal
         comment.save()
 
+        # Respond asynchronously for smooth AJAX DOM update
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({
                 'success': True,
@@ -203,7 +237,7 @@ def add_comment(request, meal_id):
         messages.success(request, 'Your comment was posted successfully!')
         return redirect(_get_safe_redirect_url(request, fallback_url))
 
-    # Form errors
+    # Form validation errors
     first_error = form.errors.get('text', ['Invalid comment.'])[0]
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({'error': str(first_error)}, status=400)
@@ -217,19 +251,29 @@ def add_comment(request, meal_id):
 def toggle_save_meal(request, meal_id):
     """
     Toggle saving/bookmarking a Meal of the Day for the current user.
-    Integrates directly with the user profile's Saved collection using immutable snapshots.
+    
+    Snapshot Integration:
+    - If already saved: deletes bookmark and unsaves.
+    - If unsaved: captures point-in-time recipe snapshot (calories, ingredients, steps)
+      and stores it in SavedMeal.snapshot_data.
+    - Returns JSON for AJAX optimistic UI toggling or redirects safely.
     """
     meal = get_object_or_404(MealOfTheDay, id=meal_id)
     saved_record = SavedMeal.objects.filter(user=request.user, meal=meal).first()
+    # notes = request.POST.get('notes', '').strip()
+    # SavedMeal.objects.create(..., notes=notes)
 
     if saved_record:
+        # Unsave action
         saved_record.delete()
         saved = False
         msg = "Meal removed from your Saved collection."
     else:
+        # Save action: generate snapshot
         recipe = get_recipe(meal.recipe_id)
         snapshot = build_recipe_snapshot(recipe)
 
+        # Derive trusted server-side title
         canonical_title = snapshot.get('title') or (str(recipe.get('title') or '') if isinstance(recipe, dict) else '')
         if canonical_title:
             recipe_title = canonical_title[:255]
@@ -247,6 +291,7 @@ def toggle_save_meal(request, meal_id):
         saved = True
         msg = "Meal saved to your profile!"
 
+    # Asynchronous AJAX response
     if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json':
         return JsonResponse({
             'saved': saved,
@@ -254,9 +299,16 @@ def toggle_save_meal(request, meal_id):
             'message': msg,
         })
 
+    # Standard form submit fallback
     messages.success(request, msg)
     next_url = request.POST.get('next', '')
     if next_url and url_has_allowed_host_and_scheme(url=next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
         return redirect(next_url)
     return redirect('food_of_the_day:detail', meal_id=meal.id)
 
+#@login_required
+#@require_POST
+#def delete_comment(request, comment_id):
+    comment = get_object_or_404(MealComment, id=comment_id, user=request.user)  # Security: user=request.user prevents IDOR
+    comment.delete()
+    return redirect('food_of_the_day:detail', meal_id=comment.meal_id)

@@ -1,3 +1,11 @@
+"""
+Forms for the Meal of the Day module.
+
+Includes:
+- MealCommentForm: Validates community comment submissions, enforcing length
+  constraints, null-byte rejection, and non-printable control character filtering.
+"""
+
 import re
 from django import forms
 from django.core.exceptions import ValidationError
@@ -7,6 +15,7 @@ from food_of_the_day.models import MealComment
 class MealCommentForm(forms.ModelForm):
     class Meta:
         model = MealComment
+        # fields = ['text', rating']
         fields = ['text']
         widgets = {
             'text': forms.Textarea(attrs={

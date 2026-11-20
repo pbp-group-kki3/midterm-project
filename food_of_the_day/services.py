@@ -1,3 +1,21 @@
+"""
+Services and business logic helpers for the Meal of the Day module.
+
+Responsibilities:
+1. API Communications & Caching:
+   - Fetches and caches Spoonacular recipe details.
+   - Enforces 1-hour cache and 5-minute negative caching to prevent API exhaustion / DoS.
+2. Sanitization & URL Verification:
+   - Validates external hyperlinks against malicious pseudo-protocols (javascript:, data:).
+3. Nutrition & Metric Extraction:
+   - Parses calories, health scores, and macro/micronutrients.
+   - Strict filter for 'Did You Know?' facts to feature only genuine vitamins and minerals.
+4. Snapshot Serialization:
+   - Packages full recipe data into a frozen, standalone JSON snapshot for bookmarking.
+5. On-Demand Seeding:
+   - Fallback generator ensuring a featured meal always exists, even on fresh production instances.
+"""
+
 import os
 from urllib.parse import urlparse
 import requests
