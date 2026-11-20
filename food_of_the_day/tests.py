@@ -1,3 +1,18 @@
+"""
+Comprehensive unit and integration test suite for the Meal of the Day module.
+
+Covers:
+1. Model Tests: MealOfTheDay uniqueness constraints, MealComment validation, and SavedMeal.
+2. Service Tests: Spoonacular API fetching, 1-hour caching, 5-minute negative caching,
+   nutrient parsing, strict vitamin/mineral filtering, ingredient/instruction extraction,
+   URL scheme validation (anti-XSS), snapshot building, and on-demand self-seeding.
+3. Form Tests: Character length limits, null-byte rejection, and non-printable control character sanitization.
+4. View Tests: Landing page rendering, detail page access, carousel slide partials,
+   AJAX comment submissions with 10-second spam protection, open redirect defenses,
+   authenticated AJAX bookmark toggles, and cross-app profile integration.
+5. Management Command Tests: Database seeding command (--days, --clear, and admin preservation).
+"""
+
 import datetime
 from unittest.mock import patch, MagicMock
 from django.test import TestCase, Client, override_settings

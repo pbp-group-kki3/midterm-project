@@ -270,6 +270,10 @@
   </style>
 
   <script>
+    /**
+     * Synchronizes all save button instances for a given meal across the page.
+     * Updates data-saved attribute, CSS classes (.is-saved), heart icon (♡ / ♥), and label.
+     */
     function updateSaveButtons(mealId, isSaved) {
       const selector = `[data-save-meal-id="${mealId}"], .save-recipe-btn, #save-recipe-btn`;
       const buttons = document.querySelectorAll(selector);
@@ -289,6 +293,14 @@
       });
     }
 
+    /**
+     * Handles bookmark saving/unsaving asynchronously without full-page reloads.
+     * Features:
+     * - Optimistic UI update (instant visual feedback).
+     * - Dispatches POST request with CSRF token to /food-of-the-day/<id>/toggle-save/.
+     * - Reverts gracefully if a network or server error occurs.
+     * - Displays green/notice toast notification using window.showToast.
+     */
     async function toggleSaveRecipe(mealId) {
       {% if not user.is_authenticated %}
         window.location.href = "{% url 'login' %}?next={{ request.path }}";
@@ -341,6 +353,16 @@
       }
     }
 
+    /**
+     * Handles community comment submission asynchronously via AJAX.
+     * Features:
+     * - Prevents default full-page reload (keeps user on active slide/panel).
+     * - Disables submit button with 'Posting...' loading state to prevent double submissions.
+     * - Enforces client & server sanitization against XSS.
+     * - Prepend the new comment into the list with smooth keyframe animation (commentFadeIn).
+     * - Increments the live comment counter badge.
+     * - Triggers toast notification upon success.
+     */
     async function submitComment(event, mealId) {
       event.preventDefault();
       const form = document.getElementById(`comment-form-${mealId}`) || event.target.closest('form');
