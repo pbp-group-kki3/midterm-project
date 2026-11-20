@@ -81,7 +81,7 @@ urlpatterns = [
     # path('api/products/', include('main.api_urls')),
     # path('api/auth/', include('profiles.api_urls')),
     path('api/products/', include('main.api_urls')),
-    # path('api/meal-plans/', include('meal_plan.api_urls')),
+    path('api/meal-plans/', include('meal_plan.api_urls')),
     # path('api/comparisons/', include('comparison.api_urls')),
     # path('api/blog/', include('blog.api_urls')),
 ]
